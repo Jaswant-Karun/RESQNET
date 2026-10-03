@@ -58,8 +58,11 @@ export async function analyzeIncidentWithGemini(
     };
   }
 
-  const timeoutMs = options?.timeoutMs || 8000;
-  const model = options?.model || "gemini-2.5-flash";
+  const timeoutMs = options?.timeoutMs || 12000;
+  const preferredModel = options?.model || process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const candidateModels = [preferredModel, "gemini-2.5-flash"].filter(
+    (m, idx, arr) => arr.indexOf(m) === idx
+  );
 
   const prompt = `You are RESQNET Emergency Operations Center Intelligence Engine.
 Analyze the following active disaster incident data and produce an emergency response recommendation plan.
@@ -98,68 +101,75 @@ JSON SCHEMA REQUIREMENT:
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  for (const model of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.2,
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
+          },
+        }),
+      });
 
-    clearTimeout(timer);
+      if (response.status === 429) {
+        clearTimeout(timer);
+        return { ok: false, error: "RATE_LIMIT" };
+      }
 
-    if (response.status === 429) {
-      return { ok: false, error: "RATE_LIMIT" };
+      if (!response.ok) {
+        continue;
+      }
+
+      const payload = await response.json();
+      const candidateText =
+        payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!candidateText || typeof candidateText !== "string") {
+        continue;
+      }
+
+      // Clean any accidental markdown backticks
+      const cleanedText = candidateText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
+      const parsed = JSON.parse(cleanedText);
+
+      // Validate Schema
+      if (!validateGeminiResponse(parsed)) {
+        continue;
+      }
+
+      clearTimeout(timer);
+      return { ok: true, data: parsed };
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
+        clearTimeout(timer);
+        return { ok: false, error: "TIMEOUT" };
+      }
     }
-
-    if (!response.ok) {
-      return { ok: false, error: "NETWORK_ERROR" };
-    }
-
-    const payload = await response.json();
-    const candidateText =
-      payload?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!candidateText || typeof candidateText !== "string") {
-      return { ok: false, error: "PARSE_ERROR" };
-    }
-
-    // Clean any accidental markdown backticks
-    const cleanedText = candidateText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    const parsed = JSON.parse(cleanedText);
-
-    // Validate Schema
-    if (!validateGeminiResponse(parsed)) {
-      return { ok: false, error: "PARSE_ERROR" };
-    }
-
-    return { ok: true, data: parsed };
-  } catch (err: unknown) {
-    clearTimeout(timer);
-    if (err instanceof Error && err.name === "AbortError") {
-      return { ok: false, error: "TIMEOUT" };
-    }
-    return { ok: false, error: "NETWORK_ERROR" };
   }
+
+  clearTimeout(timer);
+  return { ok: false, error: "NETWORK_ERROR" };
 }
 
 /**
@@ -239,6 +249,11 @@ export async function askGeminiQuestion(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
+  const preferredModel = options?.model || process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const candidateModels = [preferredModel, "gemini-2.5-flash"].filter(
+    (m, idx, arr) => arr.indexOf(m) === idx
+  );
+
   const prompt = `You are RESQNET Emergency Response Tactical Assistant.
 Answer the following operator question accurately based on this live incident data:
 - Incident: ${incident.title} (${incident.disasterType}, Severity: ${incident.severity})
@@ -253,39 +268,55 @@ Question: ${question}
 
 Provide a concise, direct, tactical answer (max 3 sentences) suitable for an emergency operations commander.`;
 
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2 },
-      }),
-    });
+  for (const model of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
+          },
+        }),
+      });
 
-    clearTimeout(timer);
+      if (!res.ok) {
+        continue;
+      }
 
-    if (!res.ok) {
-      throw new Error(`API error ${res.status}`);
+      const payload = await res.json();
+      const answer = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!answer) {
+        continue;
+      }
+
+      clearTimeout(timer);
+      return { ok: true, answer: answer.trim(), source: "GEMINI_AI" };
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
+        clearTimeout(timer);
+        return {
+          ok: false,
+          answer:
+            `[Emergency Timeout Protocol] Situation query timed out under heavy load. Direct routing: Evacuate via Corridor R2 to Shelter B.`,
+          source: "FALLBACK",
+        };
+      }
     }
-
-    const payload = await res.json();
-    const answer = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!answer) {
-      throw new Error("No answer content");
-    }
-
-    return { ok: true, answer: answer.trim(), source: "GEMINI_AI" };
-  } catch {
-    clearTimeout(timer);
-    return {
-      ok: false,
-      answer:
-        `[Emergency Knowledge Base Fallback] Active zone: ${incident.zoneName || "Zone A"} at ${incident.metrics.waterLevelMeters}m flood depth. Roads ${incident.blockedRoads?.join(", ") || "R1, R3"} blocked. All convoys must proceed via Route R2 to Shelter B.`,
-      source: "FALLBACK",
-    };
   }
+
+  clearTimeout(timer);
+  return {
+    ok: false,
+    answer:
+      `[Emergency Knowledge Base Fallback] Active zone: ${incident.zoneName || "Zone A"} at ${incident.metrics.waterLevelMeters}m flood depth. Roads ${incident.blockedRoads?.join(", ") || "R1, R3"} blocked. All convoys must proceed via Route R2 to Shelter B.`,
+    source: "FALLBACK",
+  };
 }

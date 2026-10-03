@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Attempt Gemini situation analysis
-    const geminiResult = await analyzeIncidentWithGemini(incident, { timeoutMs: 7000 });
+    const geminiResult = await analyzeIncidentWithGemini(incident, { timeoutMs: 12000 });
 
     if (!geminiResult.ok) {
       // Friendly fallback: NO raw API errors exposed
