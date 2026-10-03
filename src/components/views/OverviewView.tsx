@@ -9,6 +9,8 @@ import { SimulationControls } from "@/components/dashboard/SimulationControls";
 import { useDashboard } from "@/context/DashboardContext";
 import { AlertCircle, AlertTriangle, Droplets, MapPin, Users } from "lucide-react";
 
+import { ResourceAllocationPanel } from "@/components/dashboard/ResourceAllocationPanel";
+
 export function OverviewView() {
   const { incident, simulationStage } = useDashboard();
 
@@ -22,7 +24,7 @@ export function OverviewView() {
 
       {/* 3. Main Center/Right Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        {/* LEFT / CENTER: Large Crisis Map Placeholder Area (7 cols) */}
+        {/* LEFT / CENTER: Large Crisis Map Placeholder Area (8 cols) */}
         <div className="lg:col-span-8 flex flex-col">
           <CrisisMap />
         </div>
@@ -33,7 +35,10 @@ export function OverviewView() {
         </div>
       </div>
 
-      {/* 4. BOTTOM: Incident Timeline */}
+      {/* 4. Intelligent Resource Allocation Panel */}
+      <ResourceAllocationPanel />
+
+      {/* 5. BOTTOM: Incident Timeline */}
       <IncidentTimeline />
     </div>
   );

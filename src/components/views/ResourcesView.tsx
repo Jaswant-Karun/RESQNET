@@ -14,6 +14,8 @@ import {
   Users,
 } from "lucide-react";
 
+import { ResourceAllocationPanel } from "@/components/dashboard/ResourceAllocationPanel";
+
 export function ResourcesView() {
   const { ambulances, rescueTeams, hospitals, shelters, roads } = useDashboard();
   const [filter, setFilter] = useState<"ALL" | "TEAMS" | "AMBULANCES" | "FACILITIES">("ALL");
@@ -31,6 +33,10 @@ export function ResourcesView() {
             Real-time status of ambulances, rescue boat battalions, hospital beds, and relief shelters.
           </p>
         </div>
+      </div>
+
+      {/* Intelligent Resource Allocation Panel */}
+      <ResourceAllocationPanel />
 
         {/* Filter buttons */}
         <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-md text-xs font-mono">

@@ -38,6 +38,7 @@ export function AiResponseStatusPanel() {
     simulateApiFailure,
     setSimulateApiFailure,
     simulateFlood,
+    resourceAllocationState,
   } = useDashboard();
 
   // Extract from the ResponsePlan (either Gemini AI or Fallback)
@@ -51,11 +52,7 @@ export function AiResponseStatusPanel() {
     "Assign 2 rescue teams",
     "Route evacuees to Shelter B",
   ];
-  const resourceAllocation = plan.resourceAllocation || {
-    ambulances: 2,
-    rescueTeams: 2,
-    drones: 1,
-  };
+  const resourceAllocation = resourceAllocationState.assigned;
   const evacuationRoute = plan.evacuationRoute || "R2";
   const publicAlert = plan.publicAlert || "";
   const explanation = plan.explanation || "";
