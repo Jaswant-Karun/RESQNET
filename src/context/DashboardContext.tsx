@@ -2,17 +2,13 @@
 
 import React, { createContext, useContext, useState } from "react";
 import {
+  generateDeterministicFloodScenario,
+  DeterministicFloodScenarioResult,
+} from "@/lib/flood-simulation-engine";
+import {
   MOCK_ALERTS,
-  MOCK_AMBULANCES,
-  MOCK_DRONES,
-  MOCK_FLOOD_INCIDENT,
-  MOCK_HOSPITALS,
-  MOCK_RESCUE_TEAMS,
   MOCK_RESPONSE_PLAN,
-  MOCK_ROADS,
-  MOCK_SHELTERS,
   MOCK_TIMELINE_EVENTS,
-  MOCK_ZONES,
 } from "@/data";
 import {
   Alert,
@@ -42,6 +38,7 @@ interface DashboardContextType {
   activeTab: DashboardTab;
   setActiveTab: (tab: DashboardTab) => void;
   simulationStage: SimulationStage;
+  simulationStatus: string;
   simulateFlood: () => void;
   simulateEscalation: () => void;
   resetSimulation: () => void;
@@ -69,165 +66,157 @@ const DashboardContext = createContext<DashboardContextType | undefined>(
 );
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
+  // Generate initial deterministic flood scenario
+  const initialScenario = generateDeterministicFloodScenario();
+
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const [simulationStage, setSimulationStage] =
     useState<SimulationStage>("FLOOD_ACTIVE");
-  const [incident, setIncident] = useState<Incident>(MOCK_FLOOD_INCIDENT);
-  const [zones, setZones] = useState<Zone[]>(MOCK_ZONES);
-  const [timeline, setTimeline] =
-    useState<TimelineEvent[]>(MOCK_TIMELINE_EVENTS);
+  const [simulationStatus, setSimulationStatus] = useState<string>(
+    "FLOOD INCIDENT SIMULATED"
+  );
+  const [incident, setIncident] = useState<Incident>(initialScenario.incident);
+  const [zones, setZones] = useState<Zone[]>(initialScenario.zones);
+  const [hospitals, setHospitals] = useState<Hospital[]>(initialScenario.hospitals);
+  const [shelters, setShelters] = useState<Shelter[]>(initialScenario.shelters);
+  const [roads, setRoads] = useState<RoadSegment[]>(initialScenario.roads);
+  const [ambulances, setAmbulances] = useState<Resource[]>(initialScenario.ambulances);
+  const [rescueTeams, setRescueTeams] = useState<Resource[]>(initialScenario.rescueTeams);
+  const [drones, setDrones] = useState<Drone[]>(initialScenario.drones);
+
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([
+    initialScenario.timelineEvent,
+    ...MOCK_TIMELINE_EVENTS,
+  ]);
   const [plan, setPlan] = useState<ResponsePlan>(MOCK_RESPONSE_PLAN);
   const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS);
   const [isActionApproved, setIsActionApproved] = useState<boolean>(false);
-  const [selectedZone, setSelectedZone] = useState<Zone | null>(MOCK_ZONES[0]);
+  const [selectedZone, setSelectedZone] = useState<Zone | null>(initialScenario.zones[0]);
   const [unreadAlertCount, setUnreadAlertCount] = useState<number>(3);
 
+  // Deterministic simulateFlood() function
   const simulateFlood = () => {
+    const scenario = generateDeterministicFloodScenario();
+
     setSimulationStage("FLOOD_ACTIVE");
+    setSimulationStatus("FLOOD INCIDENT SIMULATED");
     setIsActionApproved(false);
 
-    const baseIncident: Incident = {
-      ...MOCK_FLOOD_INCIDENT,
-      status: "ACTIVE",
-      severity: "CRITICAL",
-      metrics: {
-        ...MOCK_FLOOD_INCIDENT.metrics,
-        waterLevelMeters: 4.85,
-        waterLevelTrend: "RISING_RAPID",
-        rainfallRateMmPerHour: 68.4,
-        affectedPopulationEstimated: 34200,
-        confirmedEvacuated: 12450,
-        reportedStranded: 1820,
-      },
-    };
-    setIncident(baseIncident);
+    setIncident(scenario.incident);
+    setZones(scenario.zones);
+    setHospitals(scenario.hospitals);
+    setShelters(scenario.shelters);
+    setRoads(scenario.roads);
+    setAmbulances(scenario.ambulances);
+    setRescueTeams(scenario.rescueTeams);
+    setDrones(scenario.drones);
+    setSelectedZone(scenario.zones[0]);
 
-    // Reset zones to base flood state
-    setZones(MOCK_ZONES);
+    // Prepend fresh deterministic timeline event
+    setTimeline((prev) => [scenario.timelineEvent, ...prev]);
 
-    // Append new simulation timeline event
-    const newEvent: TimelineEvent = {
-      id: `evt-sim-${Date.now()}`,
-      incidentId: baseIncident.id,
-      timestamp: new Date().toISOString(),
-      title: "Flood Incident Simulation Initialized",
-      description:
-        "Severe 68mm/h cloudburst trigger initiated. Kotturpuram Sluice Gate 7 breached. Zone Alpha categorized as CRITICAL.",
-      category: "DETECTION",
-      severity: "CRITICAL",
-      authorOrSystem: "Simulation Orchestrator",
-    };
-
-    setTimeline((prev) => [newEvent, ...prev]);
-
-    // Update response plan
+    // Update response plan specifically for Zone A (2.4m flood)
     setPlan({
       ...MOCK_RESPONSE_PLAN,
+      title: "Phase 1 Rapid Evacuation & Critical Extraction Plan — Zone A",
+      riskAssessmentSummary:
+        "Water level in Zone A measured at 2.4 meters with 1,240 people affected. Arterial Roads R1 and R3 are blocked. Direct swiftwater rescue teams and UAV payload drops to isolated pockets.",
       humanApproved: false,
       status: "AWAITING_APPROVAL",
     });
   };
 
+  // Deterministic simulateEscalation() function
   const simulateEscalation = () => {
     setSimulationStage("ESCALATED");
+    setSimulationStatus("CRITICAL ESCALATION ACTIVE");
     setIsActionApproved(false);
 
     const escalatedIncident: Incident = {
-      ...MOCK_FLOOD_INCIDENT,
+      ...incident,
       code: "FL-902-CATACLYSMIC",
-      title: "Adyar Basin Sluice Gate 7 Failure & Secondary Embankment Breach",
+      title: "Adyar Basin Sluice Gate 7 Breach & Zone B Inundation",
       severity: "CRITICAL",
       status: "ESCALATING",
       operationalSummary:
-        "CRITICAL ESCALATION: Upstream dam emergency spillway discharge increased to 58,000 cusecs. Secondary embankment at Saidapet Bridge overtopped. Sector 7B has turned into rapid-current inundated zone. Airborne payload life drops and immediate rooftop extractions authorized.",
+        "CRITICAL ESCALATION: Upstream dam emergency discharge has spiked. Water level in Zone A surged to 3.8 meters; Zone B is now critically inundated at 2.6 meters. Roads R1, R2, and R3 are blocked. Evacuate all remaining 3,400 residents via Route R4 Highland corridor.",
       metrics: {
-        ...MOCK_FLOOD_INCIDENT.metrics,
-        waterLevelMeters: 6.2,
+        ...incident.metrics,
+        waterLevelMeters: 3.8,
         waterLevelTrend: "RISING_RAPID",
-        rainfallRateMmPerHour: 92.5,
-        affectedPopulationEstimated: 52000,
-        confirmedEvacuated: 15200,
-        reportedStranded: 3640,
-        criticalInfrastructureAtRisk: 14,
+        rainfallRateMmPerHour: 98.0,
+        affectedPopulationEstimated: 3450,
+        confirmedEvacuated: 1100,
+        reportedStranded: 420,
+        criticalInfrastructureAtRisk: 9,
       },
+      blockedRoads: ["R1", "R2", "R3"],
     };
     setIncident(escalatedIncident);
 
-    // Escalate zones: Zone Bravo also becomes CRITICAL
+    // Escalate zones: Zone B also becomes CRITICAL
     setZones((prev) =>
       prev.map((z) => {
-        if (z.id === "zone-orange-bravo") {
+        if (z.code === "Zone A") {
+          return { ...z, waterDepthMeters: 3.8, status: "SUBMERGED" };
+        }
+        if (z.code === "Zone B") {
           return {
             ...z,
             riskLevel: "CRITICAL",
+            waterDepthMeters: 2.6,
             status: "SUBMERGED",
-            waterDepthMeters: 2.9,
-          };
-        }
-        if (z.id === "zone-red-alpha") {
-          return {
-            ...z,
-            waterDepthMeters: 4.6,
           };
         }
         return z;
       })
     );
 
-    // Add escalation timeline event
+    // Escalate roads: R1, R2, R3 blocked
+    setRoads((prev) =>
+      prev.map((r) => {
+        if (r.code === "R1" || r.code === "R2" || r.code === "R3") {
+          return { ...r, status: "SUBMERGED", isBlocked: true, waterDepthCm: 280 };
+        }
+        return r;
+      })
+    );
+
+    // Timeline event
     const escalationEvent: TimelineEvent = {
       id: `evt-esc-${Date.now()}`,
       incidentId: escalatedIncident.id,
       timestamp: new Date().toISOString(),
-      title: "EMERGENCY ESCALATION: Secondary Embankment Collapsed",
+      title: "Critical Escalation: Sluice Gate 7 Collapse",
       description:
-        "Surge water level reached 6.2m (+1.35m in 20 min). Sector 7B reclassified from HIGH to CRITICAL. Stranded count increased to 3,640 civilians.",
+        "Surge water level reached 3.8m in Zone A and breached Zone B. Roads R1, R2, and R3 blocked. Stranded count increased to 420.",
       category: "ESCALATION",
       severity: "CRITICAL",
-      authorOrSystem: "Automated Doppler & Hydro-Gauge Sentinel",
+      authorOrSystem: "Hydro-Gauge Sensor Sentinel",
     };
-
     setTimeline((prev) => [escalationEvent, ...prev]);
 
-    // Push critical alert
+    // Critical Alert
     const newAlert: Alert = {
       id: `alt-esc-${Date.now()}`,
       incidentId: escalatedIncident.id,
-      code: "ALT-ESCALATION-GATE-FAIL",
-      title: "Catastrophic 6.2m Water Level Inundation",
+      code: "ALT-SURGE-GATE-7",
+      title: "Catastrophic 3.8m Flood Surge in Zone A",
       message:
-        "Emergency broadcast: Sector 7B Saidapet Junction is now impassable. Direct all units to Elevated Bypass Route 104.",
+        "Emergency Directive: Roads R1, R2, and R3 are impassable. Route all medical units to Elevated Arterial R4.",
       severity: "CRITICAL",
       timestamp: new Date().toISOString(),
       source: "DAM_AUTHORITY",
-      zoneId: "zone-orange-bravo",
+      zoneId: "zone-a",
       acknowledged: false,
-      actionableStep: "Order emergency rooftop helicopter and UAV payload airlift",
+      actionableStep: "Order emergency air-drops and deploy boat squads to Zone B",
     };
-
     setAlerts((prev) => [newAlert, ...prev]);
     setUnreadAlertCount((c) => c + 1);
-
-    // Update plan with escalation actions
-    setPlan((prev) => ({
-      ...prev,
-      planVersion: prev.planVersion + 1,
-      title: "Phase 2 Emergency Airlift & Heavy Boat Extraction",
-      riskAssessmentSummary:
-        "Secondary embankment collapse has doubled flow velocity. Immediate priority is preventing hypothermia and structural drowning in Zones Alpha & Bravo.",
-      humanApproved: false,
-      status: "AWAITING_APPROVAL",
-      confidenceScorePercentage: 91.8,
-    }));
   };
 
   const resetSimulation = () => {
-    setSimulationStage("NORMAL");
-    setIsActionApproved(false);
-    setIncident(MOCK_FLOOD_INCIDENT);
-    setZones(MOCK_ZONES);
-    setTimeline(MOCK_TIMELINE_EVENTS);
-    setPlan(MOCK_RESPONSE_PLAN);
+    simulateFlood();
   };
 
   const approveAction = () => {
@@ -244,14 +233,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       id: `evt-appr-${Date.now()}`,
       incidentId: incident.id,
       timestamp: new Date().toISOString(),
-      title: "Tactical Response Plan Formally Authorized",
+      title: "Rescue Plan Authorized by Incident Commander",
       description:
-        "Command Officer authorized Phase 1 Extraction and UAV Drop. Automatic n8n resource dispatch orchestration sequence armed.",
+        "Commander R. Menon authorized Zone A rapid boat extraction and UAV life-jacket drop. Automated dispatch armed.",
       category: "DECISION",
       severity: "INFO",
       authorOrSystem: "Incident Commander R. Menon",
     };
-
     setTimeline((prev) => [approvalEvent, ...prev]);
   };
 
@@ -265,17 +253,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         activeTab,
         setActiveTab,
         simulationStage,
+        simulationStatus,
         simulateFlood,
         simulateEscalation,
         resetSimulation,
         incident,
         zones,
-        hospitals: MOCK_HOSPITALS,
-        shelters: MOCK_SHELTERS,
-        roads: MOCK_ROADS,
-        ambulances: MOCK_AMBULANCES,
-        rescueTeams: MOCK_RESCUE_TEAMS,
-        drones: MOCK_DRONES,
+        hospitals,
+        shelters,
+        roads,
+        ambulances,
+        rescueTeams,
+        drones,
         plan,
         alerts,
         timeline,

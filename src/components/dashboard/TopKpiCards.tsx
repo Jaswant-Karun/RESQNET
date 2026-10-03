@@ -9,7 +9,6 @@ import {
   Ambulance,
   Home,
   Navigation,
-  ShieldAlert,
   Users,
 } from "lucide-react";
 
@@ -68,12 +67,12 @@ export function TopKpiCards() {
               </span>
             </div>
             <div className="text-[11px] text-slate-400 font-mono truncate">
-              {incident.code}
+              {incident.zoneName || "Zone A"} • {incident.metrics.waterLevelMeters}m
             </div>
           </div>
           <div className="text-[10px] text-red-400/90 font-mono uppercase flex items-center gap-1 font-bold">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-ping" />
-            {simulationStage === "ESCALATED" ? "ESCALATED TIER 1" : "SEVERITY CRITICAL"}
+            {incident.metrics.affectedPopulationEstimated.toLocaleString()} AFFECTED
           </div>
         </CardContent>
       </Card>
@@ -99,12 +98,12 @@ export function TopKpiCards() {
             </div>
             <div className="text-[11px] text-slate-400 font-mono truncate">
               {simulationStage === "ESCALATED"
-                ? "Sectors 7A & 7B Submerged"
-                : "Sector 7A Inundated"}
+                ? "Zone A & Zone B Submerged"
+                : "Zone A Critical (2.4m)"}
             </div>
           </div>
           <div className="text-[10px] text-amber-400/90 font-mono uppercase font-bold">
-            Water depth {incident.metrics.waterLevelMeters}m
+            Blocked: {incident.blockedRoads?.join(", ") || "R1, R3"}
           </div>
         </CardContent>
       </Card>
@@ -123,17 +122,17 @@ export function TopKpiCards() {
           </div>
           <div className="my-2">
             <div className="text-2xl font-black text-emerald-400 font-mono tracking-tight flex items-baseline gap-1.5">
-              <span>{availableAmbulancesCount}</span>
+              <span>{ambulances.length}</span>
               <span className="text-xs font-normal text-slate-400 font-sans">
-                / {ambulances.length} Free
+                Units ({availableAmbulancesCount} Free)
               </span>
             </div>
             <div className="text-[11px] text-slate-400 font-mono">
-              {ambulances.length - availableAmbulancesCount} En route to Triage
+              {ambulances.length - availableAmbulancesCount} On Field / Triage
             </div>
           </div>
           <div className="text-[10px] text-emerald-400/90 font-mono uppercase font-bold">
-            ALS 108 Fleet Linked
+            ALS 108 Fleet (8 Total)
           </div>
         </CardContent>
       </Card>
@@ -154,15 +153,15 @@ export function TopKpiCards() {
             <div className="text-2xl font-black text-blue-400 font-mono tracking-tight flex items-baseline gap-1.5">
               <span>{totalRescueTeamsCount}</span>
               <span className="text-xs font-normal text-slate-400 font-sans">
-                ({activeTeamsCount} Deployed)
+                Teams ({activeTeamsCount} Active)
               </span>
             </div>
             <div className="text-[11px] text-slate-400 font-mono truncate">
-              NDRF & SDRF Boat Units
+              NDRF, SDRF & Coast Guard
             </div>
           </div>
           <div className="text-[10px] text-blue-400/90 font-mono uppercase font-bold">
-            48 Field Rescuers
+            62 Rescuers Mobilized
           </div>
         </CardContent>
       </Card>
@@ -181,17 +180,17 @@ export function TopKpiCards() {
           </div>
           <div className="my-2">
             <div className="text-2xl font-black text-indigo-300 font-mono tracking-tight flex items-baseline gap-1.5">
-              <span>{availableDronesCount}</span>
+              <span>{drones.length}</span>
               <span className="text-xs font-normal text-slate-400 font-sans">
-                / {drones.length} Operational
+                UAVs ({availableDronesCount} Ready)
               </span>
             </div>
             <div className="text-[11px] text-slate-400 font-mono">
-              2 Airborne Recon / 1 Standby
+              2 Airborne / 1 Standby
             </div>
           </div>
           <div className="text-[10px] text-indigo-400 font-mono uppercase font-bold">
-            Telemetry 96% Signal
+            Thermal & Payload Drops
           </div>
         </CardContent>
       </Card>
@@ -210,17 +209,17 @@ export function TopKpiCards() {
           </div>
           <div className="my-2">
             <div className="text-2xl font-black text-emerald-400 font-mono tracking-tight flex items-baseline gap-1.5">
-              <span>{shelters.length}</span>
+              <span>{totalShelterCapacity.toLocaleString()}</span>
               <span className="text-xs font-normal text-slate-400 font-sans">
-                Centers Open
+                Total Beds
               </span>
             </div>
             <div className="text-[11px] text-slate-400 font-mono">
-              {availableShelterSpots.toLocaleString()} Free Bed Spots
+              Shelter B: 700 • Shelter C: 1,500
             </div>
           </div>
           <div className="text-[10px] text-emerald-400/90 font-mono uppercase font-bold">
-            Alandur & Guindy Active
+            {availableShelterSpots.toLocaleString()} Free Bed Spots
           </div>
         </CardContent>
       </Card>
