@@ -4,15 +4,10 @@ import React from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Clock,
-  History,
-  Radio,
-  Sparkles,
-} from "lucide-react";
+import { Clock, History } from "lucide-react";
 
 export function IncidentTimeline() {
-  const { timeline, isActionApproved } = useDashboard();
+  const { timeline } = useDashboard();
 
   return (
     <Card className="border-slate-800 bg-[#080d1a] shadow-lg">

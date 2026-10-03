@@ -7,10 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   BatteryCharging,
   LifeBuoy,
-  Navigation,
   Radio,
-  Truck,
-  Users,
 } from "lucide-react";
 
 interface ResourceFleetProps {

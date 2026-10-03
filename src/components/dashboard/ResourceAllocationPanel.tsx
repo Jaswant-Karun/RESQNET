@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,13 +10,10 @@ import {
   Ambulance,
   Boxes,
   CheckCircle2,
-  ChevronRight,
   Flame,
-  Info,
   Navigation,
   RefreshCw,
   Sliders,
-  Sparkles,
   Truck,
   Users,
   Zap,
@@ -25,20 +22,16 @@ import { ResourceAllocation } from "@/types";
 
 interface ResourceAllocationPanelProps {
   className?: string;
-  compact?: boolean;
 }
 
 export function ResourceAllocationPanel({
   className,
-  compact = false,
 }: ResourceAllocationPanelProps) {
   const {
     resourceAllocationState,
     updateResourceAllocation,
     resetResourceAllocation,
     simulationStage,
-    simulateEscalation,
-    plan,
   } = useDashboard();
 
   const [showAdjuster, setShowAdjuster] = useState(false);
@@ -52,7 +45,7 @@ export function ResourceAllocationPanel({
     resourceAllocationState.requested.drones
   );
 
-  const { items, summary, hasWarning, warnings, available, assigned, remaining } =
+  const { items, summary, hasWarning, warnings, available } =
     resourceAllocationState;
 
   const handleApplyCustom = (req?: ResourceAllocation) => {
@@ -282,10 +275,12 @@ export function ResourceAllocationPanel({
                             </div>
                             <div className="text-[10px] text-slate-500 font-normal">
                               Requested: {item.requested}{" "}
-                              {item.isCapped && (
+                              {item.isCapped ? (
                                 <span className="text-amber-400 font-semibold">
                                   (Capped at {item.assigned})
                                 </span>
+                              ) : (
+                                <span>({utilization}% deployed)</span>
                               )}
                             </div>
                           </div>

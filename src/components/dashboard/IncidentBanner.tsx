@@ -1,7 +1,7 @@
 import React from "react";
 import { Incident } from "@/types";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CloudRain, Droplets, MapPin, Users, Waves } from "lucide-react";
+import { AlertCircle, CloudRain, MapPin, Users, Waves } from "lucide-react";
 
 interface IncidentBannerProps {
   incident: Incident;

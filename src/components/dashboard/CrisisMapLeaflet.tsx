@@ -382,7 +382,12 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
           weight: 4,
           opacity: 0.85,
           dashArray: "8, 8",
-        }).addTo(lg);
+        })
+          .bindTooltip(`Evacuation Corridor: ${route.routeName}`, {
+            direction: "center",
+            className: "leaflet-tooltip-dark",
+          })
+          .addTo(lg);
       });
     }
   }, [
