@@ -45,7 +45,7 @@ export function IncidentsView() {
                 {incident.code}
               </span>
               <Badge variant="critical">{incident.severity}</Badge>
-              <span className="text-xs text-slate-400 font-mono">
+              <span suppressHydrationWarning className="text-xs text-slate-400 font-mono">
                 {new Date(incident.detectedAt).toLocaleString()}
               </span>
             </div>

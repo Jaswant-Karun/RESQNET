@@ -39,7 +39,10 @@ export function TimelineFeed({ timeline }: TimelineFeedProps) {
 
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                  <span
+                    suppressHydrationWarning
+                    className="text-[11px] font-mono text-slate-400 flex items-center gap-1"
+                  >
                     <Clock className="h-3 w-3 text-slate-500" />
                     {new Date(event.timestamp).toLocaleTimeString()} IST
                   </span>

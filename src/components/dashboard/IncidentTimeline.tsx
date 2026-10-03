@@ -55,7 +55,10 @@ export function IncidentTimeline() {
                   <div className="space-y-1.5">
                     {/* Timestamp & Category */}
                     <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="text-slate-400 flex items-center gap-1">
+                      <span
+                        suppressHydrationWarning
+                        className="text-slate-400 flex items-center gap-1"
+                      >
                         <Clock className="h-3 w-3 text-slate-500" />
                         {new Date(event.timestamp).toLocaleTimeString([], {
                           hour: "2-digit",

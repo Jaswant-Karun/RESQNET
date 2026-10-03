@@ -215,7 +215,8 @@ export function allocateResources(
 export function createAllocationTimelineEvent(
   allocation: ResourceAllocationState,
   incidentId: string,
-  contextMessage?: string
+  contextMessage?: string,
+  timestamp?: string
 ): TimelineEvent {
   const isCapped = allocation.hasWarning;
   const assigned = allocation.assigned;
@@ -234,7 +235,7 @@ export function createAllocationTimelineEvent(
   return {
     id: `evt-alloc-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     incidentId,
-    timestamp: new Date().toISOString(),
+    timestamp: timestamp || new Date().toISOString(),
     title,
     description,
     category: "DISPATCH",

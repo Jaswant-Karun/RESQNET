@@ -42,7 +42,7 @@ export function IncidentBanner({ incident }: IncidentBannerProps) {
               <strong className="text-slate-200">Incident Commander:</strong> {incident.commandChief}
             </span>
             <span>•</span>
-            <span>
+            <span suppressHydrationWarning>
               <strong className="text-slate-200">Detected:</strong> {new Date(incident.detectedAt).toLocaleTimeString()} IST
             </span>
             <span>•</span>

@@ -131,7 +131,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const initialAllocEvent = createAllocationTimelineEvent(
     initialAllocation,
     initialScenario.incident.id,
-    "Initial Allocation: 2 Ambulances (READY), 2 Rescue Teams (DEPLOYING), 1 Drone (MISSION CREATED). 6 Ambulances, 2 Teams, 2 Drones in reserve."
+    "Initial Allocation: 2 Ambulances (READY), 2 Rescue Teams (DEPLOYING), 1 Drone (MISSION CREATED). 6 Ambulances, 2 Teams, 2 Drones in reserve.",
+    initialScenario.incident.detectedAt
   );
 
   const [timeline, setTimeline] = useState<TimelineEvent[]>([

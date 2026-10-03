@@ -52,7 +52,10 @@ export function AlertsFeed({ alerts }: AlertsFeedProps) {
                   {alt.code}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-slate-400 shrink-0">
+              <span
+                suppressHydrationWarning
+                className="text-[10px] font-mono text-slate-400 shrink-0"
+              >
                 {new Date(alt.timestamp).toLocaleTimeString()}
               </span>
             </div>
