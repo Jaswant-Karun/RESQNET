@@ -38,9 +38,9 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Center map around Adyar River Basin (Chennai Metro Sector)
+    // Center map around Zone A & River Basin
     const initialMap = L.map(mapContainerRef.current, {
-      center: [13.0145, 80.2225],
+      center: [13.0135, 80.2215],
       zoom: 14,
       zoomControl: false,
       attributionControl: false,
@@ -67,7 +67,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
     };
   }, []);
 
-  // 2. Render and update map layers whenever data, simulationStage, or filter layers change
+  // 2. Render and update map layers whenever data or simulationStage changes
   useEffect(() => {
     const map = mapInstanceRef.current;
     const lg = layerGroupRef.current;
@@ -120,14 +120,8 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
           ? "#3b82f6"
           : "#10b981";
 
-        const polyFill = isCritical
-          ? "rgba(239, 68, 68, 0.35)"
-          : isHigh
-          ? "rgba(249, 115, 22, 0.25)"
-          : "rgba(59, 130, 246, 0.15)";
-
         // Draw tactical polygon boundaries
-        const polygon = L.polygon(zone.polygonCoordinates, {
+        const polygon = L.polygon(zone.polygonCoordinates as L.LatLngTuple[], {
           color: polyColor,
           weight: isCritical ? 3 : 2,
           dashArray: isCritical ? "5, 5" : undefined,
@@ -140,8 +134,8 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
         });
 
         // Add Center Pin with label
-        const isZoneA = zone.code === "Z-ALPHA";
-        const isZoneB = zone.code === "Z-BRAVO";
+        const isZoneA = zone.code.toLowerCase().includes("a");
+        const isZoneB = zone.code.toLowerCase().includes("b");
 
         let zoneLabel = zone.code;
         if (isZoneA) zoneLabel = "ZONE A [CRITICAL]";
@@ -161,14 +155,14 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
         }).addTo(lg);
 
         zoneMarker.bindPopup(`
-          <div style="padding: 12px; font-family: sans-serif; min-width: 200px;">
+          <div style="padding: 12px; font-family: sans-serif; min-width: 210px;">
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 8px;">
               <span style="font-family: monospace; font-weight: bold; color: ${polyColor}; font-size: 11px;">${zone.code}</span>
               <span style="font-size: 10px; background: ${isCritical ? '#450a0a' : '#431407'}; color: ${polyColor}; padding: 1px 6px; border-radius: 4px; font-weight: bold;">${zone.riskLevel}</span>
             </div>
             <div style="font-weight: bold; color: #f8fafc; font-size: 12px; margin-bottom: 4px;">${zone.name}</div>
-            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Inundation Depth: <strong style="color: ${polyColor};">${zone.waterDepthMeters}m</strong></div>
-            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Estimated Pop: <strong>${zone.populationEstimate.toLocaleString()}</strong></div>
+            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Water Depth: <strong style="color: ${polyColor};">${zone.waterDepthMeters} meters</strong></div>
+            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Affected Population: <strong>${zone.populationEstimate.toLocaleString()}</strong></div>
             <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 6px;">Evac Progress: <strong style="color: #10b981;">${zone.evacuationProgressPercentage}%</strong></div>
             <div style="font-size: 10px; background: #0f172a; padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; color: #94a3b8;">
               Status: <span style="color: #f8fafc; font-weight: bold;">${zone.status}</span>
@@ -178,41 +172,40 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
       });
     }
 
-    // 3, 4, 5. HOSPITALS (H1, H2, H3) - BLUE
+    // 3, 4, 5. HOSPITALS (H1 80%, H2 42%, H3 95%) - BLUE
     if (layers.infrastructure) {
       hospitals.forEach((hosp, idx) => {
-        const hTag = `H${idx + 1}`;
+        const hTag = hosp.code || `H${idx + 1}`;
+        const usage = hosp.capacityUsagePercentage ?? Math.round(((hosp.totalBeds - hosp.availableBeds) / hosp.totalBeds) * 100);
+
         const marker = L.marker([hosp.location.latitude, hosp.location.longitude], {
           icon: createMarkerIcon(
             "#0b1120",
             "#3b82f6",
             "#60a5fa",
             hTag,
-            `Hospital ${hTag}`
+            `Hospital ${hTag} (${usage}%)`
           ),
         }).addTo(lg);
 
         marker.bindPopup(`
           <div style="padding: 12px; font-family: sans-serif; min-width: 220px;">
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 8px;">
-              <span style="font-family: monospace; font-weight: bold; color: #60a5fa; font-size: 11px;">[${hTag}] MEDICAL FACILITY</span>
-              <span style="font-size: 10px; background: #172554; color: #93c5fd; padding: 1px 6px; border-radius: 4px;">${hosp.type}</span>
+              <span style="font-family: monospace; font-weight: bold; color: #60a5fa; font-size: 11px;">[${hTag}] HOSPITAL</span>
+              <span style="font-size: 10px; background: #172554; color: #93c5fd; padding: 1px 6px; border-radius: 4px; font-weight: bold;">Usage: ${usage}%</span>
             </div>
             <div style="font-weight: bold; color: #f8fafc; font-size: 12px; margin-bottom: 6px;">${hosp.name}</div>
+            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Capacity Usage: <strong style="color: ${usage > 85 ? '#ef4444' : '#60a5fa'}; font-size: 12px;">${usage}%</strong></div>
             <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Available Beds: <strong style="color: #10b981;">${hosp.availableBeds} / ${hosp.totalBeds}</strong></div>
-            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">ICU Units Free: <strong style="color: #38bdf8;">${hosp.icuAvailable} / ${hosp.icuTotal}</strong></div>
-            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 4px;">Elevation: <strong>${hosp.location.elevationMeters}m</strong></div>
-            <div style="font-family: monospace; font-size: 10px; color: #94a3b8;">Radio: ${hosp.contactRadio}</div>
+            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">ICU Free: <strong style="color: #38bdf8;">${hosp.icuAvailable} / ${hosp.icuTotal}</strong></div>
+            <div style="font-family: monospace; font-size: 10px; color: #94a3b8; margin-top: 4px;">Radio: ${hosp.contactRadio}</div>
           </div>
         `);
       });
 
-      // 6 & 7. SHELTERS (Shelter B, Shelter C) - GREEN
+      // 6 & 7. SHELTERS (Shelter B: 700, Shelter C: 1500) - GREEN
       shelters.forEach((shelter) => {
-        let shelterTag = "Shelter";
-        if (shelter.id.includes("guindy")) shelterTag = "Shelter B";
-        else if (shelter.id.includes("alandur")) shelterTag = "Shelter C";
-        else shelterTag = "Shelter A";
+        const shelterTag = shelter.code || (shelter.id.includes("b") ? "Shelter B" : "Shelter C");
 
         const marker = L.marker([shelter.location.latitude, shelter.location.longitude], {
           icon: createMarkerIcon(
@@ -220,27 +213,28 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
             "#10b981",
             "#34d399",
             "⌂",
-            shelterTag
+            `${shelterTag} (${shelter.totalCapacity})`
           ),
         }).addTo(lg);
 
         marker.bindPopup(`
           <div style="padding: 12px; font-family: sans-serif; min-width: 220px;">
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 8px;">
-              <span style="font-family: monospace; font-weight: bold; color: #34d399; font-size: 11px;">[${shelterTag}] RELIEF CENTER</span>
-              <span style="font-size: 10px; background: #064e3b; color: #a7f3d0; padding: 1px 6px; border-radius: 4px;">${shelter.status}</span>
+              <span style="font-family: monospace; font-weight: bold; color: #34d399; font-size: 11px;">[${shelterTag}]</span>
+              <span style="font-size: 10px; background: #064e3b; color: #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: bold;">Cap: ${shelter.totalCapacity}</span>
             </div>
             <div style="font-weight: bold; color: #f8fafc; font-size: 12px; margin-bottom: 6px;">${shelter.name}</div>
-            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Capacity: <strong>${shelter.currentOccupancy} / ${shelter.totalCapacity}</strong></div>
+            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Designated Capacity: <strong style="color: #10b981; font-size: 12px;">${shelter.totalCapacity}</strong></div>
+            <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Current Occupancy: <strong>${shelter.currentOccupancy}</strong></div>
             <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 2px;">Water Supply: <strong style="color: #38bdf8;">${shelter.waterSupplyDays} Days</strong></div>
             <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; margin-bottom: 4px;">Rations: <strong style="color: #fbbf24;">${shelter.foodRationsDays} Days</strong></div>
-            <div style="font-size: 10px; color: #94a3b8;">Medical Station: <strong style="color: #f8fafc;">${shelter.medicalStationPresent ? "OPERATIONAL" : "STANDBY"}</strong></div>
+            <div style="font-size: 10px; color: #94a3b8;">Status: <strong style="color: #f8fafc;">${shelter.status}</strong></div>
           </div>
         `);
       });
     }
 
-    // 8. AMBULANCES - WHITE/BLUE
+    // 8. AMBULANCES (8 AMBULANCES) - WHITE/BLUE
     if (layers.rescueUnits) {
       ambulances.forEach((amb) => {
         const marker = L.marker([amb.currentLocation.latitude, amb.currentLocation.longitude], {
@@ -264,7 +258,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
         `);
       });
 
-      // 9. RESCUE TEAMS - PURPLE
+      // 9. RESCUE TEAMS (4 RESCUE TEAMS) - PURPLE
       rescueTeams.forEach((team) => {
         const marker = L.marker([team.currentLocation.latitude, team.currentLocation.longitude], {
           icon: createMarkerIcon(
@@ -289,7 +283,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
       });
     }
 
-    // 10. DRONES - CYAN
+    // 10. DRONES (3 DRONES) - CYAN
     if (layers.drones) {
       drones.forEach((drone) => {
         const isAirborne = drone.flightStatus !== "STANDBY_PAD";
@@ -338,19 +332,16 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
       });
     }
 
-    // ROADS & BLOCKED HIGHWAYS
+    // BLOCKED ROADS (R1, R3 BLOCKED; R2, R4 CLEAR)
     if (layers.roads) {
       roads.forEach((road) => {
-        // If simulation escalated, Anna Salai corridor also gets severely waterlogged/impassable
-        const isEscalatedSubmerged =
-          simulationStage === "ESCALATED" && road.id === "road-annasalai-corridor";
-
         const isBlocked =
-          road.status === "SUBMERGED" ||
-          road.status === "IMPASSABLE" ||
-          isEscalatedSubmerged;
+          road.isBlocked ??
+          (road.status === "SUBMERGED" ||
+            road.status === "IMPASSABLE" ||
+            incident.blockedRoads?.includes(road.code || ""));
 
-        const roadColor = isBlocked ? "#ef4444" : road.status === "WATERLOGGED" ? "#f97316" : "#10b981";
+        const roadColor = isBlocked ? "#ef4444" : "#10b981";
 
         const poly = L.polyline(
           [
@@ -359,7 +350,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
           ],
           {
             color: roadColor,
-            weight: isBlocked ? 5 : 4,
+            weight: isBlocked ? 6 : 4,
             dashArray: isBlocked ? "6, 6" : undefined,
             opacity: 0.9,
           }
@@ -368,21 +359,22 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
         poly.bindPopup(`
           <div style="padding: 10px; font-family: monospace; font-size: 11px;">
             <div style="font-weight: bold; color: ${roadColor}; margin-bottom: 4px;">${road.name}</div>
-            <div style="color: #cbd5e1;">Code: ${road.routeCode}</div>
-            <div style="color: ${roadColor}; font-weight: bold;">Status: ${isBlocked ? "ROAD BLOCKED / SUBMERGED" : road.status}</div>
-            <div style="color: #cbd5e1;">Water Depth: ${isEscalatedSubmerged ? "110 cm" : road.waterDepthCm + " cm"}</div>
+            <div style="color: #cbd5e1;">Code: ${road.code || road.routeCode}</div>
+            <div style="color: ${roadColor}; font-weight: bold; font-size: 12px;">
+              ${isBlocked ? "⚠ ROAD BLOCKED / IMPASSABLE" : "✓ ROAD OPEN & CLEAR"}
+            </div>
+            <div style="color: #cbd5e1;">Water Depth: ${road.waterDepthCm} cm</div>
             ${road.detourRouteName ? `<div style="color: #f59e0b; margin-top: 4px; font-size: 10px;">Recommended Detour: ${road.detourRouteName}</div>` : ""}
           </div>
         `);
       });
 
-      // EVACUATION ROUTE HIGHLIGHT
+      // EVACUATION ROUTE HIGHLIGHT (R4 Highland Pass to Shelter C)
       plan.evacuationRoutes.forEach((route) => {
-        // Safe route corridor from Sector 7A/7B to Alandur Shelter via Guindy Highland
-        const routeCoords: [number, number][] = [
-          [13.0135, 80.2312], // Kotturpuram
-          [13.0185, 80.2095], // Guindy Apex
-          [12.9972, 80.1975], // Alandur Stadium Shelter
+        const routeCoords: L.LatLngTuple[] = [
+          [13.0135, 80.2312], // Zone A
+          [13.0075, 80.2065], // Road R4 Elevated
+          [12.9972, 80.1975], // Shelter C
         ];
 
         L.polyline(routeCoords, {
