@@ -166,35 +166,42 @@ JSON SCHEMA REQUIREMENT:
  * Validates the parsed object against the required schema
  */
 export function validateGeminiResponse(
-  val: any
+  val: unknown
 ): val is GeminiResponseSchema {
   if (!val || typeof val !== "object") return false;
 
+  const obj = val as Record<string, unknown>;
   const validRiskLevels = ["CRITICAL", "HIGH", "MODERATE", "LOW"];
-  if (!validRiskLevels.includes(val.risk_level)) return false;
-
-  if (!Array.isArray(val.priority_zones) || val.priority_zones.length === 0)
-    return false;
-
-  if (!Array.isArray(val.immediate_actions) || val.immediate_actions.length === 0)
-    return false;
-
   if (
-    !val.resource_allocation ||
-    typeof val.resource_allocation.ambulances !== "number" ||
-    typeof val.resource_allocation.rescue_teams !== "number" ||
-    typeof val.resource_allocation.drones !== "number"
+    typeof obj.risk_level !== "string" ||
+    !validRiskLevels.includes(obj.risk_level)
   ) {
     return false;
   }
 
-  if (typeof val.evacuation_route !== "string" || !val.evacuation_route.trim())
+  if (!Array.isArray(obj.priority_zones) || obj.priority_zones.length === 0)
     return false;
 
-  if (typeof val.public_alert !== "string" || !val.public_alert.trim())
+  if (!Array.isArray(obj.immediate_actions) || obj.immediate_actions.length === 0)
     return false;
 
-  if (typeof val.explanation !== "string" || !val.explanation.trim())
+  const res = obj.resource_allocation as Record<string, unknown> | undefined;
+  if (
+    !res ||
+    typeof res.ambulances !== "number" ||
+    typeof res.rescue_teams !== "number" ||
+    typeof res.drones !== "number"
+  ) {
+    return false;
+  }
+
+  if (typeof obj.evacuation_route !== "string" || !obj.evacuation_route.trim())
+    return false;
+
+  if (typeof obj.public_alert !== "string" || !obj.public_alert.trim())
+    return false;
+
+  if (typeof obj.explanation !== "string" || !obj.explanation.trim())
     return false;
 
   return true;
