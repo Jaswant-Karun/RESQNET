@@ -13,6 +13,7 @@ import {
   Cpu,
   HeartPulse,
   Info,
+  Loader2,
   Lock,
   Megaphone,
   Navigation,
@@ -32,9 +33,15 @@ export function AiResponseStatusPanel() {
     plan,
     isActionApproved,
     approveAction,
+    isAiLoading,
+    aiStatusMessage,
+    simulateApiFailure,
+    setSimulateApiFailure,
+    simulateFlood,
   } = useDashboard();
 
-  // Extract from the deterministic ResponsePlan
+  // Extract from the ResponsePlan (either Gemini AI or Fallback)
+  const isAiDecision = plan.decisionEngine === "GEMINI_AI";
   const riskLevel = plan.riskLevel || incident.severity || "CRITICAL";
   const priorityZones = plan.priorityZones?.length ? plan.priorityZones : ["Zone A"];
   const immediateActions = plan.immediateActions || [
@@ -56,22 +63,32 @@ export function AiResponseStatusPanel() {
 
   return (
     <Card
-      glow={isActionApproved ? "green" : "red"}
-      className="border-slate-800 bg-[#080d1a] shadow-xl flex flex-col justify-between"
+      glow={isActionApproved ? "green" : isAiDecision ? "blue" : "red"}
+      className="border-slate-800 bg-[#080d1a] shadow-xl flex flex-col justify-between transition-all duration-300"
     >
       {/* Header */}
       <CardHeader className="py-3 px-4 bg-slate-950/90 border-b border-slate-800">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded bg-indigo-950 border border-indigo-700/60 text-indigo-400">
+            <div
+              className={`p-1.5 rounded border transition-colors ${
+                isAiDecision
+                  ? "bg-indigo-950/80 border-indigo-500/80 text-indigo-300"
+                  : "bg-slate-900 border-slate-700 text-slate-400"
+              }`}
+            >
               <Bot className="h-4 w-4" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <CardTitle className="text-xs sm:text-sm font-mono tracking-wider text-slate-100">
+                <CardTitle className="text-xs sm:text-sm font-mono tracking-wider text-slate-100 flex items-center gap-1">
                   AI RESPONSE STATUS
                 </CardTitle>
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                {isAiDecision ? (
+                  <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                ) : (
+                  <Cpu className="h-3.5 w-3.5 text-amber-400" />
+                )}
               </div>
               <div className="text-[10px] font-mono text-slate-400 flex items-center gap-2 mt-0.5">
                 <span>SCENARIO: {priorityZones.join(", ")}</span>
@@ -81,15 +98,33 @@ export function AiResponseStatusPanel() {
             </div>
           </div>
 
-          {/* Decision Engine Indicator & Risk Level */}
+          {/* Decision Engine Indicator: "AI Decision" vs "Fallback Decision" */}
           <div className="flex items-center gap-1.5">
-            <Badge
-              variant="outline"
-              className="border-amber-500/60 text-amber-300 bg-amber-950/40 text-[10px] font-mono px-2 py-0.5"
-            >
-              <Cpu className="h-3 w-3 mr-1 text-amber-400" />
-              Decision Engine: FALLBACK
-            </Badge>
+            {isAiLoading ? (
+              <Badge
+                variant="outline"
+                className="border-indigo-500/60 text-indigo-300 bg-indigo-950/40 text-[10px] font-mono px-2 py-0.5 animate-pulse"
+              >
+                <Loader2 className="h-3 w-3 mr-1 animate-spin text-indigo-400" />
+                Analyzing with Gemini...
+              </Badge>
+            ) : isAiDecision ? (
+              <Badge
+                variant="outline"
+                className="border-indigo-500/70 text-indigo-300 bg-indigo-950/50 text-[10px] font-mono px-2 py-0.5 font-bold shadow-sm shadow-indigo-950"
+              >
+                <Sparkles className="h-3 w-3 mr-1 text-indigo-400" />
+                AI Decision
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="border-amber-500/60 text-amber-300 bg-amber-950/40 text-[10px] font-mono px-2 py-0.5 font-semibold"
+              >
+                <Cpu className="h-3 w-3 mr-1 text-amber-400" />
+                Fallback Decision
+              </Badge>
+            )}
 
             <Badge
               variant={riskLevel === "CRITICAL" ? "critical" : "warning"}
@@ -102,6 +137,31 @@ export function AiResponseStatusPanel() {
       </CardHeader>
 
       <CardContent className="p-4 space-y-3.5 text-xs font-sans">
+        {/* Friendly AI Fallback Status Banner (Zero raw error exposure) */}
+        {!isAiDecision && (
+          <div className="p-2 rounded-lg bg-amber-950/25 border border-amber-800/50 flex items-center justify-between text-[11px] font-sans text-amber-200">
+            <div className="flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span>{aiStatusMessage || "AI service unavailable — emergency fallback activated."}</span>
+            </div>
+            <span className="text-[10px] font-mono text-amber-400/80 uppercase font-semibold">
+              SAFEGUARD ACTIVE
+            </span>
+          </div>
+        )}
+
+        {isAiDecision && (
+          <div className="p-2 rounded-lg bg-indigo-950/30 border border-indigo-800/40 flex items-center justify-between text-[11px] font-sans text-indigo-200">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+              <span>AI Decision: Gemini cognitive situation synthesis active.</span>
+            </div>
+            <span className="text-[10px] font-mono text-indigo-300 uppercase font-semibold">
+              VERIFIED
+            </span>
+          </div>
+        )}
+
         {/* 1. RISK LEVEL & PRIORITY ZONE BANNER */}
         <div className="grid grid-cols-2 gap-2">
           {/* Risk Level */}
@@ -154,11 +214,13 @@ export function AiResponseStatusPanel() {
           </div>
         </div>
 
-        {/* 3. RESOURCE ALLOCATION (Ambulances: 2, Rescue Teams: 2, Drones: 1) */}
+        {/* 3. RESOURCE ALLOCATION */}
         <div className="space-y-1">
           <div className="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider flex items-center justify-between">
             <span>Resource Allocation</span>
-            <span className="text-slate-400 font-mono text-[10px]">Deterministic Dispatch</span>
+            <span className="text-slate-400 font-mono text-[10px]">
+              {isAiDecision ? "Gemini Allocated" : "Deterministic Dispatch"}
+            </span>
           </div>
           <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
             <div className="p-2 rounded bg-slate-950/80 border border-slate-800 text-center">
@@ -223,12 +285,14 @@ export function AiResponseStatusPanel() {
           </div>
         )}
 
-        {/* 6. RULE-BASED EXPLANATION */}
+        {/* 6. EXPLANATION / RATIONALE */}
         {explanation && (
           <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/90 text-[10px] font-mono text-slate-300 space-y-1">
             <div className="flex items-center gap-1 text-indigo-300 font-semibold">
               <Info className="h-3 w-3 text-indigo-400" />
-              <span>Decision Rationale (Deterministic Fallback)</span>
+              <span>
+                {isAiDecision ? "Gemini Situation Reasoning" : "Decision Rationale (Fallback Engine)"}
+              </span>
             </div>
             <div className="text-slate-400 leading-snug">
               {explanation}
@@ -236,7 +300,26 @@ export function AiResponseStatusPanel() {
           </div>
         )}
 
-        {/* 7. APPROVAL REQUIRED */}
+        {/* 7. DEVELOPER TEST TOGGLE: Simulate API Failure */}
+        <div className="p-2 rounded bg-slate-950/50 border border-slate-800/70 flex items-center justify-between text-[10px] font-mono text-slate-400">
+          <label htmlFor="simulate-fail" className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              id="simulate-fail"
+              type="checkbox"
+              checked={simulateApiFailure}
+              onChange={(e) => {
+                setSimulateApiFailure(e.target.checked);
+              }}
+              className="rounded bg-slate-900 border-slate-700 text-indigo-500 focus:ring-0 cursor-pointer"
+            />
+            <span>Test Mode: Simulate API Failure</span>
+          </label>
+          <span className="text-[9px] text-slate-500">
+            {simulateApiFailure ? "Simulated Disconnection" : "Standard Route"}
+          </span>
+        </div>
+
+        {/* 8. APPROVAL REQUIRED */}
         <div className="pt-2 border-t border-slate-800/80 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono uppercase text-slate-400 font-semibold">
