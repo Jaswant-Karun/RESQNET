@@ -223,7 +223,7 @@ export function validateGeminiResponse(
 export async function askGeminiQuestion(
   question: string,
   incident: Incident,
-  options?: { timeoutMs?: number }
+  options?: { timeoutMs?: number; model?: string }
 ): Promise<{ ok: boolean; answer: string; source: "GEMINI_AI" | "FALLBACK" }> {
   const apiKey = process.env.GEMINI_API_KEY;
 

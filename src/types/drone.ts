@@ -21,6 +21,7 @@ export interface Drone {
   model: string;
   role: DroneRole;
   flightStatus: DroneFlightStatus;
+  tacticalStatus?: "MISSION CREATED" | "STANDBY" | "AIRBORNE" | "DEPLETED";
   batteryPercentage: number;
   altitudeMeters: number;
   groundSpeedKmH: number;
