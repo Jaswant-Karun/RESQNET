@@ -29,11 +29,13 @@ export interface Zone {
 
 export interface Hospital {
   id: string;
+  code?: string; // H1, H2, H3
   name: string;
   type: "LEVEL_1_TRAUMA" | "DISTRICT_HOSPITAL" | "COMMUNITY_CLINIC";
   location: LocationCoordinates;
   totalBeds: number;
   availableBeds: number;
+  capacityUsagePercentage?: number; // e.g. 80%, 42%, 95%
   icuTotal: number;
   icuAvailable: number;
   powerBackupStatus: "OPERATIONAL" | "AUXILIARY_GENERATOR" | "FAILING";
@@ -43,6 +45,7 @@ export interface Hospital {
 
 export interface Shelter {
   id: string;
+  code?: string; // Shelter B, Shelter C
   name: string;
   type: "CIVIC_STAGING_CENTER" | "HIGH_SCHOOL_GYM" | "INDOOR_STADIUM";
   location: LocationCoordinates;
@@ -56,9 +59,11 @@ export interface Shelter {
 
 export interface RoadSegment {
   id: string;
+  code?: string; // R1, R2, R3, R4
   name: string;
   routeCode: string;
   status: "CLEAR" | "WATERLOGGED" | "IMPASSABLE" | "SUBMERGED";
+  isBlocked?: boolean;
   waterDepthCm: number;
   clearanceVehicleTypes: ("AMBULANCE" | "HIGH_CLEARANCE_TRUCK" | "RESCUE_BOAT")[];
   detourRouteName?: string;

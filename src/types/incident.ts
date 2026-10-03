@@ -21,6 +21,9 @@ export interface Incident {
   severity: RiskLevel;
   status: EmergencyStatus;
   primaryLocation: LocationCoordinates;
+  zoneId?: string;
+  zoneName?: string;
+  blockedRoads?: string[];
   detectedAt: string;
   lastUpdatedAt: string;
   metrics: IncidentMetrics;
