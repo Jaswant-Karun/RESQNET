@@ -292,11 +292,13 @@ export function syncFleetStatuses(
     if (idx < assigned.drones) {
       return {
         ...drone,
+        tacticalStatus: "MISSION CREATED" as const,
         flightStatus: "AIRBORNE_PATROL" as const,
       };
     }
     return {
       ...drone,
+      tacticalStatus: "STANDBY" as const,
       flightStatus: "STANDBY_PAD" as const,
     };
   });

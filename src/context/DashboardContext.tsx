@@ -7,6 +7,14 @@ import {
 } from "@/lib/flood-simulation-engine";
 import { generateResponsePlan } from "@/lib/responseEngine";
 import {
+  allocateResources,
+  calculateRecommendedAllocation,
+  createAllocationTimelineEvent,
+  syncFleetStatuses,
+  INITIAL_AVAILABLE_RESOURCES,
+  INITIAL_RECOMMENDED_RESOURCES,
+} from "@/lib/resourceAllocationEngine";
+import {
   MOCK_ALERTS,
   MOCK_TIMELINE_EVENTS,
 } from "@/data";
@@ -16,6 +24,8 @@ import {
   Hospital,
   Incident,
   Resource,
+  ResourceAllocation,
+  ResourceAllocationState,
   ResponsePlan,
   RoadSegment,
   Shelter,
@@ -60,6 +70,11 @@ interface DashboardContextType {
   unreadAlertCount: number;
   markAlertsRead: () => void;
 
+  // Intelligent Resource Allocation State & Methods
+  resourceAllocationState: ResourceAllocationState;
+  updateResourceAllocation: (requested?: Partial<ResourceAllocation>) => void;
+  resetResourceAllocation: () => void;
+
   // Gemini & Fallback states
   isAiLoading: boolean;
   aiStatusMessage: string;
@@ -76,6 +91,22 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const initialScenario = generateDeterministicFloodScenario();
   const initialPlan = generateResponsePlan(initialScenario.incident);
 
+  // Initial Intelligent Resource Allocation:
+  // Available: 8 Ambulances, 4 Rescue Teams, 3 Drones
+  // Recommended: 2 Ambulances, 2 Rescue Teams, 1 Drone
+  const initialAllocation = allocateResources(
+    INITIAL_AVAILABLE_RESOURCES,
+    INITIAL_RECOMMENDED_RESOURCES,
+    initialScenario.incident
+  );
+
+  const initialSyncedFleets = syncFleetStatuses(
+    initialScenario.ambulances,
+    initialScenario.rescueTeams,
+    initialScenario.drones,
+    initialAllocation.assigned
+  );
+
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const [simulationStage, setSimulationStage] =
     useState<SimulationStage>("FLOOD_ACTIVE");
@@ -87,14 +118,28 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [hospitals, setHospitals] = useState<Hospital[]>(initialScenario.hospitals);
   const [shelters, setShelters] = useState<Shelter[]>(initialScenario.shelters);
   const [roads, setRoads] = useState<RoadSegment[]>(initialScenario.roads);
-  const [ambulances, setAmbulances] = useState<Resource[]>(initialScenario.ambulances);
-  const [rescueTeams, setRescueTeams] = useState<Resource[]>(initialScenario.rescueTeams);
-  const [drones, setDrones] = useState<Drone[]>(initialScenario.drones);
+
+  // Resource fleets with tactical statuses synced
+  const [ambulances, setAmbulances] = useState<Resource[]>(initialSyncedFleets.updatedAmbulances);
+  const [rescueTeams, setRescueTeams] = useState<Resource[]>(initialSyncedFleets.updatedRescueTeams);
+  const [drones, setDrones] = useState<Drone[]>(initialSyncedFleets.updatedDrones);
+
+  // Intelligent Resource Allocation state
+  const [resourceAllocationState, setResourceAllocationState] =
+    useState<ResourceAllocationState>(initialAllocation);
+
+  const initialAllocEvent = createAllocationTimelineEvent(
+    initialAllocation,
+    initialScenario.incident.id,
+    "Initial Allocation: 2 Ambulances (READY), 2 Rescue Teams (DEPLOYING), 1 Drone (MISSION CREATED). 6 Ambulances, 2 Teams, 2 Drones in reserve."
+  );
 
   const [timeline, setTimeline] = useState<TimelineEvent[]>([
     initialScenario.timelineEvent,
+    initialAllocEvent,
     ...MOCK_TIMELINE_EVENTS,
   ]);
+
   const [plan, setPlan] = useState<ResponsePlan>(initialPlan);
   const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS);
   const [isActionApproved, setIsActionApproved] = useState<boolean>(false);
@@ -109,10 +154,62 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [simulateApiFailure, setSimulateApiFailure] = useState<boolean>(false);
 
   /**
+   * Applies resource allocation, enforces availability caps, updates fleet statuses,
+   * and creates a timeline dispatch audit event.
+   */
+  const applyAllocation = (
+    targetRequested: ResourceAllocation,
+    targetIncident?: Incident,
+    availablePool?: ResourceAllocation
+  ) => {
+    const inc = targetIncident || incident;
+    const avail = availablePool || resourceAllocationState.available;
+    const nextAlloc = allocateResources(avail, targetRequested, inc);
+
+    setResourceAllocationState(nextAlloc);
+
+    // Synchronize fleet unit cards
+    setAmbulances((prev) => {
+      const synced = syncFleetStatuses(prev, rescueTeams, drones, nextAlloc.assigned);
+      return synced.updatedAmbulances;
+    });
+    setRescueTeams((prev) => {
+      const synced = syncFleetStatuses(ambulances, prev, drones, nextAlloc.assigned);
+      return synced.updatedRescueTeams;
+    });
+    setDrones((prev) => {
+      const synced = syncFleetStatuses(ambulances, rescueTeams, prev, nextAlloc.assigned);
+      return synced.updatedDrones;
+    });
+
+    // Record in timeline
+    const allocEvent = createAllocationTimelineEvent(nextAlloc, inc.id);
+    setTimeline((prev) => [allocEvent, ...prev]);
+
+    return nextAlloc;
+  };
+
+  /**
+   * Updates resource allocation from external components or custom commander inputs
+   */
+  const updateResourceAllocation = (requested?: Partial<ResourceAllocation>) => {
+    const nextRequested: ResourceAllocation = {
+      ambulances: requested?.ambulances ?? resourceAllocationState.requested.ambulances,
+      rescueTeams: requested?.rescueTeams ?? resourceAllocationState.requested.rescueTeams,
+      drones: requested?.drones ?? resourceAllocationState.requested.drones,
+    };
+    applyAllocation(nextRequested);
+  };
+
+  const resetResourceAllocation = () => {
+    applyAllocation(INITIAL_RECOMMENDED_RESOURCES, incident, INITIAL_AVAILABLE_RESOURCES);
+  };
+
+  /**
    * Dispatches incident to server-side /api/analyze-incident endpoint.
    * If Gemini is available & succeeds -> updates plan with Gemini AI recommendations.
    * If Gemini fails/times out/missing key/simulate failure -> updates with deterministic fallback.
-   * Never throws or exposes raw errors to user.
+   * Also syncs intelligent resource allocation from the generated response plan!
    */
   const triggerAiAnalysis = async (targetIncident: Incident, forceSimulateFailure?: boolean) => {
     setIsAiLoading(true);
@@ -138,6 +235,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             ? "AI Decision Generated by Gemini"
             : "AI service unavailable — emergency fallback activated.")
         );
+
+        // Update resource allocation based on response plan recommendation
+        if (data.plan.resourceAllocation) {
+          applyAllocation(data.plan.resourceAllocation, targetIncident);
+        }
       }
     } catch {
       // Offline fallback guarantee
@@ -147,6 +249,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         decisionEngine: "FALLBACK",
       });
       setAiStatusMessage("AI service unavailable — emergency fallback activated.");
+
+      if (fallbackPlan.resourceAllocation) {
+        applyAllocation(fallbackPlan.resourceAllocation, targetIncident);
+      }
     } finally {
       setIsAiLoading(false);
     }
@@ -160,18 +266,38 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setSimulationStatus("FLOOD INCIDENT SIMULATED");
     setIsActionApproved(false);
 
+    // Initial scenario resource allocation (8 available, 2 / 2 / 1 allocated)
+    const initAlloc = allocateResources(
+      INITIAL_AVAILABLE_RESOURCES,
+      INITIAL_RECOMMENDED_RESOURCES,
+      scenario.incident
+    );
+    setResourceAllocationState(initAlloc);
+
+    const synced = syncFleetStatuses(
+      scenario.ambulances,
+      scenario.rescueTeams,
+      scenario.drones,
+      initAlloc.assigned
+    );
+    setAmbulances(synced.updatedAmbulances);
+    setRescueTeams(synced.updatedRescueTeams);
+    setDrones(synced.updatedDrones);
+
     setIncident(scenario.incident);
     setZones(scenario.zones);
     setHospitals(scenario.hospitals);
     setShelters(scenario.shelters);
     setRoads(scenario.roads);
-    setAmbulances(scenario.ambulances);
-    setRescueTeams(scenario.rescueTeams);
-    setDrones(scenario.drones);
     setSelectedZone(scenario.zones[0]);
 
-    // Prepend fresh deterministic timeline event
-    setTimeline((prev) => [scenario.timelineEvent, ...prev]);
+    // Timeline events
+    const allocEvent = createAllocationTimelineEvent(
+      initAlloc,
+      scenario.incident.id,
+      "Flood Response Initialized: 2 Ambulances (READY), 2 Rescue Teams (DEPLOYING), 1 Drone (MISSION CREATED)."
+    );
+    setTimeline([scenario.timelineEvent, allocEvent, ...MOCK_TIMELINE_EVENTS]);
 
     // Set immediate deterministic baseline, then query Gemini server route
     const instantFallbackPlan = generateResponsePlan(scenario.incident);
@@ -237,6 +363,28 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       })
     );
 
+    // Re-allocate resources during escalation:
+    // Escalation recommendation: 6 Ambulances, 3 Rescue Teams, 2 Drones
+    const escalatedRecommended = calculateRecommendedAllocation(escalatedIncident, {
+      isEscalated: true,
+    });
+    const escalatedAlloc = allocateResources(
+      resourceAllocationState.available,
+      escalatedRecommended,
+      escalatedIncident
+    );
+    setResourceAllocationState(escalatedAlloc);
+
+    setAmbulances((prev) =>
+      syncFleetStatuses(prev, rescueTeams, drones, escalatedAlloc.assigned).updatedAmbulances
+    );
+    setRescueTeams((prev) =>
+      syncFleetStatuses(ambulances, prev, drones, escalatedAlloc.assigned).updatedRescueTeams
+    );
+    setDrones((prev) =>
+      syncFleetStatuses(ambulances, rescueTeams, prev, escalatedAlloc.assigned).updatedDrones
+    );
+
     // Timeline event
     const escalationEvent: TimelineEvent = {
       id: `evt-esc-${Date.now()}`,
@@ -249,11 +397,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       severity: "CRITICAL",
       authorOrSystem: "Hydro-Gauge Sensor Sentinel",
     };
-    setTimeline((prev) => [escalationEvent, ...prev]);
+
+    const allocEvent = createAllocationTimelineEvent(
+      escalatedAlloc,
+      escalatedIncident.id,
+      "Escalation Dispatch: Mobilized 6 Ambulances (READY), 3 Rescue Teams (DEPLOYING), 2 Drones (MISSION CREATED)."
+    );
+    setTimeline((prev) => [escalationEvent, allocEvent, ...prev]);
 
     // Run Escalated Incident through Response Plan
     const instantEscalatedPlan = generateResponsePlan(escalatedIncident);
-    setPlan(instantEscalatedPlan);
+    setPlan({
+      ...instantEscalatedPlan,
+      resourceAllocation: escalatedAlloc.assigned,
+    });
 
     // Query Gemini Situation Analysis for Escalated scenario
     triggerAiAnalysis(escalatedIncident);
@@ -336,6 +493,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setSelectedZone,
         unreadAlertCount,
         markAlertsRead,
+        resourceAllocationState,
+        updateResourceAllocation,
+        resetResourceAllocation,
         isAiLoading,
         aiStatusMessage,
         simulateApiFailure,
