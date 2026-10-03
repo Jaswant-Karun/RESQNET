@@ -6,7 +6,6 @@ import {
   ResourceAllocationItem,
   ResourceAllocationState,
   ResourceAllocationSummary,
-  RiskLevel,
   TimelineEvent,
 } from "@/types";
 
@@ -92,7 +91,7 @@ export function calculateRecommendedAllocation(
 export function allocateResources(
   available: ResourceAllocation,
   requested: ResourceAllocation,
-  incident?: Incident
+  _incident?: Incident
 ): ResourceAllocationState {
   // Ensure non-negative numbers
   const safeAvail = {

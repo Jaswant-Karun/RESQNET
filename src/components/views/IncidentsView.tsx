@@ -6,17 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertOctagon,
-  AlertTriangle,
-  CloudRain,
-  Droplets,
-  MapPin,
   ShieldAlert,
-  Users,
-  Waves,
 } from "lucide-react";
 
 export function IncidentsView() {
-  const { incident, zones, simulationStage } = useDashboard();
+  const { incident } = useDashboard();
 
   return (
     <div className="space-y-5">

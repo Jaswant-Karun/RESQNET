@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState } from "react";
 import {
   generateDeterministicFloodScenario,
-  DeterministicFloodScenarioResult,
 } from "@/lib/flood-simulation-engine";
 import { generateResponsePlan } from "@/lib/responseEngine";
 import {
