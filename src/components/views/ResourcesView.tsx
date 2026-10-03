@@ -33,10 +33,6 @@ export function ResourcesView() {
             Real-time status of ambulances, rescue boat battalions, hospital beds, and relief shelters.
           </p>
         </div>
-      </div>
-
-      {/* Intelligent Resource Allocation Panel */}
-      <ResourceAllocationPanel />
 
         {/* Filter buttons */}
         <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-md text-xs font-mono">
@@ -74,6 +70,9 @@ export function ResourcesView() {
           </button>
         </div>
       </div>
+
+      {/* Intelligent Resource Allocation Panel */}
+      <ResourceAllocationPanel />
 
       {/* Rescue Teams & Ambulances */}
       {(filter === "ALL" || filter === "TEAMS") && (

@@ -6,6 +6,8 @@ import { ResponsePlanReview } from "@/components/dashboard/ResponsePlanReview";
 import { Badge } from "@/components/ui/badge";
 import { FileCheck2 } from "lucide-react";
 
+import { ResourceAllocationPanel } from "@/components/dashboard/ResourceAllocationPanel";
+
 export function ResponsePlansView() {
   const { plan } = useDashboard();
 
@@ -25,6 +27,8 @@ export function ResponsePlansView() {
           {plan.humanApproved ? "AUTHORIZED FOR EXECUTION" : "AWAITING HUMAN APPROVAL"}
         </Badge>
       </div>
+
+      <ResourceAllocationPanel />
 
       <ResponsePlanReview plan={plan} />
     </div>

@@ -222,18 +222,36 @@ export function AiResponseStatusPanel() {
           <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
             <div className="p-2 rounded bg-slate-950/80 border border-slate-800 text-center">
               <Ambulance className="h-3.5 w-3.5 text-emerald-400 mx-auto mb-1" />
-              <div className="text-white font-bold">{resourceAllocation.ambulances}</div>
+              <div className="text-white font-bold">
+                {resourceAllocationState.assigned.ambulances}{" "}
+                <span className="text-[10px] text-slate-500 font-normal">
+                  / {resourceAllocationState.available.ambulances}
+                </span>
+              </div>
               <div className="text-[10px] text-slate-400 truncate">Ambulances</div>
+              <div className="text-[9px] text-emerald-400 font-bold mt-0.5">READY</div>
             </div>
             <div className="p-2 rounded bg-slate-950/80 border border-slate-800 text-center">
               <Users className="h-3.5 w-3.5 text-purple-400 mx-auto mb-1" />
-              <div className="text-white font-bold">{resourceAllocation.rescueTeams}</div>
+              <div className="text-white font-bold">
+                {resourceAllocationState.assigned.rescueTeams}{" "}
+                <span className="text-[10px] text-slate-500 font-normal">
+                  / {resourceAllocationState.available.rescueTeams}
+                </span>
+              </div>
               <div className="text-[10px] text-slate-400 truncate">Rescue Teams</div>
+              <div className="text-[9px] text-amber-400 font-bold mt-0.5">DEPLOYING</div>
             </div>
             <div className="p-2 rounded bg-slate-950/80 border border-slate-800 text-center">
               <Navigation className="h-3.5 w-3.5 text-cyan-400 mx-auto mb-1" />
-              <div className="text-white font-bold">{resourceAllocation.drones}</div>
-              <div className="text-[10px] text-slate-400 truncate">Drone</div>
+              <div className="text-white font-bold">
+                {resourceAllocationState.assigned.drones}{" "}
+                <span className="text-[10px] text-slate-500 font-normal">
+                  / {resourceAllocationState.available.drones}
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-400 truncate">Drones</div>
+              <div className="text-[9px] text-cyan-400 font-bold mt-0.5">MISSION CREATED</div>
             </div>
           </div>
         </div>
