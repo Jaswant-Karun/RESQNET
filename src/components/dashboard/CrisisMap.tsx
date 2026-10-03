@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { useDashboard } from "@/context/DashboardContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertTriangle,
   Compass,
   Crosshair,
-  Eye,
-  EyeOff,
   Layers,
   MapPin,
   Maximize2,
@@ -18,20 +18,31 @@ import {
   Waves,
 } from "lucide-react";
 
+// Dynamically import Leaflet with SSR disabled to prevent window/document undefined issues
+const CrisisMapLeaflet = dynamic(
+  () =>
+    import("./CrisisMapLeaflet").then((mod) => mod.CrisisMapLeaflet),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[480px] sm:h-[540px] flex flex-col items-center justify-center bg-[#070b16] tactical-grid text-slate-400 font-mono">
+        <div className="relative mb-3 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+          <Crosshair className="h-5 w-5 text-blue-400 absolute" />
+        </div>
+        <div className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+          Initializing Leaflet & OpenStreetMap Engine...
+        </div>
+        <div className="text-[11px] text-slate-500 mt-1">
+          Loading Sector Telemetry & GIS Layers
+        </div>
+      </div>
+    ),
+  }
+);
+
 export function CrisisMap() {
-  const {
-    incident,
-    zones,
-    selectedZone,
-    setSelectedZone,
-    drones,
-    rescueTeams,
-    ambulances,
-    hospitals,
-    shelters,
-    roads,
-    simulationStage,
-  } = useDashboard();
+  const { incident, simulationStage, drones } = useDashboard();
 
   // Layer Visibility Toggles
   const [layers, setLayers] = useState({
@@ -43,6 +54,7 @@ export function CrisisMap() {
   });
 
   const [activeViewMode, setActiveViewMode] = useState<"TERRAIN" | "THERMAL_IR" | "ELEVATION">("TERRAIN");
+  const [showLegend, setShowLegend] = useState(true);
 
   const toggleLayer = (key: keyof typeof layers) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -50,7 +62,20 @@ export function CrisisMap() {
 
   return (
     <Card className="border-slate-800 bg-[#080d1a] overflow-hidden shadow-2xl flex flex-col">
-      {/* Map Control Header */}
+      {/* 1. MANDATORY SIMULATION WARNING BANNER */}
+      <div className="bg-amber-950/80 border-b border-amber-600/70 px-4 py-1.5 flex items-center justify-between text-[11px] font-mono font-bold text-amber-300">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+          <span className="tracking-wide">
+            SIMULATION DATA — NOT LIVE EMERGENCY INFORMATION
+          </span>
+        </div>
+        <span className="hidden sm:inline text-amber-400/90 text-[10px] font-normal">
+          DISASTER EXERCISE: HACKATHON FLOOD SCENARIO
+        </span>
+      </div>
+
+      {/* 2. Map Control Header */}
       <CardHeader className="py-2.5 px-4 bg-slate-950/90 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-2.5 w-2.5 relative">
@@ -58,10 +83,10 @@ export function CrisisMap() {
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
           </div>
           <CardTitle className="text-xs sm:text-sm font-mono tracking-wider text-slate-100 flex items-center gap-2">
-            CRISIS TACTICAL GIS MAP
+            LEAFLET GIS CRISIS MAP
             <span className="text-slate-500 font-normal">|</span>
-            <span className="text-[11px] text-blue-400 font-semibold font-mono">
-              ADYAR RIVERFRONT SECTOR
+            <span className="text-[11px] text-blue-400 font-semibold font-mono truncate">
+              {incident.primaryLocation.name}
             </span>
           </CardTitle>
         </div>
@@ -101,219 +126,184 @@ export function CrisisMap() {
             </button>
           </div>
 
-          <Badge variant="outline" className="border-slate-700 text-slate-300 font-mono text-[11px]">
-            WGS84 • EPSG:4326
-          </Badge>
+          <button
+            onClick={() => setShowLegend((v) => !v)}
+            className={`px-2 py-1 rounded border text-[11px] transition-colors cursor-pointer font-bold ${
+              showLegend
+                ? "bg-slate-800 text-white border-slate-600"
+                : "bg-slate-900 text-slate-400 border-slate-800"
+            }`}
+          >
+            LEGEND {showLegend ? "▲" : "▼"}
+          </button>
         </div>
       </CardHeader>
 
-      {/* Main Interactive Map Surface */}
-      <CardContent className="p-0 relative h-[480px] sm:h-[540px] w-full flex flex-col justify-between tactical-grid bg-[#0a0f1d] overflow-hidden select-none">
-        {/* Radar concentric tactical sweep circles */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-30">
-          <div className="w-[300px] h-[300px] rounded-full border border-blue-500/30" />
-          <div className="w-[500px] h-[500px] rounded-full border border-blue-500/20 absolute" />
-          <div className="w-[700px] h-[700px] rounded-full border border-blue-500/10 absolute" />
-          <div className="w-full h-[1px] bg-blue-500/20 absolute" />
-          <div className="h-full w-[1px] bg-blue-500/20 absolute" />
+      {/* 3. Layer Filter Pills Bar */}
+      <div className="px-4 py-2 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] text-slate-400 uppercase font-semibold mr-1">
+            LAYERS:
+          </span>
+          <button
+            onClick={() => toggleLayer("floodHeatmap")}
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+              layers.floodHeatmap
+                ? "bg-red-950/80 border-red-600 text-red-300"
+                : "bg-slate-900 border-slate-800 text-slate-500 line-through"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+            Zones A & B
+          </button>
+          <button
+            onClick={() => toggleLayer("infrastructure")}
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+              layers.infrastructure
+                ? "bg-blue-950/80 border-blue-600 text-blue-300"
+                : "bg-slate-900 border-slate-800 text-slate-500 line-through"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+            Hospitals & Shelters
+          </button>
+          <button
+            onClick={() => toggleLayer("rescueUnits")}
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+              layers.rescueUnits
+                ? "bg-purple-950/80 border-purple-600 text-purple-300"
+                : "bg-slate-900 border-slate-800 text-slate-500 line-through"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+            Ambulances & Boats
+          </button>
+          <button
+            onClick={() => toggleLayer("drones")}
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+              layers.drones
+                ? "bg-cyan-950/80 border-cyan-600 text-cyan-300"
+                : "bg-slate-900 border-slate-800 text-slate-500 line-through"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            Drones ({drones.length})
+          </button>
+          <button
+            onClick={() => toggleLayer("roads")}
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+              layers.roads
+                ? "bg-amber-950/80 border-amber-600 text-amber-300"
+                : "bg-slate-900 border-slate-800 text-slate-500 line-through"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            Blocked Roads
+          </button>
         </div>
 
-        {/* Top HUD: Coordinates & Quick Layer Filters */}
-        <div className="p-3 z-10 flex flex-wrap items-center justify-between gap-2 bg-gradient-to-b from-slate-950/80 to-transparent">
-          <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-800/90 px-2.5 py-1 rounded-md text-[11px] font-mono text-slate-300 backdrop-blur-sm">
-            <Crosshair className="h-3.5 w-3.5 text-blue-400" />
-            <span>ORIGIN: 13.0135° N, 80.2312° E</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-amber-400">SURGE: {incident.metrics.waterLevelMeters}m</span>
-          </div>
+        <div className="text-[11px] text-slate-400">
+          SURGE: <strong className="text-white">{incident.metrics.waterLevelMeters}m</strong> (
+          <span className="text-red-400 font-bold">
+            {simulationStage === "ESCALATED" ? "ESCALATED 6.2m" : "ACTIVE 4.85m"}
+          </span>
+          )
+        </div>
+      </div>
 
-          {/* Quick Layer Filter Badges */}
-          <div className="flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
-            <button
-              onClick={() => toggleLayer("floodHeatmap")}
-              className={`px-2 py-0.5 rounded border transition-colors flex items-center gap-1 cursor-pointer ${
-                layers.floodHeatmap
-                  ? "bg-blue-950/80 border-blue-600 text-blue-300"
-                  : "bg-slate-900/60 border-slate-800 text-slate-500 line-through"
-              }`}
-            >
-              <Waves className="h-3 w-3" />
-              Flood Poly
-            </button>
-            <button
-              onClick={() => toggleLayer("drones")}
-              className={`px-2 py-0.5 rounded border transition-colors flex items-center gap-1 cursor-pointer ${
-                layers.drones
-                  ? "bg-indigo-950/80 border-indigo-600 text-indigo-300"
-                  : "bg-slate-900/60 border-slate-800 text-slate-500 line-through"
-              }`}
-            >
-              <Navigation2 className="h-3 w-3" />
-              Drones ({drones.length})
-            </button>
-            <button
-              onClick={() => toggleLayer("rescueUnits")}
-              className={`px-2 py-0.5 rounded border transition-colors flex items-center gap-1 cursor-pointer ${
-                layers.rescueUnits
-                  ? "bg-emerald-950/80 border-emerald-600 text-emerald-300"
-                  : "bg-slate-900/60 border-slate-800 text-slate-500 line-through"
-              }`}
-            >
-              <MapPin className="h-3 w-3" />
-              Rescue Units
-            </button>
-          </div>
+      {/* 4. Interactive Map Container with Overlay Legend */}
+      <CardContent className="p-0 relative min-h-[480px] sm:min-h-[540px] flex flex-col justify-between overflow-hidden">
+        {/* Real Leaflet Map */}
+        <div className="absolute inset-0 z-0">
+          <CrisisMapLeaflet
+            layers={layers}
+            activeViewMode={activeViewMode}
+          />
         </div>
 
-        {/* Center: Tactical Sector Grid Visualization */}
-        <div className="relative flex-1 p-4 grid grid-cols-2 gap-3 z-10 overflow-hidden">
-          {zones.map((zone) => {
-            const isSelected = selectedZone?.id === zone.id;
-            const isCritical = zone.riskLevel === "CRITICAL";
-            const isHigh = zone.riskLevel === "HIGH";
-
-            return (
-              <div
-                key={zone.id}
-                onClick={() => setSelectedZone(zone)}
-                className={`relative rounded-lg p-3 cursor-pointer transition-all border flex flex-col justify-between backdrop-blur-sm ${
-                  isCritical
-                    ? "bg-red-950/30 border-red-600/70 hover:border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                    : isHigh
-                    ? "bg-amber-950/25 border-amber-600/60 hover:border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]"
-                    : zone.riskLevel === "MODERATE"
-                    ? "bg-blue-950/20 border-blue-600/50 hover:border-blue-400"
-                    : "bg-emerald-950/20 border-emerald-600/50 hover:border-emerald-400"
-                } ${isSelected ? "ring-2 ring-white/60" : ""}`}
-              >
-                {/* Zone Header */}
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-slate-950/80 text-white border border-slate-700">
-                      {zone.code}
-                    </span>
-                    <h5 className="text-xs font-semibold text-white mt-1">
-                      {zone.name}
-                    </h5>
-                  </div>
-                  <Badge
-                    variant={
-                      isCritical ? "critical" : isHigh ? "warning" : "info"
-                    }
-                    pulse={isCritical}
-                    className="text-[10px]"
-                  >
-                    {zone.riskLevel}
-                  </Badge>
-                </div>
-
-                {/* Zone Telemetry */}
-                <div className="my-2 space-y-1 font-mono text-[11px]">
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span>Inundation Depth:</span>
-                    <span
-                      className={`font-bold ${
-                        isCritical
-                          ? "text-red-400"
-                          : isHigh
-                          ? "text-amber-400"
-                          : "text-blue-300"
-                      }`}
-                    >
-                      {zone.waterDepthMeters > 0
-                        ? `${zone.waterDepthMeters}m depth`
-                        : "Dry Land (Highland)"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-400">
-                    <span>Population:</span>
-                    <span className="text-slate-200">
-                      {zone.populationEstimate.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-400">
-                    <span>Evac Progress:</span>
-                    <span className="text-emerald-400 font-bold">
-                      {zone.evacuationProgressPercentage}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Tactical Assets inside this zone */}
-                <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-[10px] font-mono text-slate-400">
-                  <div className="flex items-center gap-1">
-                    {zone.id === "zone-red-alpha" && (
-                      <span className="text-red-400 font-bold flex items-center gap-1">
-                        <Crosshair className="h-3 w-3" />
-                        STRANDED VICTIMS DETECTED
-                      </span>
-                    )}
-                    {zone.id === "zone-green-delta" && (
-                      <span className="text-emerald-400 font-bold flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        PRIMARY STAGING CAMP
-                      </span>
-                    )}
-                    {zone.id === "zone-orange-bravo" && (
-                      <span className="text-amber-400 font-bold">
-                        BRIDGE ROUTE CLOSED
-                      </span>
-                    )}
-                    {zone.id === "zone-yellow-charlie" && (
-                      <span className="text-blue-400">
-                        APEX HOSPITAL SECURE
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-slate-500">
-                    [{zone.center.latitude.toFixed(3)}, {zone.center.longitude.toFixed(3)}]
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Live Drone & Asset Overlay Bar */}
-        {layers.drones && (
-          <div className="mx-3 mb-2 p-2 rounded-lg bg-slate-950/90 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono z-10">
-            <div className="flex items-center gap-2 text-indigo-400">
-              <Navigation2 className="h-3.5 w-3.5 animate-pulse" />
-              <span className="font-bold">ACTIVE UAV SURVEILLANCE VECTORS:</span>
+        {/* TACTICAL OVERLAY LEGEND */}
+        {showLegend && (
+          <div className="absolute bottom-3 left-3 z-[400] bg-slate-950/95 border border-slate-800 p-3 rounded-lg shadow-2xl backdrop-blur-md max-w-xs text-xs font-mono select-none">
+            <div className="font-bold text-slate-200 border-b border-slate-800 pb-1.5 mb-2 flex items-center justify-between">
+              <span>MAP TACTICAL LEGEND</span>
+              <span className="text-[10px] text-slate-500">EOC CODE</span>
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-[11px]">
-              {drones.map((d) => (
-                <div
-                  key={d.id}
-                  className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300"
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span className="font-bold text-white">{d.callsign}</span>
-                  <span className="text-slate-400">
-                    Alt {d.altitudeMeters}m • {d.batteryPercentage}% bat
-                  </span>
-                </div>
-              ))}
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+              {/* RED */}
+              <div className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-red-600 border border-red-400 shadow-[0_0_8px_#ef4444]" />
+                <span className="text-slate-300">
+                  <strong className="text-red-400">RED:</strong> Critical Zone A
+                </span>
+              </div>
+
+              {/* ORANGE */}
+              <div className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-amber-500 border border-amber-300 shadow-[0_0_8px_#f97316]" />
+                <span className="text-slate-300">
+                  <strong className="text-amber-400">ORANGE:</strong> High-risk Zone B
+                </span>
+              </div>
+
+              {/* GREEN */}
+              <div className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-emerald-500 border border-emerald-300 shadow-[0_0_8px_#10b981]" />
+                <span className="text-slate-300">
+                  <strong className="text-emerald-400">GREEN:</strong> Shelters B & C
+                </span>
+              </div>
+
+              {/* BLUE */}
+              <div className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-blue-500 border border-blue-300 shadow-[0_0_8px_#3b82f6]" />
+                <span className="text-slate-300">
+                  <strong className="text-blue-400">BLUE:</strong> Hospitals H1-H3
+                </span>
+              </div>
+
+              {/* WHITE/BLUE */}
+              <div className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-slate-100 border border-sky-400 shadow-[0_0_8px_#38bdf8]" />
+                <span className="text-slate-300">
+                  <strong className="text-sky-300">WHITE/BLUE:</strong> Ambulance
+                </span>
+              </div>
+
+              {/* PURPLE */}
+              <div className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-purple-600 border border-purple-400 shadow-[0_0_8px_#a855f7]" />
+                <span className="text-slate-300">
+                  <strong className="text-purple-300">PURPLE:</strong> Rescue Teams
+                </span>
+              </div>
+
+              {/* CYAN */}
+              <div className="flex items-center gap-1.5 col-span-2">
+                <span className="h-3 w-3 rounded-full bg-cyan-400 border border-cyan-200 shadow-[0_0_8px_#22d3ee]" />
+                <span className="text-slate-300">
+                  <strong className="text-cyan-300">CYAN:</strong> UAV Drones (with flight vectors)
+                </span>
+              </div>
+
+              {/* BLOCKED ROADS */}
+              <div className="flex items-center gap-1.5 col-span-2 pt-1 border-t border-slate-800">
+                <span className="h-0.5 w-4 bg-red-500 border-t border-dashed border-red-300" />
+                <span className="text-red-400 font-bold text-[10px]">
+                  RED DASHED: Blocked / Submerged Road
+                </span>
+              </div>
+
+              {/* EVACUATION CORRIDOR */}
+              <div className="flex items-center gap-1.5 col-span-2">
+                <span className="h-0.5 w-4 bg-emerald-400 border-t border-dashed border-emerald-200" />
+                <span className="text-emerald-400 font-bold text-[10px]">
+                  GREEN DASHED: Safe Evacuation Corridor
+                </span>
+              </div>
             </div>
           </div>
         )}
-
-        {/* Bottom Status & GIS Staging Info */}
-        <div className="p-3 bg-slate-950 border-t border-slate-800 z-10 flex flex-wrap items-center justify-between text-xs font-mono text-slate-400">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-slate-300 font-semibold">
-              OpenStreetMap + Leaflet Engine Ready
-            </span>
-            <span className="text-slate-600">|</span>
-            <span className="text-slate-400">
-              Active Scenario: {incident.title}
-            </span>
-          </div>
-          <div className="text-[11px] text-slate-500 hidden sm:block">
-            CLICK ON ANY SECTOR CARD TO INSPECT INFRASTRUCTURE & DISPATCH
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
