@@ -10,11 +10,12 @@ import {
   Ambulance,
   Bot,
   CheckCircle2,
+  Cpu,
   HeartPulse,
-  Home,
+  Info,
   Lock,
+  Megaphone,
   Navigation,
-  Radio,
   Route,
   ShieldAlert,
   ShieldCheck,
@@ -28,32 +29,30 @@ export function AiResponseStatusPanel() {
     zones,
     hospitals,
     shelters,
-    ambulances,
-    rescueTeams,
-    drones,
     plan,
     isActionApproved,
     approveAction,
-    simulationStage,
   } = useDashboard();
 
-  // Priority Zone: Zone A
-  const priorityZone =
-    zones.find((z) => z.riskLevel === "CRITICAL") || zones[0];
-
-  const primaryAction = plan.actions[0] || {
-    title: "Deploy Swiftwater Boats & Life Vests",
-    description: "Extract isolated citizens from Zone A and supply aerial floatation pods.",
-    priority: "IMMEDIATE",
-    estimatedMinutesToDeploy: 3,
+  // Extract from the deterministic ResponsePlan
+  const riskLevel = plan.riskLevel || incident.severity || "CRITICAL";
+  const priorityZones = plan.priorityZones?.length ? plan.priorityZones : ["Zone A"];
+  const immediateActions = plan.immediateActions || [
+    "Evacuate Zone A",
+    "Deploy Drone 01",
+    "Dispatch 2 ambulances",
+    "Assign 2 rescue teams",
+    "Route evacuees to Shelter B",
+  ];
+  const resourceAllocation = plan.resourceAllocation || {
+    ambulances: 2,
+    rescueTeams: 2,
+    drones: 1,
   };
-
-  const primaryRoute = {
-    routeName: "Route R4 Highland Arterial -> Shelter C Stadium",
-    safetyScore: 92,
-    estimatedTransitMin: 14,
-    status: "OPEN (Bypasses Submerged Roads R1 & R3)",
-  };
+  const evacuationRoute = plan.evacuationRoute || "R2";
+  const publicAlert = plan.publicAlert || "";
+  const explanation = plan.explanation || "";
+  const approvalRequired = plan.approvalRequired ?? true;
 
   return (
     <Card
@@ -64,134 +63,146 @@ export function AiResponseStatusPanel() {
       <CardHeader className="py-3 px-4 bg-slate-950/90 border-b border-slate-800">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1 rounded bg-indigo-950 border border-indigo-700/60 text-indigo-400">
+            <div className="p-1.5 rounded bg-indigo-950 border border-indigo-700/60 text-indigo-400">
               <Bot className="h-4 w-4" />
             </div>
             <div>
-              <CardTitle className="text-xs sm:text-sm font-mono tracking-wider text-slate-100 flex items-center gap-1.5">
-                AI RESPONSE STATUS
+              <div className="flex items-center gap-1.5">
+                <CardTitle className="text-xs sm:text-sm font-mono tracking-wider text-slate-100">
+                  AI RESPONSE STATUS
+                </CardTitle>
                 <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              </CardTitle>
-              <div className="text-[10px] font-mono text-slate-400">
-                SCENARIO: {incident.zoneName || "Zone A"} • WATER LEVEL: {incident.metrics.waterLevelMeters}m
+              </div>
+              <div className="text-[10px] font-mono text-slate-400 flex items-center gap-2 mt-0.5">
+                <span>SCENARIO: {priorityZones.join(", ")}</span>
+                <span>•</span>
+                <span>WATER LEVEL: {incident.metrics.waterLevelMeters}m</span>
               </div>
             </div>
           </div>
 
-          <Badge
-            variant={incident.severity === "CRITICAL" ? "critical" : "warning"}
-            pulse
-          >
-            {incident.severity}
-          </Badge>
+          {/* Decision Engine Indicator & Risk Level */}
+          <div className="flex items-center gap-1.5">
+            <Badge
+              variant="outline"
+              className="border-amber-500/60 text-amber-300 bg-amber-950/40 text-[10px] font-mono px-2 py-0.5"
+            >
+              <Cpu className="h-3 w-3 mr-1 text-amber-400" />
+              Decision Engine: FALLBACK
+            </Badge>
+
+            <Badge
+              variant={riskLevel === "CRITICAL" ? "critical" : "warning"}
+              pulse
+            >
+              {riskLevel}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="p-4 space-y-3.5 text-xs font-sans">
-        {/* 1. RISK LEVEL */}
-        <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/90 flex items-center justify-between">
-          <div>
+        {/* 1. RISK LEVEL & PRIORITY ZONE BANNER */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Risk Level */}
+          <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/90">
             <div className="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider">
               Risk Level
             </div>
-            <div className="text-sm font-black text-red-400 font-mono flex items-center gap-1.5 mt-0.5">
-              <ShieldAlert className="h-4 w-4 text-red-500" />
-              <span>{incident.severity} — FLOOD INUNDATION</span>
+            <div className="text-xs font-black text-red-400 font-mono flex items-center gap-1 mt-1">
+              <ShieldAlert className="h-3.5 w-3.5 text-red-500 shrink-0" />
+              <span className="truncate">{riskLevel}</span>
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+              Water Depth: <span className="text-blue-300 font-bold">{incident.metrics.waterLevelMeters}m</span>
             </div>
           </div>
-          <div className="text-right font-mono text-[11px]">
-            <div className="text-slate-400">Water Level</div>
-            <div className="text-blue-300 font-black text-sm">{incident.metrics.waterLevelMeters} meters</div>
+
+          {/* Priority Zone */}
+          <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/90">
+            <div className="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider">
+              Priority Zone
+            </div>
+            <div className="text-xs font-black text-white font-mono flex items-center gap-1 mt-1">
+              <span className="text-red-400 font-bold">{priorityZones.join(", ")}</span>
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+              Affected: <span className="text-white font-bold">{incident.metrics.affectedPopulationEstimated.toLocaleString()}</span>
+            </div>
           </div>
         </div>
 
-        {/* 2. PRIORITY ZONE */}
+        {/* 2. IMMEDIATE ACTIONS (1 to 5) */}
         <div className="space-y-1">
           <div className="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider flex items-center justify-between">
-            <span>Priority Zone</span>
-            <span className="text-red-400 font-bold">{priorityZone.code}</span>
+            <span>Immediate Actions</span>
+            <span className="text-amber-400 font-mono text-[10px]">{immediateActions.length} Step Protocol</span>
           </div>
-          <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-200">
-            <div className="font-semibold text-xs text-white flex items-center justify-between">
-              <span>{priorityZone.name}</span>
-              <span className="text-red-400 font-mono text-[10px] font-bold">DEPTH: {priorityZone.waterDepthMeters}m</span>
-            </div>
-            <div className="text-[11px] text-slate-400 font-mono mt-1 flex items-center justify-between">
-              <span>Affected: <strong className="text-white">{incident.metrics.affectedPopulationEstimated.toLocaleString()}</strong></span>
-              <span className="text-amber-400">Blocked: {incident.blockedRoads?.join(", ") || "R1, R3"}</span>
-            </div>
-          </div>
-        </div>
 
-        {/* 3. RECOMMENDED ACTION */}
-        <div className="space-y-1">
-          <div className="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider">
-            Recommended Action
-          </div>
           <div className="p-2.5 rounded-lg bg-blue-950/20 border border-blue-900/40 text-slate-200 space-y-1.5">
-            <div className="flex items-center gap-1.5 font-semibold text-xs text-blue-300">
-              <span className="font-mono text-[10px] px-1 py-0.2 bg-blue-900/60 rounded">STEP 01</span>
-              <span>Deploy Swiftwater Boats & Life Vests to Zone A</span>
-            </div>
-            <p className="text-[11px] text-slate-300 leading-normal">
-              Direct NDRF boat squads to extract 180 stranded residents in Zone A. Dispatch UAV-02 with self-inflating life vests.
-            </p>
-            <div className="text-[10px] font-mono text-amber-300 flex items-center gap-1">
-              <span>DEPLOYMENT ETA:</span>
-              <span className="font-bold">~3 minutes to target coordinates</span>
-            </div>
+            {immediateActions.map((action, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-2 font-mono text-[11px] py-0.5 border-b border-slate-800/60 last:border-0"
+              >
+                <span className="h-4 w-4 rounded-full bg-blue-900/70 text-blue-300 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  {idx + 1}
+                </span>
+                <span className="text-slate-200 font-medium">{action}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* 4. ASSIGNED RESOURCES (8 Ambulances, 4 Teams, 3 Drones) */}
+        {/* 3. RESOURCE ALLOCATION (Ambulances: 2, Rescue Teams: 2, Drones: 1) */}
         <div className="space-y-1">
           <div className="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider flex items-center justify-between">
-            <span>Assigned Resources</span>
-            <span className="text-slate-400 font-mono text-[10px]">{ambulances.length + rescueTeams.length + drones.length} Assets Linked</span>
+            <span>Resource Allocation</span>
+            <span className="text-slate-400 font-mono text-[10px]">Deterministic Dispatch</span>
           </div>
           <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
             <div className="p-2 rounded bg-slate-950/80 border border-slate-800 text-center">
               <Ambulance className="h-3.5 w-3.5 text-emerald-400 mx-auto mb-1" />
-              <div className="text-white font-bold">{ambulances.length} Units</div>
-              <div className="text-[10px] text-slate-400 truncate">8 Ambulances</div>
+              <div className="text-white font-bold">{resourceAllocation.ambulances}</div>
+              <div className="text-[10px] text-slate-400 truncate">Ambulances</div>
             </div>
             <div className="p-2 rounded bg-slate-950/80 border border-slate-800 text-center">
               <Users className="h-3.5 w-3.5 text-purple-400 mx-auto mb-1" />
-              <div className="text-white font-bold">{rescueTeams.length} Teams</div>
-              <div className="text-[10px] text-slate-400 truncate">4 Rescue Teams</div>
+              <div className="text-white font-bold">{resourceAllocation.rescueTeams}</div>
+              <div className="text-[10px] text-slate-400 truncate">Rescue Teams</div>
             </div>
             <div className="p-2 rounded bg-slate-950/80 border border-slate-800 text-center">
               <Navigation className="h-3.5 w-3.5 text-cyan-400 mx-auto mb-1" />
-              <div className="text-white font-bold">{drones.length} Drones</div>
-              <div className="text-[10px] text-slate-400 truncate">3 UAV Fleet</div>
+              <div className="text-white font-bold">{resourceAllocation.drones}</div>
+              <div className="text-[10px] text-slate-400 truncate">Drone</div>
             </div>
           </div>
         </div>
 
-        {/* 5. EVACUATION ROUTE & HOSPITALS USAGE */}
+        {/* 4. EVACUATION ROUTE & DESTINATION */}
         <div className="space-y-1">
           <div className="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider flex items-center justify-between">
             <span>Evacuation Route & Shelters</span>
             <Badge variant="success" className="text-[9px]">
-              Safety {primaryRoute.safetyScore}%
+              Route {evacuationRoute} Clear
             </Badge>
           </div>
           <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800 text-slate-300 space-y-1 font-mono text-[11px]">
             <div className="flex items-center gap-1.5 text-white font-medium">
               <Route className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-              <span className="truncate">{primaryRoute.routeName}</span>
+              <span>Route {evacuationRoute} (Kotturpuram High Bypass) &rarr; Shelter B</span>
             </div>
             <div className="text-[10px] text-slate-400 flex items-center justify-between">
-              <span>Shelters: B (700 cap) • C (1500 cap)</span>
-              <span className="text-emerald-400 font-bold">R1 & R3 BLOCKED</span>
+              <span>Dest: Shelter B (700 cap)</span>
+              <span className="text-red-400 font-bold">R1 & R3 BLOCKED</span>
             </div>
           </div>
 
-          {/* Quick Hospital Capacity Usage Ticker */}
+          {/* Hospital Capacity Usage Ticker */}
           <div className="p-2 rounded bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-[10px] font-mono text-slate-400">
             <span className="text-slate-300 flex items-center gap-1">
               <HeartPulse className="h-3 w-3 text-blue-400" />
-              Hospital Usage:
+              Hospitals:
             </span>
             <span className="text-slate-300">H1: <strong className="text-blue-400">80%</strong></span>
             <span className="text-slate-300">H2: <strong className="text-blue-400">42%</strong></span>
@@ -199,7 +210,33 @@ export function AiResponseStatusPanel() {
           </div>
         </div>
 
-        {/* 6. APPROVAL REQUIRED */}
+        {/* 5. PUBLIC ALERT MESSAGE */}
+        {publicAlert && (
+          <div className="space-y-1">
+            <div className="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1 text-amber-300">
+              <Megaphone className="h-3 w-3 text-amber-400" />
+              Public Emergency Alert
+            </div>
+            <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/60 text-amber-200 text-[11px] leading-relaxed font-sans">
+              {publicAlert}
+            </div>
+          </div>
+        )}
+
+        {/* 6. RULE-BASED EXPLANATION */}
+        {explanation && (
+          <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/90 text-[10px] font-mono text-slate-300 space-y-1">
+            <div className="flex items-center gap-1 text-indigo-300 font-semibold">
+              <Info className="h-3 w-3 text-indigo-400" />
+              <span>Decision Rationale (Deterministic Fallback)</span>
+            </div>
+            <div className="text-slate-400 leading-snug">
+              {explanation}
+            </div>
+          </div>
+        )}
+
+        {/* 7. APPROVAL REQUIRED */}
         <div className="pt-2 border-t border-slate-800/80 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono uppercase text-slate-400 font-semibold">
@@ -207,7 +244,7 @@ export function AiResponseStatusPanel() {
             </span>
             <Badge
               variant={isActionApproved ? "success" : "warning"}
-              pulse={!isActionApproved}
+              pulse={!isActionApproved && approvalRequired}
             >
               {isActionApproved ? "AUTHORIZED" : "APPROVAL REQUIRED"}
             </Badge>
@@ -231,14 +268,14 @@ export function AiResponseStatusPanel() {
                   <strong className="block text-emerald-200 font-semibold">
                     Authorized by Commander Raghav Menon
                   </strong>
-                  Dispatch protocol armed for Zone A rescue units. Automated n8n webhook notification ready for execution.
+                  Dispatch protocol armed for {priorityZones.join(", ")} rescue units. Automated dispatch order validated.
                 </>
               ) : (
                 <>
                   <strong className="block text-amber-200 font-semibold">
                     Human Authorization Safeguard Active
                   </strong>
-                  Critical water-breach dispatch to Zone A requires command clearance.
+                  Critical rescue actions require EOC officer clearance prior to resource deployment.
                 </>
               )}
             </div>

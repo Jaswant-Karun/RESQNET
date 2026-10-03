@@ -34,6 +34,12 @@ export interface EvacuationRoutePlan {
   status: "OPEN" | "RESTRICTED_CONVOY" | "BLOCKED";
 }
 
+export interface ResourceAllocation {
+  ambulances: number;
+  rescueTeams: number;
+  drones: number;
+}
+
 export interface ResponsePlan {
   id: string;
   incidentId: string;
@@ -51,4 +57,15 @@ export interface ResponsePlan {
   evacuationRoutes: EvacuationRoutePlan[];
   confidenceScorePercentage: number;
   projectedCasualtyReductionPercentage: number;
+
+  // RESQNET Response Engine fields
+  riskLevel: RiskLevel;
+  priorityZones: string[];
+  immediateActions: string[];
+  resourceAllocation: ResourceAllocation;
+  evacuationRoute: string;
+  publicAlert: string;
+  explanation: string;
+  approvalRequired: boolean;
+  decisionEngine: "FALLBACK" | "GEMINI_AI";
 }

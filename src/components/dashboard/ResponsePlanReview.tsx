@@ -46,6 +46,12 @@ export function ResponsePlanReview({ plan: initialPlan }: ResponsePlanReviewProp
           </div>
 
           <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className="border-amber-500/60 text-amber-300 bg-amber-950/40 text-[10px] font-mono"
+            >
+              Decision Engine: {initialPlan.decisionEngine || "FALLBACK"}
+            </Badge>
             <Badge variant="info">
               Confidence: {initialPlan.confidenceScorePercentage}%
             </Badge>

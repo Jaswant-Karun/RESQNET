@@ -5,9 +5,9 @@ import {
   generateDeterministicFloodScenario,
   DeterministicFloodScenarioResult,
 } from "@/lib/flood-simulation-engine";
+import { generateResponsePlan } from "@/lib/responseEngine";
 import {
   MOCK_ALERTS,
-  MOCK_RESPONSE_PLAN,
   MOCK_TIMELINE_EVENTS,
 } from "@/data";
 import {
@@ -68,6 +68,7 @@ const DashboardContext = createContext<DashboardContextType | undefined>(
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Generate initial deterministic flood scenario
   const initialScenario = generateDeterministicFloodScenario();
+  const initialPlan = generateResponsePlan(initialScenario.incident);
 
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const [simulationStage, setSimulationStage] =
@@ -88,13 +89,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     initialScenario.timelineEvent,
     ...MOCK_TIMELINE_EVENTS,
   ]);
-  const [plan, setPlan] = useState<ResponsePlan>(MOCK_RESPONSE_PLAN);
+  const [plan, setPlan] = useState<ResponsePlan>(initialPlan);
   const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS);
   const [isActionApproved, setIsActionApproved] = useState<boolean>(false);
   const [selectedZone, setSelectedZone] = useState<Zone | null>(initialScenario.zones[0]);
   const [unreadAlertCount, setUnreadAlertCount] = useState<number>(3);
 
-  // Deterministic simulateFlood() function
+  // Deterministic simulateFlood() function:
+  // Incident -> Response Engine -> Response Plan -> Dashboard updates
   const simulateFlood = () => {
     const scenario = generateDeterministicFloodScenario();
 
@@ -115,15 +117,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     // Prepend fresh deterministic timeline event
     setTimeline((prev) => [scenario.timelineEvent, ...prev]);
 
-    // Update response plan specifically for Zone A (2.4m flood)
-    setPlan({
-      ...MOCK_RESPONSE_PLAN,
-      title: "Phase 1 Rapid Evacuation & Critical Extraction Plan — Zone A",
-      riskAssessmentSummary:
-        "Water level in Zone A measured at 2.4 meters with 1,240 people affected. Arterial Roads R1 and R3 are blocked. Direct swiftwater rescue teams and UAV payload drops to isolated pockets.",
-      humanApproved: false,
-      status: "AWAITING_APPROVAL",
-    });
+    // Run Incident through Deterministic Emergency Response Engine
+    const generatedPlan = generateResponsePlan(scenario.incident);
+    setPlan(generatedPlan);
   };
 
   // Deterministic simulateEscalation() function
@@ -211,6 +207,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       acknowledged: false,
       actionableStep: "Order emergency air-drops and deploy boat squads to Zone B",
     };
+    // Run Escalated Incident through Deterministic Emergency Response Engine
+    const escalatedPlan = generateResponsePlan(escalatedIncident);
+    setPlan(escalatedPlan);
+
     setAlerts((prev) => [newAlert, ...prev]);
     setUnreadAlertCount((c) => c + 1);
   };

@@ -100,6 +100,27 @@ export const MOCK_RESPONSE_PLAN: ResponsePlan = {
       status: "RESTRICTED_CONVOY",
     },
   ],
+  riskLevel: "CRITICAL",
+  priorityZones: ["Zone A"],
+  immediateActions: [
+    "Evacuate Zone A",
+    "Deploy Drone 01",
+    "Dispatch 2 ambulances",
+    "Assign 2 rescue teams",
+    "Route evacuees to Shelter B",
+  ],
+  resourceAllocation: {
+    ambulances: 2,
+    rescueTeams: 2,
+    drones: 1,
+  },
+  evacuationRoute: "R2",
+  publicAlert:
+    "EMERGENCY ALERT: Immediate mandatory evacuation for Zone A due to critical flood surge (water level: 2.4m, 1,240 citizens affected). Proceed via designated safe route R2 to Shelter B immediately. Avoid submerged roadways R1, R3.",
+  explanation:
+    "Fallback rule engine triggered: Water level 2.4m and affected population 1,240 meet CRITICAL severity threshold. Submerged roads R1 and R3 bypassed via corridor R2 to Shelter B. Fast-response tactical units dispatched.",
+  approvalRequired: true,
+  decisionEngine: "FALLBACK",
 };
 
 export const MOCK_ALERTS: Alert[] = [
