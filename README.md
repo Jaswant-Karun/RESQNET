@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RESQNET — AI-Powered Adaptive Disaster Response & Rescue Coordination
 
-## Getting Started
+> **Tagline:** From disaster detection to rescue decision — in seconds.  
+> **Domain:** Crisis & Emergency Response — Disaster Management.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 1. Overview
+
+**RESQNET** is an AI-assisted disaster response coordination platform designed for Emergency Operations Centers (EOCs). It models the full end-to-end tactical response pipeline:
+```
+Simulate Disaster 
+  → Incident Created 
+  → Analyze Situation 
+  → Determine Risk 
+  → Recommend Response 
+  → Human Approval for Critical Actions 
+  → n8n Automation 
+  → Allocate Resources 
+  → Deploy Rescue Teams / Drones 
+  → Update Dashboard 
+  → Monitor 
+  → Simulate Escalation 
+  → Recalculate Response
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For the Hackathon MVP, RESQNET implements a high-fidelity **Severe Flood Inundation & Embankment Breach** disaster scenario.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 2. Project Architecture & Folder Structure
 
-## Learn More
+```
+RESQNET/
+├── src/
+│   ├── app/                    # Next.js App Router (Layouts & Pages)
+│   │   ├── api/                # Next.js Route Handlers
+│   │   │   ├── incident/       # GET /api/incident
+│   │   │   └── resources/      # GET /api/resources
+│   │   ├── globals.css         # Emergency Operations Center theme tokens
+│   │   ├── layout.tsx          # Root layout with Header and Footer
+│   │   └── page.tsx            # Main EOC Command Dashboard Shell
+│   ├── components/
+│   │   ├── dashboard/          # Tactical Dashboard Components
+│   │   │   ├── AlertsFeed.tsx
+│   │   │   ├── IncidentBanner.tsx
+│   │   │   ├── InfrastructureStatus.tsx
+│   │   │   ├── MapPlaceholder.tsx
+│   │   │   ├── MetricsOverview.tsx
+│   │   │   ├── ResourceFleet.tsx
+│   │   │   ├── ResponsePlanReview.tsx
+│   │   │   ├── TimelineFeed.tsx
+│   │   │   └── ZoneMatrix.tsx
+│   │   ├── layout/             # Application Shell Components
+│   │   │   ├── Header.tsx
+│   │   │   └── Footer.tsx
+│   │   └── ui/                 # Reusable UI primitives (shadcn pattern)
+│   │       ├── badge.tsx
+│   │       ├── button.tsx
+│   │       └── card.tsx
+│   ├── data/                   # Deterministic Mock Data
+│   │   ├── mock-flood-incident.ts
+│   │   ├── mock-infrastructure.ts
+│   │   ├── mock-plan-alerts.ts
+│   │   ├── mock-resources.ts
+│   │   ├── mock-zones.ts
+│   │   └── index.ts
+│   ├── lib/
+│   │   └── utils.ts            # Class name merger (clsx + twMerge)
+│   └── types/                  # Strict TypeScript Domain Models
+│       ├── alert.ts
+│       ├── drone.ts
+│       ├── incident.ts
+│       ├── location.ts
+│       ├── resource.ts
+│       ├── response-plan.ts
+│       ├── timeline.ts
+│       └── index.ts
+├── public/                     # Static assets
+├── next.config.ts
+├── package.json
+├── tsconfig.json
+└── README.md
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 3. Data & Type Models
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **[Incident](file:///c:/Users/jaswant%20karun/RESQNET/src/types/incident.ts):** Title, status, severity, coordinates, hydrological metrics (water depth, rise rate, precipitation rate, discharge), affected population estimates, commander, threats.
+- **[Zone](file:///c:/Users/jaswant%20karun/RESQNET/src/types/location.ts):** Zoned emergency sectors (`Z-ALPHA` critical lowlands, `Z-BRAVO` commercial corridor, `Z-CHARLIE` uplands, `Z-DELTA` safe buffer staging), inundation depths, evacuation progress %.
+- **[Resource](file:///c:/Users/jaswant%20karun/RESQNET/src/types/resource.ts):** Swiftwater rescue teams, inflatable motorized boats, high-clearance all-terrain transport, ALS ambulances.
+- **[Drone](file:///c:/Users/jaswant%20karun/RESQNET/src/types/drone.ts):** Aerial UAVs (Thermal Sentinel, Heavy Payload Lifeline Drop, Medical Courier) with battery %, altitude, speed, payload description, telemetry link strength.
+- **[Infrastructure](file:///c:/Users/jaswant%20karun/RESQNET/src/types/location.ts):**
+  - **Hospitals:** Trauma centers, bed & ICU capacity, generator power backup status, radio channels.
+  - **Shelters:** Indoor stadiums, school hubs, current occupancy vs capacity, food & water supply days.
+  - **Roads:** Submerged arterial causeways, water depths, clearance vehicle types, designated detours.
+- **[ResponsePlan](file:///c:/Users/jaswant%20karun/RESQNET/src/types/response-plan.ts):** Adaptive multi-stage response sequence, safety scores, human clearance authorization flag.
+- **[Alert](file:///c:/Users/jaswant%20karun/RESQNET/src/types/alert.ts):** Critical warning notifications, sensor source, acknowledgment tracking, operational directives.
+- **[TimelineEvent](file:///c:/Users/jaswant%20karun/RESQNET/src/types/timeline.ts):** Chronological log tracing from detection to analysis and dispatch.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 4. How to Run
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Development Server:
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) to view the EOC Command Dashboard.
+
+### API Endpoints:
+- `GET http://localhost:3000/api/incident`
+- `GET http://localhost:3000/api/resources`
+
+### Production Build:
+```bash
+npm run build
+npm run start
+```

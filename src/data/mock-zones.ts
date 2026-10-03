@@ -1,0 +1,85 @@
+import { Zone } from "@/types";
+
+export const MOCK_ZONES: Zone[] = [
+  {
+    id: "zone-red-alpha",
+    name: "Sector 7A - Riverfront Lowlands (Kotturpuram Basin)",
+    code: "Z-ALPHA",
+    riskLevel: "CRITICAL",
+    waterDepthMeters: 3.4,
+    populationEstimate: 14500,
+    evacuationProgressPercentage: 42,
+    status: "SUBMERGED",
+    center: {
+      latitude: 13.0135,
+      longitude: 80.2312,
+    },
+    polygonCoordinates: [
+      [13.008, 80.224],
+      [13.018, 80.228],
+      [13.022, 80.239],
+      [13.011, 80.241],
+      [13.004, 80.232],
+    ],
+  },
+  {
+    id: "zone-orange-bravo",
+    name: "Sector 7B - Commercial Corridor (Saidapet Junction)",
+    code: "Z-BRAVO",
+    riskLevel: "HIGH",
+    waterDepthMeters: 1.8,
+    populationEstimate: 11200,
+    evacuationProgressPercentage: 68,
+    status: "EVACUATING",
+    center: {
+      latitude: 13.0211,
+      longitude: 80.2195,
+    },
+    polygonCoordinates: [
+      [13.016, 80.212],
+      [13.026, 80.215],
+      [13.028, 80.227],
+      [13.019, 80.225],
+    ],
+  },
+  {
+    id: "zone-yellow-charlie",
+    name: "Sector 7C - Residential Uplands (Guindy Fringe)",
+    code: "Z-CHARLIE",
+    riskLevel: "MODERATE",
+    waterDepthMeters: 0.6,
+    populationEstimate: 8500,
+    evacuationProgressPercentage: 85,
+    status: "AT_RISK",
+    center: {
+      latitude: 13.0078,
+      longitude: 80.2074,
+    },
+    polygonCoordinates: [
+      [13.001, 80.201],
+      [13.012, 80.203],
+      [13.014, 80.214],
+      [13.003, 80.212],
+    ],
+  },
+  {
+    id: "zone-green-delta",
+    name: "Sector 8 - Highland Staging Command (Alandur Ridge)",
+    code: "Z-DELTA",
+    riskLevel: "LOW",
+    waterDepthMeters: 0.0,
+    populationEstimate: 4200,
+    evacuationProgressPercentage: 100,
+    status: "SAFE_BUFFER",
+    center: {
+      latitude: 12.9984,
+      longitude: 80.1989,
+    },
+    polygonCoordinates: [
+      [12.992, 80.191],
+      [13.002, 80.193],
+      [13.004, 80.205],
+      [12.994, 80.203],
+    ],
+  },
+];

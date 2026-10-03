@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --background: #080d1a;
+  --foreground: #f1f5f9;
+  --card: #0d1527;
+  --card-foreground: #f8fafc;
+  --card-border: #1e293b;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e3a8a;
+  --accent-foreground: #60a5fa;
+  --critical: #ef4444;
+  --warning: #f97316;
+  --success: #10b981;
+  --info: #3b82f6;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Tactical scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080d1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Subtle tactical grid background pattern */
+.tactical-grid {
+  background-image: radial-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Blinking beacon pulse animation */
+@keyframes emergency-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.15);
+  }
+}
+
+.animate-emergency-pulse {
+  animation: emergency-pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
