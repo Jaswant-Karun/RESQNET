@@ -91,8 +91,9 @@ export function calculateRecommendedAllocation(
 export function allocateResources(
   available: ResourceAllocation,
   requested: ResourceAllocation,
-  _incident?: Incident
+  incident?: Incident
 ): ResourceAllocationState {
+  void incident;
   // Ensure non-negative numbers
   const safeAvail = {
     ambulances: Math.max(0, Math.floor(available.ambulances ?? 0)),
