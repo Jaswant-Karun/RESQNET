@@ -588,8 +588,19 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       syncFleetStatuses(ambulances, rescueTeams, prev, escalatedAlloc.assigned).updatedDrones
     );
 
-    // REQUIRED EXACT TIMELINE ENTRIES
+    // REQUIRED EXACT TIMELINE ENTRIES (CHRONOLOGICAL EVENT LOG)
     const requiredTimelineEvents: TimelineEvent[] = [
+      {
+        id: `evt-esc-0-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime).toISOString(),
+        title: "Escalation detected",
+        description:
+          "Upstream dam discharge breached Route R2. Catastrophic water surge detected across Adyar basin hydro-stations.",
+        category: "ESCALATION",
+        severity: "CRITICAL",
+        authorOrSystem: "Dam Sluice Telemetry Array",
+      },
       {
         id: `evt-esc-1-${baseTime}`,
         incidentId: escalatedIncident.id,
@@ -608,7 +619,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         title: "Water level increased from 2.4m to 3.1m.",
         description:
           "River basin crest exceeded 3.1 meters. 2,180 residents in Zone A & B now in critical inundation zone.",
-        category: "ENVIRONMENTAL",
+        category: "DETECTION",
         severity: "CRITICAL",
         authorOrSystem: "Telemetry Node Adyar-4",
       },
@@ -619,7 +630,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         title: "Route R2 became blocked.",
         description:
           "Kotturpuram High Bypass (R2) submerged by 185cm flash flood surge. Traffic impassable.",
-        category: "HAZARD",
+        category: "ESCALATION",
         severity: "CRITICAL",
         authorOrSystem: "Traffic Transit Monitoring",
       },
@@ -627,9 +638,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         id: `evt-esc-4-${baseTime}`,
         incidentId: escalatedIncident.id,
         timestamp: new Date(baseTime + 4000).toISOString(),
-        title: "Previous evacuation route invalidated.",
+        title: "Route R2 invalidated",
         description:
           "Primary evacuation corridor via Route R2 to Shelter B revoked due to active flooding.",
+        category: "DECISION",
+        severity: "WARNING",
+        authorOrSystem: "RESQNET Route Safety Guard",
+      },
+      {
+        id: `evt-esc-4b-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 4500).toISOString(),
+        title: "Previous evacuation route invalidated.",
+        description:
+          "Previous evacuation corridor via Route R2 invalidated due to rising flood surge.",
         category: "DECISION",
         severity: "WARNING",
         authorOrSystem: "RESQNET Route Safety Guard",
@@ -641,9 +663,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         title: "Response plan recalculated.",
         description:
           "Adaptive response engine executed dynamic multi-criteria rerouting with updated risk parameters.",
-        category: "AI_DECISION",
+        category: "DECISION",
         severity: "INFO",
         authorOrSystem: "RESQNET Adaptive Response Engine",
+      },
+      {
+        id: `evt-esc-5b-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 5500).toISOString(),
+        title: "New response plan generated",
+        description:
+          "Multi-hazard contingency plan generated: High-capacity evacuation to Shelter C via Route R4.",
+        category: "DECISION",
+        severity: "INFO",
+        authorOrSystem: "Automated Planner Core",
       },
       {
         id: `evt-esc-6-${baseTime}`,
@@ -666,6 +699,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         category: "RESOURCE",
         severity: "CRITICAL",
         authorOrSystem: "Incident Commander R. Menon",
+      },
+      {
+        id: `evt-esc-8-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 8000).toISOString(),
+        title: "Human approval requested",
+        description:
+          "Mandatory operator authorization checkpoint: Evacuate Zone A & B (2,180 pop) via Route R4 → Shelter C.",
+        category: "APPROVAL",
+        severity: "WARNING",
+        authorOrSystem: "HITL Security Guardrail",
       },
     ];
 
