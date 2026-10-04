@@ -95,14 +95,24 @@ interface DashboardContextType {
   aiStatusMessage: string;
   simulateApiFailure: boolean;
   setSimulateApiFailure: (val: boolean) => void;
+  triggerAiAnalysisWithTestCase?: (testCase: "MISSING_KEY" | "QUOTA_EXCEEDED" | "INVALID_JSON" | "TIMEOUT" | "INVALID_RESPONSE") => Promise<void>;
 
   // n8n Workflow Orchestration Layer
   workflowState: WorkflowOrchestrationState;
   isTriggeringAutomation: boolean;
-  triggerAutomationWorkflow: (action?: string) => Promise<void>;
+  simulateN8nFailure: boolean;
+  setSimulateN8nFailure: (val: boolean) => void;
+  triggerAutomationWorkflow: (action?: string, options?: { simulateUnavailable?: boolean; testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING" }) => Promise<void>;
   approveCriticalResponseWorkflow: () => Promise<void>;
   dispatchDroneWorkflow: (droneId?: string) => Promise<void>;
   approveEmergencyAlertWorkflow: () => Promise<void>;
+
+  // Resilience & Failure Testing State
+  simulateTileError: boolean;
+  setSimulateTileError: (val: boolean) => void;
+  activeResilienceTest: string | null;
+  triggerResilienceTest: (testId: string) => Promise<void>;
+  resetAllResilienceTests: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
