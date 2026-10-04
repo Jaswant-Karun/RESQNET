@@ -54,16 +54,24 @@ export function EmergencyApprovalPanel() {
   }
 
   // Dynamic values with clean fallbacks matching user prompt
-  const actionTitle = plan.immediateActions?.[0] || "Evacuate Zone A";
+  const isEscalated =
+    plan.evacuationRoute === "R4" ||
+    (incident.metrics?.waterLevelMeters ?? 0) >= 3.0 ||
+    incident.blockedRoads?.includes("R2");
+  const actionTitle =
+    plan.immediateActions?.[0] ||
+    (isEscalated ? "Evacuate Zone A & B" : "Evacuate Zone A");
   const affectedPopulation =
-    incident.metrics?.affectedPopulationEstimated?.toLocaleString() || "1,240";
-  const proposedRoute = plan.evacuationRoute
-    ? `${plan.evacuationRoute} → Shelter B`
-    : "R2 → Shelter B";
+    incident.metrics?.affectedPopulationEstimated?.toLocaleString() ||
+    (isEscalated ? "2,180" : "1,240");
+  const targetShelterName =
+    plan.targetShelter ||
+    (isEscalated || plan.evacuationRoute === "R4" ? "Shelter C" : "Shelter B");
+  const proposedRoute = `${plan.evacuationRoute || (isEscalated ? "R4" : "R2")} → ${targetShelterName}`;
   const assigned = resourceAllocationState.assigned;
-  const ambulanceCount = assigned.ambulances || 2;
-  const rescueTeamCount = assigned.rescueTeams || 2;
-  const droneCount = assigned.drones || 1;
+  const ambulanceCount = assigned.ambulances || (isEscalated ? 4 : 2);
+  const rescueTeamCount = assigned.rescueTeams || (isEscalated ? 3 : 2);
+  const droneCount = assigned.drones || (isEscalated ? 2 : 1);
 
   return (
     <>
@@ -283,7 +291,9 @@ export function EmergencyApprovalPanel() {
               <div className="mt-1 space-y-0.5 text-xs font-mono font-bold text-slate-200">
                 <div className="text-cyan-300">• {ambulanceCount} ambulances</div>
                 <div className="text-emerald-300">• {rescueTeamCount} rescue teams</div>
-                <div className="text-indigo-300">• {droneCount} drone</div>
+                <div className="text-indigo-300">
+                  • {droneCount} drone{droneCount > 1 ? "s" : ""}
+                </div>
               </div>
             </div>
           </div>
@@ -300,8 +310,8 @@ export function EmergencyApprovalPanel() {
                   </Badge>
                 </div>
                 <p className="text-slate-300 text-xs">
-                  Authorized by <strong>Commander Raghav Menon (EOC Chief)</strong>. 2 ambulances
-                  assigned to CAD 108, 2 SDRF motorized boat squads mobilized, and UAV Echo-1
+                  Authorized by <strong>Commander Raghav Menon (EOC Chief)</strong>. {ambulanceCount} ambulances
+                  assigned to CAD 108, {rescueTeamCount} SDRF motorized boat squads mobilized, and {droneCount} UAV{droneCount > 1 ? "s" : ""}{" "}
                   cleared to AIRBORNE PATROL.
                 </p>
               </div>

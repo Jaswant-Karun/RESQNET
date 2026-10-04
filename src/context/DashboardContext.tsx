@@ -392,13 +392,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Deterministic simulateEscalation() function
   const simulateEscalation = () => {
+    const now = new Date();
+    const baseTime = now.getTime();
+
     setSimulationStage("ESCALATED");
     setSimulationStatus("CRITICAL ESCALATION ACTIVE");
     setIsActionApproved(false);
     setIsActionRejected(false);
     setRejectionReason(null);
-    setNotification(null);
 
+    // Escalated Incident with exact prompt metrics:
+    // Water level: 3.1m, Affected population: 2,180, Blocked roads: R1, R2, R3 (R2 now blocked)
     const escalatedIncident: Incident = {
       ...incident,
       code: "FL-902-CATACLYSMIC",
@@ -406,32 +410,32 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       severity: "CRITICAL",
       status: "ESCALATING",
       operationalSummary:
-        "CRITICAL ESCALATION: Upstream dam emergency discharge has spiked. Water level in Zone A surged to 3.8 meters; Zone B is now critically inundated at 2.6 meters. Roads R1, R2, and R3 are blocked. Evacuate all remaining 3,400 residents via Route R4 Highland corridor.",
+        "CRITICAL ESCALATION: Upstream dam discharge breached Route R2. Water level surged from 2.4m to 3.1m with 2,180 civilians in inundation zone. Previous Route R2 invalidated. Recalculated evacuation route via Route R4 Highland Arterial to Shelter C.",
       metrics: {
         ...incident.metrics,
-        waterLevelMeters: 3.8,
+        waterLevelMeters: 3.1, // Exact: 3.1m
         waterLevelTrend: "RISING_RAPID",
         rainfallRateMmPerHour: 98.0,
-        affectedPopulationEstimated: 3450,
-        confirmedEvacuated: 1100,
-        reportedStranded: 420,
+        affectedPopulationEstimated: 2180, // Exact: 2,180
+        confirmedEvacuated: 680,
+        reportedStranded: 340,
         criticalInfrastructureAtRisk: 9,
       },
-      blockedRoads: ["R1", "R2", "R3"],
+      blockedRoads: ["R1", "R2", "R3"], // Exact: R1, R2, R3 (R2 now blocked)
     };
     setIncident(escalatedIncident);
 
-    // Escalate zones: Zone B also becomes CRITICAL
+    // Escalate zones: Zone A is 3.1m, Zone B is 2.2m
     setZones((prev) =>
       prev.map((z) => {
         if (z.code === "Zone A") {
-          return { ...z, waterDepthMeters: 3.8, status: "SUBMERGED" };
+          return { ...z, waterDepthMeters: 3.1, populationEstimate: 2180, status: "SUBMERGED" };
         }
         if (z.code === "Zone B") {
           return {
             ...z,
             riskLevel: "CRITICAL",
-            waterDepthMeters: 2.6,
+            waterDepthMeters: 2.2,
             status: "SUBMERGED",
           };
         }
@@ -439,21 +443,31 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       })
     );
 
-    // Escalate roads: R1, R2, R3 blocked
+    // Escalate roads: R1, R2, R3 blocked; R4 clear
     setRoads((prev) =>
       prev.map((r) => {
-        if (r.code === "R1" || r.code === "R2" || r.code === "R3") {
-          return { ...r, status: "SUBMERGED", isBlocked: true, waterDepthCm: 280 };
+        if (r.code === "R1") {
+          return { ...r, status: "SUBMERGED", isBlocked: true, waterDepthCm: 310 };
+        }
+        if (r.code === "R2") {
+          return { ...r, status: "SUBMERGED", isBlocked: true, waterDepthCm: 185 };
+        }
+        if (r.code === "R3") {
+          return { ...r, status: "SUBMERGED", isBlocked: true, waterDepthCm: 220 };
+        }
+        if (r.code === "R4") {
+          return { ...r, status: "CLEAR", isBlocked: false, waterDepthCm: 0 };
         }
         return r;
       })
     );
 
-    // Re-allocate resources during escalation:
-    // Escalation recommendation: 6 Ambulances, 3 Rescue Teams, 2 Drones
-    const escalatedRecommended = calculateRecommendedAllocation(escalatedIncident, {
-      isEscalated: true,
-    });
+    // Escalated Resource Allocation: Exact prompt requirement (4 ambulances, 3 rescue teams, 2 drones)
+    const escalatedRecommended: ResourceAllocation = {
+      ambulances: 4,
+      rescueTeams: 3,
+      drones: 2,
+    };
     const escalatedAlloc = allocateResources(
       resourceAllocationState.available,
       escalatedRecommended,
@@ -471,31 +485,99 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       syncFleetStatuses(ambulances, rescueTeams, prev, escalatedAlloc.assigned).updatedDrones
     );
 
-    // Timeline event
-    const escalationEvent: TimelineEvent = {
-      id: `evt-esc-${Date.now()}`,
-      incidentId: escalatedIncident.id,
-      timestamp: new Date().toISOString(),
-      title: "Critical Escalation: Sluice Gate 7 Collapse",
-      description:
-        "Surge water level reached 3.8m in Zone A and breached Zone B. Roads R1, R2, and R3 blocked. Stranded count increased to 420.",
-      category: "ESCALATION",
-      severity: "CRITICAL",
-      authorOrSystem: "Hydro-Gauge Sensor Sentinel",
-    };
+    // REQUIRED EXACT TIMELINE ENTRIES
+    const requiredTimelineEvents: TimelineEvent[] = [
+      {
+        id: `evt-esc-1-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 1000).toISOString(),
+        title: "Flood conditions escalated.",
+        description:
+          "Sluice gate spillover intensified; catchment discharge elevated to high danger threshold.",
+        category: "ESCALATION",
+        severity: "CRITICAL",
+        authorOrSystem: "Hydro-Sensor Sentinel Network",
+      },
+      {
+        id: `evt-esc-2-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 2000).toISOString(),
+        title: "Water level increased from 2.4m to 3.1m.",
+        description:
+          "River basin crest exceeded 3.1 meters. 2,180 residents in Zone A & B now in critical inundation zone.",
+        category: "ENVIRONMENTAL",
+        severity: "CRITICAL",
+        authorOrSystem: "Telemetry Node Adyar-4",
+      },
+      {
+        id: `evt-esc-3-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 3000).toISOString(),
+        title: "Route R2 became blocked.",
+        description:
+          "Kotturpuram High Bypass (R2) submerged by 185cm flash flood surge. Traffic impassable.",
+        category: "HAZARD",
+        severity: "CRITICAL",
+        authorOrSystem: "Traffic Transit Monitoring",
+      },
+      {
+        id: `evt-esc-4-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 4000).toISOString(),
+        title: "Previous evacuation route invalidated.",
+        description:
+          "Primary evacuation corridor via Route R2 to Shelter B revoked due to active flooding.",
+        category: "DECISION",
+        severity: "WARNING",
+        authorOrSystem: "RESQNET Route Safety Guard",
+      },
+      {
+        id: `evt-esc-5-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 5000).toISOString(),
+        title: "Response plan recalculated.",
+        description:
+          "Adaptive response engine executed dynamic multi-criteria rerouting with updated risk parameters.",
+        category: "AI_DECISION",
+        severity: "INFO",
+        authorOrSystem: "RESQNET Adaptive Response Engine",
+      },
+      {
+        id: `evt-esc-6-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 6000).toISOString(),
+        title: "New evacuation route R4 selected.",
+        description:
+          "Elevated Highland Arterial R4 selected as sole safe passage, terminating at Shelter C (Capacity: 1,500).",
+        category: "DECISION",
+        severity: "INFO",
+        authorOrSystem: "GIS Routing Engine",
+      },
+      {
+        id: `evt-esc-7-${baseTime}`,
+        incidentId: escalatedIncident.id,
+        timestamp: new Date(baseTime + 7000).toISOString(),
+        title: "Additional resources requested.",
+        description:
+          "Resource requirement increased to 4 Ambulances (+2), 3 Rescue Teams (+1), and 2 UAVs (+1). Strike units mobilized.",
+        category: "RESOURCE",
+        severity: "CRITICAL",
+        authorOrSystem: "Incident Commander R. Menon",
+      },
+    ];
 
-    const allocEvent = createAllocationTimelineEvent(
-      escalatedAlloc,
-      escalatedIncident.id,
-      "Escalation Dispatch: Mobilized 6 Ambulances (READY), 3 Rescue Teams (DEPLOYING), 2 Drones (MISSION CREATED)."
-    );
-    setTimeline((prev) => [escalationEvent, allocEvent, ...prev]);
+    setTimeline((prev) => [...requiredTimelineEvents, ...prev]);
 
-    // Run Escalated Incident through Response Plan
-    const instantEscalatedPlan = generateResponsePlan(escalatedIncident);
+    // Recalculate Response Plan adaptively
+    const recalculatedPlan = generateResponsePlan(escalatedIncident);
     setPlan({
-      ...instantEscalatedPlan,
+      ...recalculatedPlan,
       resourceAllocation: escalatedAlloc.assigned,
+      evacuationRoute: "R4",
+      targetShelter: "Shelter C",
+      approvalRequired: true,
+      status: "AWAITING_APPROVAL",
+      humanApproved: false,
     });
 
     // Query Gemini Situation Analysis for Escalated scenario
@@ -506,18 +588,27 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       id: `alt-esc-${Date.now()}`,
       incidentId: escalatedIncident.id,
       code: "ALT-SURGE-GATE-7",
-      title: "Catastrophic 3.8m Flood Surge in Zone A",
+      title: "Catastrophic 3.1m Flood Surge — Route R2 Inundated",
       message:
-        "Emergency Directive: Roads R1, R2, and R3 are impassable. Route all medical units to Elevated Arterial R4.",
+        "Emergency Directive: Roads R1, R2, and R3 are impassable. All evacuation convoys diverted to Route R4 Highland Arterial toward Shelter C.",
       severity: "CRITICAL",
       timestamp: new Date().toISOString(),
       source: "DAM_AUTHORITY",
       zoneId: "zone-a",
       acknowledged: false,
-      actionableStep: "Order emergency air-drops and deploy boat squads to Zone B",
+      actionableStep: "Evacuate via Route R4 Highland Pass to Shelter C",
     };
     setAlerts((prev) => [newAlert, ...prev]);
     setUnreadAlertCount((c) => c + 1);
+
+    // Notification Toast for Escalation
+    setNotification({
+      type: "warning",
+      title: "ADAPTIVE ESCALATION: ROUTE R2 BLOCKED",
+      message:
+        "Water level 3.1m. Route R2 blocked. Recalculated to Route R4 → Shelter C. Allocation: 4 Amb, 3 Rescue, 2 Drones.",
+      timestamp: new Date().toISOString(),
+    });
 
     // Trigger n8n Workflow Orchestration Layer for critical escalation
     triggerAutomationWorkflow("TRIGGER_FULL_ORCHESTRATION");
@@ -580,13 +671,22 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }));
 
     // 2. Add detailed timeline event
+    const isEscalatedPlan = plan.evacuationRoute === "R4" || simulationStage === "ESCALATED";
+    const routeText = isEscalatedPlan ? "Route R4 → Shelter C" : "Route R2 → Shelter B";
+    const popText = (incident.metrics?.affectedPopulationEstimated || (isEscalatedPlan ? 2180 : 1240)).toLocaleString();
+    const assigned = resourceAllocationState.assigned;
+    const ambCount = assigned.ambulances || (isEscalatedPlan ? 4 : 2);
+    const resCount = assigned.rescueTeams || (isEscalatedPlan ? 3 : 2);
+    const uavCount = assigned.drones || (isEscalatedPlan ? 2 : 1);
+
     const approvalEvent: TimelineEvent = {
       id: `evt-appr-${Date.now()}`,
       incidentId: incident.id,
       timestamp: now,
-      title: "Critical Response Plan Authorized by Incident Commander",
-      description:
-        "Commander R. Menon granted clearance for: Evacuate Zone A (1,240 pop) via Route R2 → Shelter B. Mobilizing 2 Ambulances, 2 Rescue Teams, 1 UAV. Automated n8n dispatch workflow armed.",
+      title: isEscalatedPlan
+        ? "Escalated Response Plan Authorized by Incident Commander"
+        : "Critical Response Plan Authorized by Incident Commander",
+      description: `Commander R. Menon granted clearance for: Evacuate Zone A & B (${popText} pop) via ${routeText}. Mobilizing ${ambCount} Ambulances, ${resCount} Rescue Teams, ${uavCount} UAV${uavCount > 1 ? "s" : ""}. Automated n8n dispatch workflow armed.`,
       category: "DECISION",
       severity: "CRITICAL",
       authorOrSystem: "Incident Commander R. Menon",
@@ -596,10 +696,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     // 3. Trigger n8n Critical Response approval workflow
     triggerAutomationWorkflow("APPROVE_CRITICAL_RESPONSE");
 
-    // 4. Update resource statuses (Ambulances to EN_ROUTE, Rescue Teams to ON_MISSION, Drone to AIRBORNE_PATROL)
+    // 4. Update resource statuses based on dynamically allocated count
     setAmbulances((prev) =>
       prev.map((amb, idx) => {
-        if (idx < 2) {
+        if (idx < ambCount) {
           return {
             ...amb,
             status: "EN_ROUTE",
@@ -612,7 +712,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     setRescueTeams((prev) =>
       prev.map((team, idx) => {
-        if (idx < 2) {
+        if (idx < resCount) {
           return {
             ...team,
             status: "ON_MISSION",
@@ -625,11 +725,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     setDrones((prev) =>
       prev.map((drone, idx) => {
-        if (idx === 0) {
+        if (idx < uavCount) {
           return {
             ...drone,
             flightStatus: "AIRBORNE_PATROL",
-            altitudeMeters: 45,
+            altitudeMeters: 45 + idx * 10,
             groundSpeedKmH: 38.5,
             telemetryLinkStrength: 98,
           };
@@ -641,9 +741,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     // 5. Show success notification
     setNotification({
       type: "success",
-      title: "CRITICAL ACTION AUTHORIZED",
-      message:
-        "Evacuation of Zone A via R2 → Shelter B approved. Dispatched 2 Ambulances, 2 Rescue Teams, 1 Drone. n8n workflow triggered.",
+      title: isEscalatedPlan
+        ? "ESCALATED ACTION AUTHORIZED & DISPATCHED"
+        : "CRITICAL ACTION AUTHORIZED & DISPATCHED",
+      message: `Evacuation corridor ${routeText} cleared. ${ambCount} Ambulances, ${resCount} Rescue Teams, and ${uavCount} Drones active. Automated n8n execution triggered.`,
       timestamp: now,
     });
   };

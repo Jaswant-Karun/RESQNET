@@ -370,66 +370,103 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
         `);
       });
 
-      // EVACUATION ROUTE HIGHLIGHTS
-      plan.evacuationRoutes.forEach((route) => {
-        const routeCoords: L.LatLngTuple[] = [
-          [13.0135, 80.2312], // Zone A
-          [13.0075, 80.2065], // Road R4 Elevated
-          [12.9972, 80.1975], // Shelter C
-        ];
+      // ADAPTIVE EVACUATION CORRIDOR LOGIC (BASELINE: R2 -> SHELTER B, ESCALATED: R4 -> SHELTER C)
+      const isEscalatedMode =
+        plan.evacuationRoute === "R4" ||
+        simulationStage === "ESCALATED" ||
+        incident.blockedRoads?.includes("R2");
 
-        L.polyline(routeCoords, {
-          color: "#34d399",
-          weight: 4,
-          opacity: 0.85,
-          dashArray: "8, 8",
+      const activeRouteCoords: L.LatLngTuple[] = isEscalatedMode
+        ? [
+            [13.0135, 80.2312], // Zone A Center
+            [13.0075, 80.2065], // Road R4 Elevated Bypass
+            [12.9972, 80.1975], // Shelter C (Alandur Indoor Sports Complex)
+          ]
+        : [
+            [13.0135, 80.2312], // Zone A Center
+            [13.0182, 80.2195], // Road R2 Highland Junction
+            [13.0245, 80.2120], // Shelter B (Guindy Safe Haven)
+          ];
+
+      const activeRouteLabel = isEscalatedMode
+        ? "ADAPTIVE CORRIDOR: Route R4 → Shelter C (Safe Elevated Bypass)"
+        : "RECOMMENDED CORRIDOR: Route R2 → Shelter B (Dry Passage)";
+
+      const targetShelterCoord: L.LatLngTuple = isEscalatedMode
+        ? [12.9972, 80.1975] // Shelter C
+        : [13.0245, 80.2120]; // Shelter B
+
+      const targetShelterTitle = isEscalatedMode
+        ? "EVACUATION TARGET: SHELTER C (CAP: 1,500)"
+        : "EVACUATION TARGET: SHELTER B (CAP: 700)";
+
+      // 1. Recommended Corridor dashed path
+      L.polyline(activeRouteCoords, {
+        color: isEscalatedMode ? "#10b981" : "#34d399",
+        weight: 4,
+        opacity: 0.85,
+        dashArray: "8, 8",
+      })
+        .bindTooltip(activeRouteLabel, {
+          direction: "center",
+          className: "leaflet-tooltip-dark",
         })
-          .bindTooltip(`Evacuation Corridor: ${route.routeName}`, {
-            direction: "center",
-            className: "leaflet-tooltip-dark",
-          })
-          .addTo(lg);
-      });
+        .addTo(lg);
 
-      // WHEN OPERATOR APPROVES: RENDER HIGH-VISIBILITY ACTIVE EVACUATION CORRIDOR (R2 -> Shelter B)
+      // 2. High-visibility indicator for Route R2 blockage when escalated
+      if (isEscalatedMode) {
+        const r2BlockedIcon = createMarkerIcon(
+          "#450a0a",
+          "#ef4444",
+          "#fecaca",
+          "⚠",
+          "ROUTE R2 BLOCKED (SUBMERGED 1.85m)",
+          true
+        );
+        const r2Marker = L.marker([13.0182, 80.2195], { icon: r2BlockedIcon }).addTo(lg);
+        r2Marker.bindPopup(`
+          <div style="padding: 10px; font-family: monospace; font-size: 11px;">
+            <div style="font-weight: bold; color: #ef4444; margin-bottom: 4px;">⚠ ROUTE R2 SUBMERGED & BLOCKED</div>
+            <div style="color: #cbd5e1;">Water Depth: 185 cm</div>
+            <div style="color: #f87171; font-weight: bold;">Status: PREVIOUS ROUTE INVALIDATED</div>
+            <div style="color: #34d399; margin-top: 4px;">Recalculated Detour: Route R4 Highland Bypass → Shelter C</div>
+          </div>
+        `);
+      }
+
+      // 3. WHEN OPERATOR APPROVES: RENDER HIGH-VISIBILITY AUTHORIZED CORRIDOR
       if (isActionApproved) {
-        const approvedRouteCoords: L.LatLngTuple[] = [
-          [13.0135, 80.2312], // Zone A Center
-          [13.0182, 80.2195], // Road R2 Highland Junction
-          [13.0245, 80.2120], // Shelter B (Primary Safe Haven)
-        ];
-
         // Outer glow polyline
-        L.polyline(approvedRouteCoords, {
+        L.polyline(activeRouteCoords, {
           color: "#10b981",
-          weight: 8,
-          opacity: 0.4,
+          weight: 9,
+          opacity: 0.45,
         }).addTo(lg);
 
         // Core pulsating route
-        L.polyline(approvedRouteCoords, {
+        L.polyline(activeRouteCoords, {
           color: "#34d399",
           weight: 5,
           opacity: 0.95,
           dashArray: "10, 10",
         })
-          .bindTooltip("OPERATOR AUTHORIZED: Active Evacuation Corridor (R2 → Shelter B)", {
+          .bindTooltip(`OPERATOR AUTHORIZED: ${isEscalatedMode ? "Escalated Corridor (R4 → Shelter C)" : "Active Corridor (R2 → Shelter B)"}`, {
             permanent: true,
             direction: "top",
             className: "leaflet-tooltip-dark",
           })
           .addTo(lg);
 
-        // Destination Marker at Shelter B
+        // Destination Marker at Target Shelter
         const destinationIcon = createMarkerIcon(
           "#064e3b",
           "#10b981",
           "#ecfdf5",
           "✓",
-          "EVACUATION TARGET: SHELTER B",
+          targetShelterTitle,
           true
         );
-        L.marker([13.0245, 80.2120], { icon: destinationIcon }).addTo(lg);
+        L.marker(targetShelterCoord, { icon: destinationIcon }).addTo(lg);
       }
     }
   }, [

@@ -12,6 +12,7 @@ import { AlertCircle, AlertTriangle, Droplets, MapPin, Users } from "lucide-reac
 import { ResourceAllocationPanel } from "@/components/dashboard/ResourceAllocationPanel";
 import { WorkflowOrchestrationPanel } from "@/components/dashboard/WorkflowOrchestrationPanel";
 import { EmergencyApprovalPanel } from "@/components/dashboard/EmergencyApprovalPanel";
+import { EscalationComparisonPanel } from "@/components/dashboard/EscalationComparisonPanel";
 import { TacticalNotificationToast } from "@/components/dashboard/TacticalNotificationToast";
 
 export function OverviewView() {
@@ -22,11 +23,14 @@ export function OverviewView() {
       {/* 1. Tactical Simulation Control Strip (with SIMULATE FLOOD & SIMULATE ESCALATION) */}
       <SimulationControls />
 
-      {/* 2. Top KPI Cards */}
-      <TopKpiCards />
+      {/* 2. ADAPTIVE ESCALATION: BEFORE vs AFTER COMPARISON PANEL */}
+      <EscalationComparisonPanel />
 
       {/* 3. EMERGENCY APPROVAL PANEL (MANDATORY HUMAN-IN-THE-LOOP SAFEGUARD) */}
       <EmergencyApprovalPanel />
+
+      {/* 4. Top KPI Cards */}
+      <TopKpiCards />
 
       {/* 4. Main Center/Right Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
