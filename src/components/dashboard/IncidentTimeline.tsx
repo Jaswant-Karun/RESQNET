@@ -423,7 +423,7 @@ export function IncidentTimeline() {
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[10px] font-mono">
-                        <span className="text-slate-300 font-bold flex items-center gap-1">
+                        <span className="text-slate-300 font-bold flex items-center gap-1" suppressHydrationWarning>
                           <Clock className="h-3 w-3 text-slate-500" />
                           {exactTime}
                         </span>
