@@ -257,6 +257,23 @@ export function OverviewView() {
         <IncidentTimeline />
       </section>
 
+      {/* ========================================================
+          SECTION 9: SYSTEM RESILIENCE & FAILURE RECOVERY
+          Answers: Full failure-handling pass & external service fallback testing
+      ======================================================== */}
+      <section className="space-y-3.5">
+        <SectionHeader
+          number="SECTION 09"
+          title="SYSTEM RESILIENCE & FAILURE RECOVERY"
+          badgeText="ZERO-CRASH TOLERANCE"
+          badgeColor="emerald"
+          icon={ShieldCheck}
+          description="Interactive verification of all 9 external service failure cases and deterministic fallbacks"
+        />
+
+        <ResilienceTestingPanel />
+      </section>
+
       {/* Global Tactical Toast */}
       <TacticalNotificationToast />
     </div>
