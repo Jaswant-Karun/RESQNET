@@ -1316,12 +1316,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         aiStatusMessage,
         simulateApiFailure,
         setSimulateApiFailure,
+        triggerAiAnalysisWithTestCase,
         workflowState,
         isTriggeringAutomation,
+        simulateN8nFailure,
+        setSimulateN8nFailure,
         triggerAutomationWorkflow,
         approveCriticalResponseWorkflow,
         dispatchDroneWorkflow,
         approveEmergencyAlertWorkflow,
+        simulateTileError,
+        setSimulateTileError,
+        activeResilienceTest,
+        triggerResilienceTest,
+        resetAllResilienceTests,
       }}
     >
       {children}
