@@ -276,9 +276,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Gemini Integration States
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
   const [aiStatusMessage, setAiStatusMessage] = useState<string>(
-    "AI service unavailable — emergency fallback activated."
+    "AI service unavailable — fallback decision engine active."
   );
   const [simulateApiFailure, setSimulateApiFailure] = useState<boolean>(false);
+
+  // Resilience & Failure Testing States
+  const [simulateN8nFailure, setSimulateN8nFailure] = useState<boolean>(false);
+  const [simulateTileError, setSimulateTileError] = useState<boolean>(false);
+  const [activeResilienceTest, setActiveResilienceTest] = useState<string | null>(null);
 
   // n8n Workflow Orchestration Layer States
   const [workflowState, setWorkflowState] = useState<WorkflowOrchestrationState>({
