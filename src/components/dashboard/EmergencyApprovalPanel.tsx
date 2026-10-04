@@ -106,17 +106,17 @@ export function EmergencyApprovalPanel() {
             {/* TIER 1: AI RECOMMENDATION */}
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-indigo-950/50 border border-indigo-500/40 text-indigo-300">
               <Bot className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-              <span className="font-semibold">1. AI RECOMMENDATION</span>
-              <span className="text-[9px] text-indigo-400/80 bg-indigo-900/60 px-1 py-0.2 rounded">
+              <span className="font-semibold text-xs">AI Recommendation</span>
+              <span className="text-[9px] text-indigo-400/80 bg-indigo-900/60 px-1 py-0.2 rounded font-mono">
                 Gemini
               </span>
             </div>
 
             <ArrowRight className="h-3 w-3 text-slate-600 hidden sm:inline" />
 
-            {/* TIER 2: HUMAN APPROVAL (HITL GATE) */}
+            {/* TIER 2: HUMAN APPROVAL */}
             <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded border font-semibold ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded border font-semibold text-xs ${
                 isActionApproved
                   ? "bg-emerald-950/60 border-emerald-500/50 text-emerald-300"
                   : isActionRejected
@@ -125,9 +125,9 @@ export function EmergencyApprovalPanel() {
               }`}
             >
               <Lock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span>2. HUMAN APPROVAL (HITL)</span>
+              <span>Human Approval</span>
               <span
-                className={`text-[9px] px-1 py-0.2 rounded font-bold ${
+                className={`text-[9px] px-1 py-0.2 rounded font-bold font-mono ${
                   isActionApproved
                     ? "bg-emerald-900/70 text-emerald-200"
                     : isActionRejected
@@ -139,24 +139,24 @@ export function EmergencyApprovalPanel() {
                   ? "CLEARED"
                   : isActionRejected
                   ? "REJECTED"
-                  : "MANDATORY GATE"}
+                  : "REQUIRED"}
               </span>
             </div>
 
             <ArrowRight className="h-3 w-3 text-slate-600 hidden sm:inline" />
 
-            {/* TIER 3: AUTOMATED EXECUTION */}
+            {/* TIER 3: AUTOMATED WORKFLOW */}
             <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded border font-semibold ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded border font-semibold text-xs ${
                 isActionApproved
                   ? "bg-emerald-950/50 border-emerald-500/40 text-emerald-300"
                   : "bg-slate-900/60 border-slate-700/50 text-slate-500"
               }`}
             >
               <GitBranch className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-              <span>3. AUTOMATED EXECUTION</span>
-              <span className="text-[9px] bg-slate-800 px-1 py-0.2 rounded text-slate-300">
-                n8n Live
+              <span>Automated Workflow</span>
+              <span className="text-[9px] bg-slate-800 px-1 py-0.2 rounded text-slate-300 font-mono">
+                n8n
               </span>
             </div>
           </div>
@@ -194,7 +194,7 @@ export function EmergencyApprovalPanel() {
                   </span>
                 </div>
                 <CardTitle className="text-base sm:text-lg font-black tracking-wide text-white uppercase mt-0.5 flex items-center gap-2">
-                  CRITICAL ACTION REQUIRES APPROVAL
+                  CRITICAL ACTION REQUIRES HUMAN APPROVAL
                 </CardTitle>
               </div>
             </div>
@@ -286,7 +286,7 @@ export function EmergencyApprovalPanel() {
             <div className="p-3.5 rounded-lg border border-slate-800/90 bg-slate-900/60 flex flex-col justify-between">
               <span className="text-[10px] font-mono uppercase text-slate-400 font-bold flex items-center gap-1.5">
                 <Ambulance className="h-3.5 w-3.5 text-cyan-400" />
-                Resources:
+                Resource Allocation:
               </span>
               <div className="mt-1 space-y-0.5 text-xs font-mono font-bold text-slate-200">
                 <div className="text-cyan-300">• {ambulanceCount} ambulances</div>
