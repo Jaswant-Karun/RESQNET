@@ -68,6 +68,7 @@ export interface ResponsePlan {
   immediateActions: string[];
   resourceAllocation: ResourceAllocation;
   evacuationRoute: string;
+  targetShelter?: string;
   publicAlert: string;
   explanation: string;
   approvalRequired: boolean;
