@@ -177,7 +177,7 @@ export function ResourceAllocationPanel({
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-xs sm:text-sm font-mono tracking-wider text-slate-100 uppercase">
-                  Intelligent Resource Allocation
+                  RESOURCE ALLOCATION & FLEET STATUS
                 </CardTitle>
                 <Badge
                   variant={simulationStage === "ESCALATED" ? "critical" : "info"}
