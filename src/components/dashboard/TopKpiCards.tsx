@@ -55,7 +55,7 @@ export function TopKpiCards() {
         <CardContent className="p-3.5 flex flex-col justify-between h-full">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] uppercase font-mono font-medium tracking-wider">
-              Active Incidents
+              Simulated Incident
             </span>
             <AlertOctagon className="h-4 w-4 text-red-500" />
           </div>
