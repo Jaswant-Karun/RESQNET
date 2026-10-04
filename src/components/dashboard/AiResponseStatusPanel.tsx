@@ -344,7 +344,7 @@ export function AiResponseStatusPanel() {
               Approval Status
             </span>
             <Badge
-              variant={isActionApproved ? "success" : isActionRejected ? "destructive" : "warning"}
+              variant={isActionApproved ? "success" : isActionRejected ? "critical" : "warning"}
               pulse={!isActionApproved && !isActionRejected && approvalRequired}
             >
               {isActionApproved

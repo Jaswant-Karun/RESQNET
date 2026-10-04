@@ -596,14 +596,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     // 3. Trigger n8n Critical Response approval workflow
     triggerAutomationWorkflow("APPROVE_CRITICAL_RESPONSE");
 
-    // 4. Update resource statuses (Ambulances to DISPATCHED, Rescue Teams to DEPLOYED, Drone to AIRBORNE_PATROL)
+    // 4. Update resource statuses (Ambulances to EN_ROUTE, Rescue Teams to ON_MISSION, Drone to AIRBORNE_PATROL)
     setAmbulances((prev) =>
       prev.map((amb, idx) => {
         if (idx < 2) {
           return {
             ...amb,
-            status: "DISPATCHED",
-            statusColor: "#3b82f6",
+            status: "EN_ROUTE",
+            tacticalStatus: "DEPLOYING",
           };
         }
         return amb;
@@ -615,8 +615,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         if (idx < 2) {
           return {
             ...team,
-            status: "DEPLOYED",
-            statusColor: "#10b981",
+            status: "ON_MISSION",
+            tacticalStatus: "DEPLOYING",
           };
         }
         return team;
