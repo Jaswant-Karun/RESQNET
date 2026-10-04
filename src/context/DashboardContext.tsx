@@ -67,6 +67,16 @@ interface DashboardContextType {
   timeline: TimelineEvent[];
   approveAction: () => void;
   isActionApproved: boolean;
+  rejectAction: (reason?: string) => void;
+  isActionRejected: boolean;
+  rejectionReason: string | null;
+  notification: {
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+    timestamp: string;
+  } | null;
+  dismissNotification: () => void;
   selectedZone: Zone | null;
   setSelectedZone: (zone: Zone | null) => void;
   unreadAlertCount: number;
@@ -154,6 +164,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [plan, setPlan] = useState<ResponsePlan>(initialPlan);
   const [alerts, setAlerts] = useState<Alert[]>(MOCK_ALERTS);
   const [isActionApproved, setIsActionApproved] = useState<boolean>(false);
+  const [isActionRejected, setIsActionRejected] = useState<boolean>(false);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+    timestamp: string;
+  } | null>(null);
+  const dismissNotification = () => setNotification(null);
   const [selectedZone, setSelectedZone] = useState<Zone | null>(initialScenario.zones[0]);
   const [unreadAlertCount, setUnreadAlertCount] = useState<number>(3);
 

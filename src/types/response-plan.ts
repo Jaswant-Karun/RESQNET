@@ -52,6 +52,9 @@ export interface ResponsePlan {
   humanApproved: boolean;
   approvedBy?: string;
   approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
   status: PlanStatus;
   primaryObjectives: string[];
   actions: TacticalAction[];
