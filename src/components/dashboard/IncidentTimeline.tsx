@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { TimelineCategory, TimelineEvent } from "@/types";
 import { formatTimelineTime, formatRelativeTime, CATEGORY_STYLES } from "@/lib/eventService";
@@ -43,6 +43,11 @@ const REQUIRED_CATEGORIES: { id: TimelineCategory; label: string; icon: React.El
 
 export function IncidentTimeline() {
   const { timeline, addTimelineEvent, incident } = useDashboard();
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
