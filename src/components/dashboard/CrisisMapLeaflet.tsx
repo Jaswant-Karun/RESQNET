@@ -499,12 +499,37 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
   ]);
 
   return (
-    <div
-      ref={mapContainerRef}
-      className={`w-full h-full relative z-0 ${
-        activeViewMode === "THERMAL_IR" ? "contrast-125 saturate-150" : ""
-      }`}
-      style={{ minHeight: "480px" }}
-    />
+    <div className="w-full h-full relative z-0 min-h-[480px]">
+      {/* Map Tile Unavailable System Status Banner */}
+      {isTileUnavailable && (
+        <div className="absolute top-3 left-3 right-3 sm:right-auto z-[500] flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-950/95 border border-amber-500/80 text-amber-300 text-xs font-mono shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-300">
+          <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 animate-bounce" />
+          <div>
+            <div className="font-bold flex items-center gap-1.5">
+              <span>External service unavailable — local emergency simulation continues.</span>
+            </div>
+            <div className="text-[10px] text-amber-400/80 font-normal">
+              Map tiles offline • Tactical vector grid and evacuation telemetry active
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leaflet Map Div with Fallback Tactical Coordinate Grid */}
+      <div
+        ref={mapContainerRef}
+        className={`w-full h-full ${
+          isTileUnavailable ? "tactical-fallback-grid" : ""
+        } ${activeViewMode === "THERMAL_IR" ? "contrast-125 saturate-150" : ""}`}
+        style={{
+          minHeight: "480px",
+          backgroundColor: isTileUnavailable ? "#070c18" : "#080d1a",
+          backgroundImage: isTileUnavailable
+            ? "radial-gradient(#1e293b 1px, transparent 1px), linear-gradient(to right, rgba(30, 41, 59, 0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(30, 41, 59, 0.4) 1px, transparent 1px)"
+            : undefined,
+          backgroundSize: isTileUnavailable ? "24px 24px, 48px 48px, 48px 48px" : undefined,
+        }}
+      />
+    </div>
   );
 }
