@@ -13,6 +13,7 @@ import { EscalationComparisonPanel } from "@/components/dashboard/EscalationComp
 import { ResourceAllocationPanel } from "@/components/dashboard/ResourceAllocationPanel";
 import { WorkflowOrchestrationPanel } from "@/components/dashboard/WorkflowOrchestrationPanel";
 import { IncidentTimeline } from "@/components/dashboard/IncidentTimeline";
+import { ResilienceTestingPanel } from "@/components/dashboard/ResilienceTestingPanel";
 import { TacticalNotificationToast } from "@/components/dashboard/TacticalNotificationToast";
 import { Badge } from "@/components/ui/badge";
 import {
