@@ -4,91 +4,250 @@
   "nodes": [
     {
       "parameters": {
+        "content": "## WORKFLOW 1: Incident Intake\n**1.** Webhook Trigger (`/webhook/resqnet-orchestrator`)\n**2.** Validate Incident Schema\n**3.** Create/Update Incident Context\n**4.** Analyze Severity & Risk\n**5.** Branch (CRITICAL vs Standard)",
+        "height": 380,
+        "width": 880,
+        "color": 4
+      },
+      "id": "sticky-w1",
+      "name": "Note: Workflow 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [80, 160]
+    },
+    {
+      "parameters": {
+        "content": "## WORKFLOW 2: Critical Response\n**1.** Check Severity\n**2.** Human Approval Checkpoint Gate\n**3.** Allocate Resources\n**4.** Trigger Mock Ambulance Workflow\n**5.** Trigger Mock Rescue Team Workflow",
+        "height": 380,
+        "width": 960,
+        "color": 6
+      },
+      "id": "sticky-w2",
+      "name": "Note: Workflow 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1020, 160]
+    },
+    {
+      "parameters": {
+        "content": "## WORKFLOW 3: Drone Deployment\n**1.** Check Available Drones\n**2.** Select Optimal Available UAV\n**3.** Create Recon Mission & Corridors\n**4.** Update Mission Telemetry to IN_FLIGHT",
+        "height": 380,
+        "width": 860,
+        "color": 5
+      },
+      "id": "sticky-w3",
+      "name": "Note: Workflow 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [80, 580]
+    },
+    {
+      "parameters": {
+        "content": "## WORKFLOW 4: Emergency Alert\n**1.** Generate CAP Emergency Alert\n**2.** Human Authorization Checkpoint\n**3.** Publish Simulated Broadcast\n**4.** Log Alert to Audit Ledger",
+        "height": 380,
+        "width": 960,
+        "color": 7
+      },
+      "id": "sticky-w4",
+      "name": "Note: Workflow 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1020, 580]
+    },
+    {
+      "parameters": {
         "httpMethod": "POST",
         "path": "resqnet-orchestrator",
         "responseMode": "responseNode",
         "options": {}
       },
       "id": "node-master-webhook",
-      "name": "RESQNET Webhook Trigger",
+      "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [140, 300],
+      "position": [120, 280],
       "webhookId": "resqnet-orchestrator"
     },
     {
       "parameters": {
-        "jsCode": "// WORKFLOW 1: Incident Intake - Validate\nconst raw = $input.first().json;\nconst payload = raw.body || raw;\nconst incident = payload.incident || {};\nconst responsePlan = payload.responsePlan || {};\nconst resources = payload.resources || { ambulances: [], rescueTeams: [], drones: [] };\nconst action = payload.action || 'TRIGGER_FULL_ORCHESTRATION';\n\nif (!incident.id || !incident.code) {\n  throw new Error('Incident validation failed: id or code missing.');\n}\n\nconst isCritical = incident.severity === 'CRITICAL' || incident.severity === 'HIGH';\n\nreturn [{\n  json: {\n    incident,\n    responsePlan,\n    resources,\n    action,\n    simulationMode: payload.simulationMode !== undefined ? payload.simulationMode : true,\n    intakeValidated: true,\n    isCritical,\n    intakeTimestamp: new Date().toISOString()\n  }\n}];"
+        "jsCode": "// W1 - Step 1: Validate Incident\nconst raw = $input.first().json;\nconst payload = raw.body || raw;\nconst incident = payload.incident || {};\n\nif (!incident.id && !incident.code) {\n  incident.id = 'inc-' + Date.now();\n}\nincident.code = incident.code || incident.id || 'INC-2026';\nincident.severity = incident.severity || 'CRITICAL';\n\nreturn [{\n  json: {\n    ...payload,\n    incident,\n    responsePlan: payload.responsePlan || {},\n    resources: payload.resources || { ambulances: [], rescueTeams: [], drones: [] },\n    action: payload.action || 'TRIGGER_FULL_ORCHESTRATION',\n    simulationMode: payload.simulationMode !== undefined ? payload.simulationMode : true,\n    validatedAt: new Date().toISOString(),\n    validationPassed: true\n  }\n}];"
       },
-      "id": "node-master-intake",
-      "name": "W1: Intake & Validate Incident",
+      "id": "node-w1-validate",
+      "name": "W1: Validate Incident",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [380, 300]
+      "position": [300, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W1 - Step 2: Create / Update Incident Context\nconst data = $input.first().json;\nconst inc = data.incident;\n\nconst incidentContext = {\n  incidentId: inc.id,\n  code: inc.code,\n  title: inc.title || 'Unclassified Event',\n  severity: inc.severity || 'CRITICAL',\n  status: inc.status || 'ACTIVE',\n  primaryLocation: inc.primaryLocation?.name || inc.location || 'Sector Alpha',\n  waterLevel: inc.metrics?.waterLevelMeters || 2.4,\n  affectedPopulation: inc.metrics?.affectedPopulationEstimated || 1200,\n  updatedAt: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...data,\n    incidentContext\n  }\n}];"
+      },
+      "id": "node-w1-create-update",
+      "name": "W1: Create/Update Incident",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W1 - Step 3: Analyze Severity\nconst data = $input.first().json;\nconst sev = (data.incidentContext.severity || 'MEDIUM').toUpperCase();\nconst isCritical = sev === 'CRITICAL' || sev === 'CATASTROPHIC' || sev === 'HIGH';\n\nreturn [{\n  json: {\n    ...data,\n    severityAnalysis: {\n      severity: sev,\n      isCritical,\n      requiresHumanApproval: isCritical,\n      escalationLevel: isCritical ? 'DEFCON_2_SEVERE' : 'DEFCON_4_NORMAL'\n    }\n  }\n}];"
+      },
+      "id": "node-w1-analyze",
+      "name": "W1: Analyze Severity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 280]
     },
     {
       "parameters": {
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ $json.isCritical }}",
+              "value1": "={{ $json.severityAnalysis.isCritical }}",
               "value2": true
             }
           ]
         }
       },
-      "id": "node-master-branch-crit",
-      "name": "W1: Branch on Severity",
+      "id": "node-w1-branch",
+      "name": "W1: Branch (Check Critical)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [620, 300]
+      "position": [840, 280]
     },
     {
       "parameters": {
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ $json.action === 'APPROVE_CRITICAL_RESPONSE' || $json.responsePlan?.humanApproved === true }}",
+              "value1": "={{ $json.action === 'APPROVE_CRITICAL_RESPONSE' || $json.responsePlan?.humanApproved === true || $json.humanApproved === true }}",
               "value2": true
             }
           ]
         }
       },
-      "id": "node-master-check-approval",
-      "name": "W2: Check Human Approval",
+      "id": "node-w2-approval-gate",
+      "name": "W2: If Approved (Human Gate)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [860, 220]
+      "position": [1080, 280]
     },
     {
       "parameters": {
-        "jsCode": "// W2: Allocate Resources & Trigger Mock Emergency Services\nconst data = $input.first().json;\nconst incident = data.incident;\nconst req = data.responsePlan?.resourceAllocation || { ambulances: 2, rescueTeams: 2, drones: 1 };\n\nconst allocated = {\n  incidentId: incident.id,\n  ambulances: req.ambulances || 2,\n  rescueTeams: req.rescueTeams || 2,\n  drones: req.drones || 1,\n  priorityZone: incident.primaryLocation?.name || 'Zone A',\n  approvedAt: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...data,\n    allocated,\n    criticalResponseApproved: true\n  }\n}];"
+        "jsCode": "// W2 - Step 2: Allocate Resources\nconst data = $input.first().json;\nconst req = data.responsePlan?.resourceAllocation || { ambulances: 2, rescueTeams: 2, drones: 1 };\n\nconst allocatedResources = {\n  incidentId: data.incident.id,\n  ambulancesAllocated: req.ambulances || 2,\n  rescueTeamsAllocated: req.rescueTeams || 2,\n  dronesAllocated: req.drones || 1,\n  priorityZone: data.incident.primaryLocation?.name || 'Zone A',\n  allocationApprovedAt: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...data,\n    allocatedResources,\n    isApproved: true\n  }\n}];"
       },
-      "id": "node-master-allocate",
+      "id": "node-w2-allocate",
       "name": "W2: Allocate Resources",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 140]
+      "position": [1280, 240]
     },
     {
       "parameters": {
-        "jsCode": "// W3: Drone Deployment Logic\nconst data = $input.first().json;\nconst targetZone = data.incident?.primaryLocation?.name || 'Zone A';\n\nconst isDeployAction = data.action === 'DEPLOY_DRONE' || data.criticalResponseApproved;\n\nconst droneStatus = isDeployAction ? 'IN_FLIGHT' : 'READY';\nconst droneMission = {\n  missionId: `MSN-DRONE-${Date.now().toString(36).toUpperCase()}`,\n  droneCallsign: 'UAV Echo-1',\n  model: 'Matrice 300 RTK',\n  targetZone,\n  flightStatus: droneStatus,\n  altitudeMeters: 45,\n  payload: 'Thermal FLIR + Floatation Vest Drop',\n  timestamp: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...data,\n    droneMission,\n    droneWorkflowStatus: droneStatus\n  }\n}];"
+        "jsCode": "// W2 - Step 3: Trigger Mock Ambulance Workflow\nconst data = $input.first().json;\n\nconst ambulanceDispatch = {\n  service: 'AMBULANCE_108_CAD',\n  unitsMobilized: data.allocatedResources.ambulancesAllocated,\n  destination: data.allocatedResources.priorityZone,\n  status: 'SIMULATED_DISPATCH',\n  dispatchTimestamp: new Date().toISOString(),\n  disclaimer: 'Mock Dispatch: Prototype demonstration. No real vehicles mobilized.'\n};\n\nreturn [{\n  json: {\n    ...data,\n    ambulanceDispatch\n  }\n}];"
       },
-      "id": "node-master-drone",
-      "name": "W3: Drone Mission Coordinator",
+      "id": "node-w2-ambulance",
+      "name": "W2: Trigger Ambulance Workflow",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1320, 140]
+      "position": [1480, 240]
     },
     {
       "parameters": {
-        "jsCode": "// W4: Emergency Alert Logic & Response Formatter\nconst data = $input.first().json;\nconst isAlertApproved = data.action === 'APPROVE_EMERGENCY_ALERT';\nconst emergencyAlertStatus = isAlertApproved ? 'SIMULATED' : 'PENDING APPROVAL';\nconst alertPayload = {\n  alertId: `CAP-${data.incident?.code || 'ALERT'}`,\n  headline: `URGENT FLOOD EVACUATION: ${data.incident?.primaryLocation?.name || 'Zone A'}`,\n  status: emergencyAlertStatus,\n  channel: 'SIMULATED_CELL_BROADCAST'\n};\n\nconst criticalStatus = data.criticalResponseApproved ? 'APPROVED' : 'WAITING FOR APPROVAL';\nconst droneStatus = data.droneWorkflowStatus || 'READY';\n\nconst response = {\n  success: true,\n  orchestrator: 'RUNNING',\n  incidentIntake: 'COMPLETED',\n  criticalResponse: criticalStatus,\n  droneWorkflow: droneStatus,\n  emergencyAlert: emergencyAlertStatus,\n  allocated: data.allocated || null,\n  droneMission: data.droneMission || null,\n  alertPayload,\n  logs: [\n    {\n      id: 'log-master-1',\n      timestamp: new Date().toISOString(),\n      workflow: 'Incident Intake',\n      status: 'SUCCESS',\n      message: 'Incident intake validated and categorized: ' + (data.incident?.code || 'ACTIVE')\n    },\n    {\n      id: 'log-master-2',\n      timestamp: new Date().toISOString(),\n      workflow: 'Critical Response',\n      status: data.criticalResponseApproved ? 'SUCCESS' : 'PENDING',\n      message: data.criticalResponseApproved ? 'Human approval verified. Dispatch orders queued to mock CAD.' : 'Human authorization safeguard armed. Awaiting commander sign-off.'\n    },\n    {\n      id: 'log-master-3',\n      timestamp: new Date().toISOString(),\n      workflow: 'Drone Deployment',\n      status: 'SUCCESS',\n      message: 'UAV Echo-1 status: ' + droneStatus\n    },\n    {\n      id: 'log-master-4',\n      timestamp: new Date().toISOString(),\n      workflow: 'Emergency Alert',\n      status: emergencyAlertStatus === 'SIMULATED' ? 'MOCK' : 'PENDING',\n      message: 'Emergency broadcast status: ' + emergencyAlertStatus\n    }\n  ],\n  disclaimer: 'PROTOTYPE DEMONSTRATION: External real emergency services are not connected. Dispatch actions are simulated via mock stubs.'\n};\n\nreturn [{ json: response }];"
+        "jsCode": "// W2 - Step 4: Trigger Mock Rescue Team Workflow\nconst data = $input.first().json;\n\nconst rescueTeamDispatch = {\n  service: 'SDRF_WATER_RESCUE',\n  teamsMobilized: data.allocatedResources.rescueTeamsAllocated,\n  boatSquads: 2,\n  destination: data.allocatedResources.priorityZone,\n  status: 'SIMULATED_DEPLOYMENT',\n  dispatchTimestamp: new Date().toISOString(),\n  disclaimer: 'Mock Dispatch: Prototype demonstration.'\n};\n\nreturn [{\n  json: {\n    ...data,\n    rescueTeamDispatch\n  }\n}];"
       },
-      "id": "node-master-alert",
-      "name": "W4: Emergency Alert Coordinator",
+      "id": "node-w2-rescue",
+      "name": "W2: Trigger Rescue Team Workflow",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1540, 140]
+      "position": [1680, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W3 - Step 1: Check Available Drones\nconst data = $input.first().json;\nconst drones = data.resources?.drones || [\n  { id: 'drone-101', callsign: 'UAV Echo-1', flightStatus: 'STANDBY_PAD', batteryPercentage: 94 },\n  { id: 'drone-102', callsign: 'UAV Talon-2', flightStatus: 'STANDBY_PAD', batteryPercentage: 88 }\n];\n\nconst availableDrones = drones.filter(d => (d.batteryPercentage || 90) > 30);\n\nreturn [{\n  json: {\n    ...data,\n    droneInventory: {\n      totalUnits: drones.length,\n      availableUnits: availableDrones\n    }\n  }\n}];"
+      },
+      "id": "node-w3-check-drones",
+      "name": "W3: Check Available Drones",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [140, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W3 - Step 2: Select Available Drone\nconst data = $input.first().json;\nconst available = data.droneInventory?.availableUnits || [];\n\nconst selectedDrone = available[0] || {\n  id: 'drone-101',\n  callsign: 'UAV Echo-1',\n  model: 'Matrice 300 RTK',\n  batteryPercentage: 94\n};\n\nreturn [{\n  json: {\n    ...data,\n    selectedDrone\n  }\n}];"
+      },
+      "id": "node-w3-select-drone",
+      "name": "W3: Select Available Drone",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W3 - Step 3: Create Mission\nconst data = $input.first().json;\nconst targetZone = data.incident?.primaryLocation?.name || 'Zone A';\n\nconst mission = {\n  missionId: `MSN-${Date.now().toString(36).toUpperCase()}`,\n  droneCallsign: data.selectedDrone?.callsign || 'UAV Echo-1',\n  targetZone,\n  flightPattern: 'PERIMETER_THERMAL_GRID',\n  altitudeMeters: 45,\n  payload: 'FLIR Thermal Recon + Floatation Vest Drop',\n  createdAt: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...data,\n    droneMission: mission\n  }\n}];"
+      },
+      "id": "node-w3-create-mission",
+      "name": "W3: Create Mission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [540, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W3 - Step 4: Update Mission Status\nconst data = $input.first().json;\nconst isDeploy = data.action === 'DEPLOY_DRONE' || data.isApproved;\n\nconst finalDroneStatus = isDeploy ? 'IN_FLIGHT' : 'READY';\n\nconst updatedMission = {\n  ...data.droneMission,\n  flightStatus: finalDroneStatus,\n  groundSpeedKmH: isDeploy ? 38.5 : 0,\n  telemetryActive: isDeploy\n};\n\nreturn [{\n  json: {\n    ...data,\n    droneMission: updatedMission,\n    droneWorkflowStatus: finalDroneStatus\n  }\n}];"
+      },
+      "id": "node-w3-update-status",
+      "name": "W3: Update Mission Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W4 - Step 1: Generate Emergency Alert\nconst data = $input.first().json;\nconst target = data.incident?.primaryLocation?.name || 'Zone A';\n\nconst alertDraft = {\n  alertId: `CAP-${data.incident?.code || 'ALERT'}`,\n  headline: `URGENT FLOOD ADVISORY: Evacuate ${target}`,\n  urgency: 'Immediate',\n  instruction: 'Move to elevated ground via Highland Arterial R4 immediately.',\n  protocol: 'COMMON_ALERTING_PROTOCOL_V1.2',\n  draftedAt: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...data,\n    alertDraft\n  }\n}];"
+      },
+      "id": "node-w4-generate-alert",
+      "name": "W4: Generate Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 700]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.action === 'APPROVE_EMERGENCY_ALERT' || $json.alertApproved === true }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-w4-approval-gate",
+      "name": "W4: Alert Approval Gate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1280, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W4 - Step 3: Publish / Simulate Alert\nconst data = $input.first().json;\n\nconst publishedBroadcast = {\n  ...data.alertDraft,\n  status: 'SIMULATED',\n  disseminationChannel: 'SIMULATED_CELL_BROADCAST_EAS',\n  broadcastTimestamp: new Date().toISOString(),\n  disclaimer: 'Mock Broadcast: Simulated emergency siren stubs.'\n};\n\nreturn [{\n  json: {\n    ...data,\n    publishedBroadcast,\n    emergencyAlertStatus: 'SIMULATED'\n  }\n}];"
+      },
+      "id": "node-w4-publish",
+      "name": "W4: Publish/Simulate Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1480, 640]
+    },
+    {
+      "parameters": {
+        "jsCode": "// W4 - Step 4: Log Alert & Consolidate Final State\nconst data = $input.first().json;\n\nconst alertStatus = data.emergencyAlertStatus || 'PENDING APPROVAL';\nconst criticalStatus = data.isApproved ? 'APPROVED' : 'WAITING FOR APPROVAL';\nconst droneStatus = data.droneWorkflowStatus || 'READY';\n\nconst logs = [\n  {\n    id: 'log-1-intake',\n    timestamp: new Date().toISOString(),\n    workflow: 'Incident Intake',\n    status: 'SUCCESS',\n    message: `[Workflow 1 Intake] Validated ${data.incident.code} (${data.incidentContext.severity}). Branched to Critical Response.`\n  },\n  {\n    id: 'log-2-critical',\n    timestamp: new Date().toISOString(),\n    workflow: 'Critical Response',\n    status: data.isApproved ? 'SUCCESS' : 'PENDING',\n    message: data.isApproved\n      ? `[Workflow 2 Critical] Commander clearance confirmed. Mobilized ${data.allocatedResources?.ambulancesAllocated || 2} ambulances & ${data.allocatedResources?.rescueTeamsAllocated || 2} boat teams.`\n      : '[Workflow 2 Critical] Human approval safeguard active. Awaiting EOC Commander signature.'\n  },\n  {\n    id: 'log-3-drone',\n    timestamp: new Date().toISOString(),\n    workflow: 'Drone Deployment',\n    status: 'SUCCESS',\n    message: `[Workflow 3 Drone] ${data.selectedDrone?.callsign || 'UAV Echo-1'} flight status: ${droneStatus} (Alt: 45m).`\n  },\n  {\n    id: 'log-4-alert',\n    timestamp: new Date().toISOString(),\n    workflow: 'Emergency Alert',\n    status: alertStatus === 'SIMULATED' ? 'MOCK' : 'PENDING',\n    message: `[Workflow 4 Alert] CAP Broadcast Status: ${alertStatus}.`\n  }\n];\n\nconst finalResponse = {\n  success: true,\n  orchestrator: 'RUNNING',\n  incidentIntake: 'COMPLETED',\n  criticalResponse: criticalStatus,\n  droneWorkflow: droneStatus,\n  emergencyAlert: alertStatus,\n  allocated: data.allocatedResources || null,\n  droneMission: data.droneMission || null,\n  alertPayload: data.publishedBroadcast || data.alertDraft || null,\n  logs,\n  disclaimer: 'PROTOTYPE DEMONSTRATION: External real emergency services are not connected. Dispatch actions are simulated via mock stubs.'\n};\n\nreturn [{ json: finalResponse }];"
+      },
+      "id": "node-consolidate-logs",
+      "name": "W4: Log Alert & Consolidate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1700, 640]
     },
     {
       "parameters": {
@@ -99,51 +258,73 @@
       "name": "Respond to RESQNET",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1780, 220]
+      "position": [1920, 640]
     }
   ],
   "connections": {
-    "RESQNET Webhook Trigger": {
+    "Webhook Trigger": {
       "main": [
         [
           {
-            "node": "W1: Intake & Validate Incident",
+            "node": "W1: Validate Incident",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "W1: Intake & Validate Incident": {
+    "W1: Validate Incident": {
       "main": [
         [
           {
-            "node": "W1: Branch on Severity",
+            "node": "W1: Create/Update Incident",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "W1: Branch on Severity": {
+    "W1: Create/Update Incident": {
       "main": [
         [
           {
-            "node": "W2: Check Human Approval",
+            "node": "W1: Analyze Severity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W1: Analyze Severity": {
+      "main": [
+        [
+          {
+            "node": "W1: Branch (Check Critical)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W1: Branch (Check Critical)": {
+      "main": [
+        [
+          {
+            "node": "W2: If Approved (Human Gate)",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Respond to RESQNET",
+            "node": "W3: Check Available Drones",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "W2: Check Human Approval": {
+    "W2: If Approved (Human Gate)": {
       "main": [
         [
           {
@@ -154,7 +335,7 @@
         ],
         [
           {
-            "node": "W3: Drone Mission Coordinator",
+            "node": "W3: Check Available Drones",
             "type": "main",
             "index": 0
           }
@@ -165,25 +346,120 @@
       "main": [
         [
           {
-            "node": "W3: Drone Mission Coordinator",
+            "node": "W2: Trigger Ambulance Workflow",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "W3: Drone Mission Coordinator": {
+    "W2: Trigger Ambulance Workflow": {
       "main": [
         [
           {
-            "node": "W4: Emergency Alert Coordinator",
+            "node": "W2: Trigger Rescue Team Workflow",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "W4: Emergency Alert Coordinator": {
+    "W2: Trigger Rescue Team Workflow": {
+      "main": [
+        [
+          {
+            "node": "W3: Check Available Drones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W3: Check Available Drones": {
+      "main": [
+        [
+          {
+            "node": "W3: Select Available Drone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W3: Select Available Drone": {
+      "main": [
+        [
+          {
+            "node": "W3: Create Mission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W3: Create Mission": {
+      "main": [
+        [
+          {
+            "node": "W3: Update Mission Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W3: Update Mission Status": {
+      "main": [
+        [
+          {
+            "node": "W4: Generate Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W4: Generate Alert": {
+      "main": [
+        [
+          {
+            "node": "W4: Alert Approval Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W4: Alert Approval Gate": {
+      "main": [
+        [
+          {
+            "node": "W4: Publish/Simulate Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "W4: Log Alert & Consolidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W4: Publish/Simulate Alert": {
+      "main": [
+        [
+          {
+            "node": "W4: Log Alert & Consolidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "W4: Log Alert & Consolidate": {
       "main": [
         [
           {
