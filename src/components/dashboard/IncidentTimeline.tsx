@@ -321,10 +321,10 @@ export function IncidentTimeline() {
                   <div className="w-[130px] sm:w-[150px] shrink-0 text-right pr-2 space-y-0.5">
                     <div className="text-xs sm:text-sm font-mono font-bold text-slate-100 tracking-wider flex items-center justify-end gap-1.5">
                       <Clock className="h-3 w-3 text-slate-500" />
-                      <span>{exactTime}</span>
+                      <span suppressHydrationWarning>{exactTime}</span>
                     </div>
-                    <div className="text-[10px] font-mono text-slate-500">
-                      {relTime || "IST"}
+                    <div className="text-[10px] font-mono text-slate-500" suppressHydrationWarning>
+                      {mounted ? (relTime || "IST") : "IST"}
                     </div>
                   </div>
 
