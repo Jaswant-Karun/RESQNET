@@ -6,7 +6,8 @@ export type PlanStatus =
   | "APPROVED_ACTIVE"
   | "EXECUTING"
   | "SUPERSEDED"
-  | "COMPLETED";
+  | "COMPLETED"
+  | "REJECTED";
 
 export interface TacticalAction {
   id: string;
