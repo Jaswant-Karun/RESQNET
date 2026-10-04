@@ -238,7 +238,7 @@ export function createAllocationTimelineEvent(
     timestamp: timestamp || new Date().toISOString(),
     title,
     description,
-    category: "DISPATCH",
+    category: "RESOURCE",
     severity: isCapped ? "WARNING" : "INFO",
     authorOrSystem: "RESQNET Intelligent Allocation Engine",
   };

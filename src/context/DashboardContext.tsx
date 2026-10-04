@@ -158,8 +158,92 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     initialScenario.incident.detectedAt
   );
 
+  const initialBaseTime = Date.now() - 45000;
+  const initialFloodEvents: TimelineEvent[] = [
+    {
+      id: `evt-fl-init-1`,
+      incidentId: initialScenario.incident.id,
+      timestamp: new Date(initialBaseTime).toISOString(),
+      title: "Flood simulation started",
+      description: "Hydro-sensor telemetry streams initiated across Adyar catchment basin. Continuous water depth monitoring active.",
+      category: "SYSTEM",
+      severity: "INFO",
+      authorOrSystem: "EOC Disaster Simulation Engine",
+    },
+    {
+      id: `evt-fl-init-2`,
+      incidentId: initialScenario.incident.id,
+      timestamp: new Date(initialBaseTime + 1000).toISOString(),
+      title: "Incident created",
+      description: "Disaster incident FL-902 categorized as active flood. Sensor Node-4 registered rapid crest increase.",
+      category: "DETECTION",
+      severity: "CRITICAL",
+      authorOrSystem: "Sensor Sentinel Grid Node-4",
+    },
+    {
+      id: `evt-fl-init-3`,
+      incidentId: initialScenario.incident.id,
+      timestamp: new Date(initialBaseTime + 2000).toISOString(),
+      title: "Risk analysis completed",
+      description: "Multi-criteria risk engine evaluated 1,240 civilians at risk. River basin overflow model verified.",
+      category: "ANALYSIS",
+      severity: "WARNING",
+      authorOrSystem: "Hydro-AI Risk Engine",
+    },
+    {
+      id: `evt-fl-init-4`,
+      incidentId: initialScenario.incident.id,
+      timestamp: new Date(initialBaseTime + 3000).toISOString(),
+      title: "Zone A classified as CRITICAL",
+      description: "Zone A water depth reached 2.4m, surpassing 2.0m danger threshold. Roads R1 and R3 impassable.",
+      category: "ANALYSIS",
+      severity: "CRITICAL",
+      authorOrSystem: "Autonomous Zone Classifier",
+    },
+    {
+      id: `evt-fl-init-5`,
+      incidentId: initialScenario.incident.id,
+      timestamp: new Date(initialBaseTime + 4000).toISOString(),
+      title: "Response plan generated",
+      description: "Designated evacuation corridor via Route R2 to Shelter B (Capacity: 700). High ground transit verified.",
+      category: "DECISION",
+      severity: "INFO",
+      authorOrSystem: "RESQNET Response Engine",
+    },
+    {
+      id: `evt-fl-init-6`,
+      incidentId: initialScenario.incident.id,
+      timestamp: new Date(initialBaseTime + 5000).toISOString(),
+      title: "Human approval requested",
+      description: "Mandatory human-in-the-loop clearance required: Evacuate Zone A (1,240 pop) via Route R2 → Shelter B.",
+      category: "APPROVAL",
+      severity: "WARNING",
+      authorOrSystem: "HITL Security Guardrail",
+    },
+    {
+      id: `evt-fl-init-7`,
+      incidentId: initialScenario.incident.id,
+      timestamp: new Date(initialBaseTime + 6000).toISOString(),
+      title: "Drone 01 mission created",
+      description: "UAV Echo-1 flight plan programmed: Corridor survey along Route R2 and Zone A perimeter recon.",
+      category: "RESOURCE",
+      severity: "INFO",
+      authorOrSystem: "Drone Fleet Command",
+    },
+    {
+      id: `evt-fl-init-8`,
+      incidentId: initialScenario.incident.id,
+      timestamp: new Date(initialBaseTime + 7000).toISOString(),
+      title: "2 ambulances assigned",
+      description: "Ambulances AMB-01 and AMB-02 pre-positioned at Station North for rapid medical extrication.",
+      category: "RESOURCE",
+      severity: "INFO",
+      authorOrSystem: "CAD 108 Dispatcher",
+    },
+  ];
+
   const [timeline, setTimeline] = useState<TimelineEvent[]>([
-    initialScenario.timelineEvent,
+    ...initialFloodEvents,
     initialAllocEvent,
     ...MOCK_TIMELINE_EVENTS,
   ]);
@@ -950,7 +1034,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       timestamp: now,
       title: "Critical Response Rejected by Operator",
       description: "Critical response rejected by operator. Simulated dispatch and evacuation aborted. Safeguard active.",
-      category: "DECISION",
+      category: "APPROVAL",
       severity: "WARNING",
       authorOrSystem: "Incident Commander / Operator",
     };
@@ -987,10 +1071,24 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         return d;
       })
     );
+    addTimelineEvent({
+      title: "Drone 01 mission created",
+      description: "UAV Echo-1 launched into AIRBORNE_PATROL over designated flood corridor.",
+      category: "RESOURCE",
+      severity: "INFO",
+      authorOrSystem: "Drone Flight Controller",
+    });
   };
 
   const approveEmergencyAlertWorkflow = async () => {
     await triggerAutomationWorkflow("APPROVE_EMERGENCY_ALERT");
+    addTimelineEvent({
+      title: "Emergency public alert authorized",
+      description: "Cell broadcast emergency alert triggered across Zone A corridor.",
+      category: "AUTOMATION",
+      severity: "WARNING",
+      authorOrSystem: "EOC Public Warning Service",
+    });
   };
 
   // Sync with automation layer on mount
@@ -1023,6 +1121,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         plan,
         alerts,
         timeline,
+        addTimelineEvent,
         approveAction,
         isActionApproved,
         rejectAction,
