@@ -5,7 +5,12 @@ export type TimelineCategory =
   | "DISPATCH"
   | "ESCALATION"
   | "STATUS_UPDATE"
-  | "RESOLUTION";
+  | "RESOLUTION"
+  | "ENVIRONMENTAL"
+  | "HAZARD"
+  | "AI_DECISION"
+  | "RESOURCE"
+  | "OPERATOR_APPROVAL";
 
 export interface TimelineEvent {
   id: string;
