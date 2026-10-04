@@ -39,8 +39,8 @@ export function SimulationControls() {
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
                 EOC Disaster Simulation Engine
               </span>
-              <Badge variant="neutral" className="border-amber-600/50 bg-amber-950/40 text-amber-300">
-                Simulation Mode
+              <Badge variant="neutral" className="border-amber-600/50 bg-amber-950/40 text-amber-300 font-bold font-mono text-[10px]">
+                SIMULATION MODE
               </Badge>
               <Badge
                 variant={
