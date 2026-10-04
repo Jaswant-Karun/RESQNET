@@ -13,7 +13,8 @@
       "name": "RESQNET Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [140, 300]
+      "position": [140, 300],
+      "webhookId": "resqnet-orchestrator"
     },
     {
       "parameters": {
@@ -81,7 +82,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// W4: Emergency Alert Logic\nconst data = $input.first().json;\nconst isAlertApproved = data.action === 'APPROVE_EMERGENCY_ALERT';\n\nconst emergencyAlertStatus = isAlertApproved ? 'SIMULATED' : 'PENDING APPROVAL';\nconst alertPayload = {\n  alertId: `CAP-${data.incident.code || 'ALERT'}`,\n  headline: `URGENT FLOOD EVACUATION: ${data.incident?.primaryLocation?.name || 'Zone A'}`,\n  status: emergencyAlertStatus,\n  channel: 'SIMULATED_CELL_BROADCAST'\n};\n\nreturn [{\n  json: {\n    ...data,\n    emergencyAlert: emergencyAlertStatus,\n    alertPayload\n  }\n}];"
+        "jsCode": "// W4: Emergency Alert Logic & Response Formatter\nconst data = $input.first().json;\nconst isAlertApproved = data.action === 'APPROVE_EMERGENCY_ALERT';\nconst emergencyAlertStatus = isAlertApproved ? 'SIMULATED' : 'PENDING APPROVAL';\nconst alertPayload = {\n  alertId: `CAP-${data.incident?.code || 'ALERT'}`,\n  headline: `URGENT FLOOD EVACUATION: ${data.incident?.primaryLocation?.name || 'Zone A'}`,\n  status: emergencyAlertStatus,\n  channel: 'SIMULATED_CELL_BROADCAST'\n};\n\nconst criticalStatus = data.criticalResponseApproved ? 'APPROVED' : 'WAITING FOR APPROVAL';\nconst droneStatus = data.droneWorkflowStatus || 'READY';\n\nconst response = {\n  success: true,\n  orchestrator: 'RUNNING',\n  incidentIntake: 'COMPLETED',\n  criticalResponse: criticalStatus,\n  droneWorkflow: droneStatus,\n  emergencyAlert: emergencyAlertStatus,\n  allocated: data.allocated || null,\n  droneMission: data.droneMission || null,\n  alertPayload,\n  logs: [\n    {\n      id: 'log-master-1',\n      timestamp: new Date().toISOString(),\n      workflow: 'Incident Intake',\n      status: 'SUCCESS',\n      message: 'Incident intake validated and categorized: ' + (data.incident?.code || 'ACTIVE')\n    },\n    {\n      id: 'log-master-2',\n      timestamp: new Date().toISOString(),\n      workflow: 'Critical Response',\n      status: data.criticalResponseApproved ? 'SUCCESS' : 'PENDING',\n      message: data.criticalResponseApproved ? 'Human approval verified. Dispatch orders queued to mock CAD.' : 'Human authorization safeguard armed. Awaiting commander sign-off.'\n    },\n    {\n      id: 'log-master-3',\n      timestamp: new Date().toISOString(),\n      workflow: 'Drone Deployment',\n      status: 'SUCCESS',\n      message: 'UAV Echo-1 status: ' + droneStatus\n    },\n    {\n      id: 'log-master-4',\n      timestamp: new Date().toISOString(),\n      workflow: 'Emergency Alert',\n      status: emergencyAlertStatus === 'SIMULATED' ? 'MOCK' : 'PENDING',\n      message: 'Emergency broadcast status: ' + emergencyAlertStatus\n    }\n  ],\n  disclaimer: 'PROTOTYPE DEMONSTRATION: External real emergency services are not connected. Dispatch actions are simulated via mock stubs.'\n};\n\nreturn [{ json: response }];"
       },
       "id": "node-master-alert",
       "name": "W4: Emergency Alert Coordinator",
@@ -91,8 +92,7 @@
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"orchestrator\": \"RUNNING\",\n  \"incidentIntake\": \"COMPLETED\",\n  \"criticalResponse\": $json.criticalResponseApproved ? \"APPROVED\" : \"WAITING FOR APPROVAL\",\n  \"droneWorkflow\": $json.droneWorkflowStatus || \"READY\",\n  \"emergencyAlert\": $json.emergencyAlert || \"PENDING APPROVAL\",\n  \"allocated\": $json.allocated || null,\n  \"droneMission\": $json.droneMission || null,\n  \"alertPayload\": $json.alertPayload || null,\n  \"logs\": [\n    {\n      \"id\": \"log-master-1\",\n      \"timestamp\": new Date().toISOString(),\n      \"workflow\": \"Incident Intake\",\n      \"status\": \"SUCCESS\",\n      \"message\": \"Incident intake validated and categorized: \" + $json.incident.code\n    },\n    {\n      \"id\": \"log-master-2\",\n      \"timestamp\": new Date().toISOString(),\n      \"workflow\": \"Critical Response\",\n      \"status\": $json.criticalResponseApproved ? \"SUCCESS\" : \"PENDING\",\n      \"message\": $json.criticalResponseApproved ? \"Human approval verified. Dispatch orders queued to mock CAD.\" : \"Human authorization safeguard armed. Awaiting commander sign-off.\"\n    },\n    {\n      \"id\": \"log-master-3\",\n      \"timestamp\": new Date().toISOString(),\n      \"workflow\": \"Drone Deployment\",\n      \"status\": \"SUCCESS\",\n      \"message\": \"UAV Echo-1 status: \" + ($json.droneWorkflowStatus || \"READY\")\n    },\n    {\n      \"id\": \"log-master-4\",\n      \"timestamp\": new Date().toISOString(),\n      \"workflow\": \"Emergency Alert\",\n      \"status\": $json.emergencyAlert === 'SIMULATED' ? \"MOCK\" : \"PENDING\",\n      \"message\": \"Emergency broadcast status: \" + ($json.emergencyAlert || \"PENDING APPROVAL\")\n    }\n  ],\n  \"disclaimer\": \"PROTOTYPE DEMONSTRATION: External real emergency services are not connected. Dispatch actions are simulated via mock stubs.\"\n}",
+        "respondWith": "firstIncomingItem",
         "options": {}
       },
       "id": "node-master-respond-full",
