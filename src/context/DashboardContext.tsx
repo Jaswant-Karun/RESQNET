@@ -314,6 +314,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         message: "Cell broadcast draft queued for Zone A Highland corridor.",
       },
     ],
+  });
   const [isTriggeringAutomation, setIsTriggeringAutomation] = useState<boolean>(false);
 
   // Subscribe to Common Event Service to capture all emitted events
