@@ -1,7 +1,6 @@
-"use client";
-
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
+import { AlertTriangle, WifiOff } from "lucide-react";
 import { useDashboard } from "@/context/DashboardContext";
 
 interface CrisisMapLeafletProps {
@@ -19,6 +18,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
+  const [detectedTileError, setDetectedTileError] = useState(false);
 
   const {
     incident,
@@ -33,7 +33,10 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
     isActionApproved,
     simulationStage,
     setSelectedZone,
+    simulateTileError,
   } = useDashboard();
+
+  const isTileUnavailable = detectedTileError || simulateTileError;
 
   // 1. Initialize Map instance once
   useEffect(() => {
@@ -47,11 +50,21 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
       attributionControl: false,
     });
 
-    // OpenStreetMap standard tile layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    // OpenStreetMap standard tile layer with resilient error detection
+    const tileUrl = simulateTileError
+      ? "https://invalid-offline-tile-domain.resqnet.internal/{z}/{x}/{y}.png"
+      : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+    const tileLayer = L.tileLayer(tileUrl, {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(initialMap);
+    });
+
+    tileLayer.on("tileerror", () => {
+      setDetectedTileError(true);
+    });
+
+    tileLayer.addTo(initialMap);
 
     // Zoom control at top right
     L.control.zoom({ position: "topright" }).addTo(initialMap);
@@ -66,7 +79,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
       mapInstanceRef.current = null;
       layerGroupRef.current = null;
     };
-  }, []);
+  }, [simulateTileError]);
 
   // 2. Render and update map layers whenever data or simulationStage changes
   useEffect(() => {
