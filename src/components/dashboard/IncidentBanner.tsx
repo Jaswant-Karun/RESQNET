@@ -20,8 +20,11 @@ export function IncidentBanner({ incident }: IncidentBannerProps) {
             <Badge variant="critical" pulse>
               {incident.severity} PRIORITY
             </Badge>
-            <Badge variant="warning">
-              DISASTER: {incident.disasterType}
+            <Badge variant="neutral" className="bg-amber-950/70 border-amber-600/70 text-amber-300 font-mono font-bold text-[10px]">
+              SIMULATED INCIDENT • {incident.disasterType}
+            </Badge>
+            <Badge variant="outline" className="border-slate-700 bg-slate-900 text-slate-300 font-mono text-[10px]">
+              SIMULATION MODE
             </Badge>
             <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
               <MapPin className="h-3 w-3 text-red-400" />
