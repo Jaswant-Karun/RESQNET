@@ -69,14 +69,16 @@ function SectionHeader({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 pt-4 border-b border-slate-800/80 gap-2">
-      <div className="flex items-center gap-2.5">
-        <span className="font-mono text-xs font-bold text-blue-400 bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 rounded">
+    <div className="relative p-3 rounded-lg bg-gradient-to-r from-slate-950 via-[#0a1122] to-slate-950 border border-slate-800/90 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="font-mono text-[11px] font-black text-blue-400 bg-blue-950/80 border border-blue-500/40 px-2 py-0.5 rounded shadow-sm">
           {number}
         </span>
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-slate-300" />
-          <h2 className="text-sm font-black font-mono tracking-wider text-slate-100 uppercase">
+          <div className="p-1 rounded bg-slate-900 border border-slate-800 text-slate-300">
+            <Icon className="h-3.5 w-3.5" />
+          </div>
+          <h2 className="text-xs sm:text-sm font-black font-mono tracking-wider text-slate-100 uppercase">
             {title}
           </h2>
         </div>
@@ -84,13 +86,13 @@ function SectionHeader({
           <Badge
             variant="outline"
             pulse={badgePulse}
-            className={`text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 border ${getBadgeClass()}`}
+            className={`text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 border shadow-sm ${getBadgeClass()}`}
           >
             {badgeText}
           </Badge>
         )}
       </div>
-      <p className="text-xs text-slate-400 font-sans sm:text-right">
+      <p className="text-[11px] text-slate-400 font-sans sm:text-right font-medium">
         {description}
       </p>
     </div>
