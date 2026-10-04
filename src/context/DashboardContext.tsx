@@ -342,6 +342,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setSimulationStage("FLOOD_ACTIVE");
     setSimulationStatus("FLOOD INCIDENT SIMULATED");
     setIsActionApproved(false);
+    setIsActionRejected(false);
+    setRejectionReason(null);
+    setNotification(null);
 
     // Initial scenario resource allocation (8 available, 2 / 2 / 1 allocated)
     const initAlloc = allocateResources(
@@ -392,6 +395,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setSimulationStage("ESCALATED");
     setSimulationStatus("CRITICAL ESCALATION ACTIVE");
     setIsActionApproved(false);
+    setIsActionRejected(false);
+    setRejectionReason(null);
+    setNotification(null);
 
     const escalatedIncident: Incident = {
       ...incident,
@@ -559,30 +565,127 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
 
   const approveAction = () => {
+    const now = new Date().toISOString();
     setIsActionApproved(true);
+    setIsActionRejected(false);
+    setRejectionReason(null);
+
+    // 1. Update response plan status
     setPlan((prev) => ({
       ...prev,
       humanApproved: true,
       approvedBy: "Commander Raghav Menon (EOC Chief)",
-      approvedAt: new Date().toISOString(),
+      approvedAt: now,
       status: "APPROVED_ACTIVE",
     }));
 
-    // Trigger n8n Critical Response approval workflow
-    triggerAutomationWorkflow("APPROVE_CRITICAL_RESPONSE");
-
+    // 2. Add detailed timeline event
     const approvalEvent: TimelineEvent = {
       id: `evt-appr-${Date.now()}`,
       incidentId: incident.id,
-      timestamp: new Date().toISOString(),
-      title: "Rescue Plan Authorized by Incident Commander",
+      timestamp: now,
+      title: "Critical Response Plan Authorized by Incident Commander",
       description:
-        "Commander R. Menon authorized Zone A rapid boat extraction and UAV life-jacket drop. Automated dispatch armed.",
+        "Commander R. Menon granted clearance for: Evacuate Zone A (1,240 pop) via Route R2 → Shelter B. Mobilizing 2 Ambulances, 2 Rescue Teams, 1 UAV. Automated n8n dispatch workflow armed.",
       category: "DECISION",
-      severity: "INFO",
+      severity: "CRITICAL",
       authorOrSystem: "Incident Commander R. Menon",
     };
     setTimeline((prev) => [approvalEvent, ...prev]);
+
+    // 3. Trigger n8n Critical Response approval workflow
+    triggerAutomationWorkflow("APPROVE_CRITICAL_RESPONSE");
+
+    // 4. Update resource statuses (Ambulances to DISPATCHED, Rescue Teams to DEPLOYED, Drone to AIRBORNE_PATROL)
+    setAmbulances((prev) =>
+      prev.map((amb, idx) => {
+        if (idx < 2) {
+          return {
+            ...amb,
+            status: "DISPATCHED",
+            statusColor: "#3b82f6",
+          };
+        }
+        return amb;
+      })
+    );
+
+    setRescueTeams((prev) =>
+      prev.map((team, idx) => {
+        if (idx < 2) {
+          return {
+            ...team,
+            status: "DEPLOYED",
+            statusColor: "#10b981",
+          };
+        }
+        return team;
+      })
+    );
+
+    setDrones((prev) =>
+      prev.map((drone, idx) => {
+        if (idx === 0) {
+          return {
+            ...drone,
+            flightStatus: "AIRBORNE_PATROL",
+            altitudeMeters: 45,
+            groundSpeedKmH: 38.5,
+            telemetryLinkStrength: 98,
+          };
+        }
+        return drone;
+      })
+    );
+
+    // 5. Show success notification
+    setNotification({
+      type: "success",
+      title: "CRITICAL ACTION AUTHORIZED",
+      message:
+        "Evacuation of Zone A via R2 → Shelter B approved. Dispatched 2 Ambulances, 2 Rescue Teams, 1 Drone. n8n workflow triggered.",
+      timestamp: now,
+    });
+  };
+
+  const rejectAction = (reason: string = "Critical response rejected by operator.") => {
+    const now = new Date().toISOString();
+    setIsActionApproved(false);
+    setIsActionRejected(true);
+    setRejectionReason(reason);
+
+    // 1. Update response plan status to REJECTED
+    setPlan((prev) => ({
+      ...prev,
+      humanApproved: false,
+      rejectedBy: "Operator / Commander Raghav Menon",
+      rejectedAt: now,
+      rejectionReason: reason,
+      status: "REJECTED",
+    }));
+
+    // 2. Add required timeline event: "Critical response rejected by operator."
+    const rejectionEvent: TimelineEvent = {
+      id: `evt-rej-${Date.now()}`,
+      incidentId: incident.id,
+      timestamp: now,
+      title: "Critical Response Rejected by Operator",
+      description: "Critical response rejected by operator. Simulated dispatch and evacuation aborted. Safeguard active.",
+      category: "DECISION",
+      severity: "WARNING",
+      authorOrSystem: "Incident Commander / Operator",
+    };
+    setTimeline((prev) => [rejectionEvent, ...prev]);
+
+    // 3. Do not execute the simulated workflow (n8n is NOT triggered)
+
+    // 4. Show warning notification
+    setNotification({
+      type: "warning",
+      title: "CRITICAL RESPONSE REJECTED",
+      message: "Critical response rejected by operator. Simulated dispatch halted.",
+      timestamp: now,
+    });
   };
 
   const approveCriticalResponseWorkflow = async () => {
@@ -643,6 +746,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         timeline,
         approveAction,
         isActionApproved,
+        rejectAction,
+        isActionRejected,
+        rejectionReason,
+        notification,
+        dismissNotification,
         selectedZone,
         setSelectedZone,
         unreadAlertCount,

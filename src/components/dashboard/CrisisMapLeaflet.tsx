@@ -30,6 +30,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
     rescueTeams,
     drones,
     plan,
+    isActionApproved,
     simulationStage,
     setSelectedZone,
   } = useDashboard();
@@ -369,7 +370,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
         `);
       });
 
-      // EVACUATION ROUTE HIGHLIGHT (R4 Highland Pass to Shelter C)
+      // EVACUATION ROUTE HIGHLIGHTS
       plan.evacuationRoutes.forEach((route) => {
         const routeCoords: L.LatLngTuple[] = [
           [13.0135, 80.2312], // Zone A
@@ -389,6 +390,47 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
           })
           .addTo(lg);
       });
+
+      // WHEN OPERATOR APPROVES: RENDER HIGH-VISIBILITY ACTIVE EVACUATION CORRIDOR (R2 -> Shelter B)
+      if (isActionApproved) {
+        const approvedRouteCoords: L.LatLngTuple[] = [
+          [13.0135, 80.2312], // Zone A Center
+          [13.0182, 80.2195], // Road R2 Highland Junction
+          [13.0245, 80.2120], // Shelter B (Primary Safe Haven)
+        ];
+
+        // Outer glow polyline
+        L.polyline(approvedRouteCoords, {
+          color: "#10b981",
+          weight: 8,
+          opacity: 0.4,
+        }).addTo(lg);
+
+        // Core pulsating route
+        L.polyline(approvedRouteCoords, {
+          color: "#34d399",
+          weight: 5,
+          opacity: 0.95,
+          dashArray: "10, 10",
+        })
+          .bindTooltip("OPERATOR AUTHORIZED: Active Evacuation Corridor (R2 → Shelter B)", {
+            permanent: true,
+            direction: "top",
+            className: "leaflet-tooltip-dark",
+          })
+          .addTo(lg);
+
+        // Destination Marker at Shelter B
+        const destinationIcon = createMarkerIcon(
+          "#064e3b",
+          "#10b981",
+          "#ecfdf5",
+          "✓",
+          "EVACUATION TARGET: SHELTER B",
+          true
+        );
+        L.marker([13.0245, 80.2120], { icon: destinationIcon }).addTo(lg);
+      }
     }
   }, [
     incident,
@@ -402,6 +444,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
     plan,
     simulationStage,
     layers,
+    isActionApproved,
     setSelectedZone,
   ]);
 

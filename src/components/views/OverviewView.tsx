@@ -11,6 +11,8 @@ import { AlertCircle, AlertTriangle, Droplets, MapPin, Users } from "lucide-reac
 
 import { ResourceAllocationPanel } from "@/components/dashboard/ResourceAllocationPanel";
 import { WorkflowOrchestrationPanel } from "@/components/dashboard/WorkflowOrchestrationPanel";
+import { EmergencyApprovalPanel } from "@/components/dashboard/EmergencyApprovalPanel";
+import { TacticalNotificationToast } from "@/components/dashboard/TacticalNotificationToast";
 
 export function OverviewView() {
   const { incident, simulationStage } = useDashboard();
@@ -23,7 +25,10 @@ export function OverviewView() {
       {/* 2. Top KPI Cards */}
       <TopKpiCards />
 
-      {/* 3. Main Center/Right Content Grid */}
+      {/* 3. EMERGENCY APPROVAL PANEL (MANDATORY HUMAN-IN-THE-LOOP SAFEGUARD) */}
+      <EmergencyApprovalPanel />
+
+      {/* 4. Main Center/Right Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* LEFT / CENTER: Large Crisis Map Placeholder Area (8 cols) */}
         <div className="lg:col-span-8 flex flex-col">
@@ -39,11 +44,14 @@ export function OverviewView() {
       {/* 4. n8n Workflow Orchestration Layer Panel */}
       <WorkflowOrchestrationPanel />
 
-      {/* 5. Intelligent Resource Allocation Panel */}
+      {/* 6. Intelligent Resource Allocation Panel */}
       <ResourceAllocationPanel />
 
-      {/* 6. BOTTOM: Incident Timeline */}
+      {/* 7. BOTTOM: Incident Timeline */}
       <IncidentTimeline />
+
+      {/* 8. Global Tactical Notification Toast */}
+      <TacticalNotificationToast />
     </div>
   );
 }

@@ -32,7 +32,10 @@ export function AiResponseStatusPanel() {
     shelters,
     plan,
     isActionApproved,
+    isActionRejected,
+    rejectionReason,
     approveAction,
+    rejectAction,
     isAiLoading,
     aiStatusMessage,
     simulateApiFailure,
@@ -341,10 +344,14 @@ export function AiResponseStatusPanel() {
               Approval Status
             </span>
             <Badge
-              variant={isActionApproved ? "success" : "warning"}
-              pulse={!isActionApproved && approvalRequired}
+              variant={isActionApproved ? "success" : isActionRejected ? "destructive" : "warning"}
+              pulse={!isActionApproved && !isActionRejected && approvalRequired}
             >
-              {isActionApproved ? "AUTHORIZED" : "APPROVAL REQUIRED"}
+              {isActionApproved
+                ? "AUTHORIZED"
+                : isActionRejected
+                ? "REJECTED BY OPERATOR"
+                : "APPROVAL REQUIRED"}
             </Badge>
           </div>
 
@@ -352,11 +359,15 @@ export function AiResponseStatusPanel() {
             className={`p-2.5 rounded-lg border text-xs leading-relaxed flex items-start gap-2 ${
               isActionApproved
                 ? "bg-emerald-950/30 border-emerald-800/60 text-emerald-300"
+                : isActionRejected
+                ? "bg-red-950/30 border-red-800/60 text-red-300"
                 : "bg-amber-950/30 border-amber-800/60 text-amber-300"
             }`}
           >
             {isActionApproved ? (
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+            ) : isActionRejected ? (
+              <ShieldAlert className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
             ) : (
               <Lock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
             )}
@@ -367,6 +378,13 @@ export function AiResponseStatusPanel() {
                     Authorized by Commander Raghav Menon
                   </strong>
                   Dispatch protocol armed for {priorityZones.join(", ")} rescue units. Automated dispatch order validated.
+                </>
+              ) : isActionRejected ? (
+                <>
+                  <strong className="block text-red-200 font-semibold">
+                    Response Rejected by Operator
+                  </strong>
+                  {rejectionReason || "Simulated dispatch halted. No units deployed."}
                 </>
               ) : (
                 <>
@@ -383,15 +401,35 @@ export function AiResponseStatusPanel() {
 
       {/* Action Footer */}
       <CardFooter className="p-3 bg-slate-950 border-t border-slate-800">
-        {!isActionApproved ? (
-          <Button
-            onClick={approveAction}
-            variant="destructive"
-            className="w-full flex items-center justify-center gap-2 font-mono text-xs py-2 shadow-lg hover:shadow-red-600/20 cursor-pointer"
-          >
-            <ShieldCheck className="h-4 w-4" />
-            APPROVE & AUTHORIZE RESCUE ACTION
-          </Button>
+        {!isActionApproved && !isActionRejected ? (
+          <div className="w-full flex items-center gap-2">
+            <Button
+              onClick={() => rejectAction("Critical response rejected by operator.")}
+              variant="outline"
+              className="w-1/3 border-red-700/60 bg-red-950/30 text-red-300 hover:bg-red-900/60 hover:text-white font-mono text-[11px] py-2 cursor-pointer"
+            >
+              REJECT
+            </Button>
+            <Button
+              onClick={approveAction}
+              variant="destructive"
+              className="w-2/3 flex items-center justify-center gap-1.5 font-mono text-[11px] py-2 shadow-lg hover:shadow-emerald-600/20 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold cursor-pointer"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              APPROVE & AUTHORIZE
+            </Button>
+          </div>
+        ) : isActionRejected ? (
+          <div className="w-full flex items-center justify-between gap-2">
+            <span className="text-[10px] font-mono text-red-400">PLAN REJECTED</span>
+            <Button
+              onClick={approveAction}
+              variant="outline"
+              className="border-emerald-600/60 text-emerald-300 bg-emerald-950/30 font-mono text-[11px] py-1.5 cursor-pointer"
+            >
+              RE-AUTHORIZE PLAN
+            </Button>
+          </div>
         ) : (
           <Button
             disabled
