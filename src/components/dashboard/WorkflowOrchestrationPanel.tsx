@@ -104,7 +104,7 @@ export function WorkflowOrchestrationPanel() {
             <div>
               <div className="flex items-center gap-2">
                 <CardTitle className="text-xs sm:text-sm font-mono tracking-wider text-slate-100 flex items-center gap-1.5">
-                  <span>WORKFLOW ORCHESTRATION LAYER</span>
+                  <span>AUTOMATED WORKFLOW ORCHESTRATION</span>
                   <span className="text-[10px] text-indigo-400 font-bold px-1.5 py-0.5 rounded bg-indigo-950/70 border border-indigo-800/60">
                     n8n
                   </span>
