@@ -817,7 +817,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       status: "APPROVED_ACTIVE",
     }));
 
-    // 2. Add detailed timeline event
+    // 2. Add detailed chronological timeline events matching prompt requirements
     const isEscalatedPlan = plan.evacuationRoute === "R4" || simulationStage === "ESCALATED";
     const routeText = isEscalatedPlan ? "Route R4 → Shelter C" : "Route R2 → Shelter B";
     const popText = (incident.metrics?.affectedPopulationEstimated || (isEscalatedPlan ? 2180 : 1240)).toLocaleString();
@@ -825,20 +825,51 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const ambCount = assigned.ambulances || (isEscalatedPlan ? 4 : 2);
     const resCount = assigned.rescueTeams || (isEscalatedPlan ? 3 : 2);
     const uavCount = assigned.drones || (isEscalatedPlan ? 2 : 1);
+    const apprBaseTime = Date.now();
 
-    const approvalEvent: TimelineEvent = {
-      id: `evt-appr-${Date.now()}`,
-      incidentId: incident.id,
-      timestamp: now,
-      title: isEscalatedPlan
-        ? "Escalated Response Plan Authorized by Incident Commander"
-        : "Critical Response Plan Authorized by Incident Commander",
-      description: `Commander R. Menon granted clearance for: Evacuate Zone A & B (${popText} pop) via ${routeText}. Mobilizing ${ambCount} Ambulances, ${resCount} Rescue Teams, ${uavCount} UAV${uavCount > 1 ? "s" : ""}. Automated n8n dispatch workflow armed.`,
-      category: "DECISION",
-      severity: "CRITICAL",
-      authorOrSystem: "Incident Commander R. Menon",
-    };
-    setTimeline((prev) => [approvalEvent, ...prev]);
+    const approveEvents: TimelineEvent[] = [
+      {
+        id: `evt-appr-1-${apprBaseTime}`,
+        incidentId: incident.id,
+        timestamp: new Date(apprBaseTime).toISOString(),
+        title: "Response approved",
+        description: `Commander Raghav Menon granted clearance for: Evacuate Zone A via ${routeText}. Clearance confirmed.`,
+        category: "APPROVAL",
+        severity: "INFO",
+        authorOrSystem: "Incident Commander Raghav Menon",
+      },
+      {
+        id: `evt-appr-2-${apprBaseTime}`,
+        incidentId: incident.id,
+        timestamp: new Date(apprBaseTime + 1000).toISOString(),
+        title: "n8n critical response workflow triggered",
+        description: "Automated execution armed. Webhook payload dispatched to n8n orchestrator on port 5680.",
+        category: "AUTOMATION",
+        severity: "INFO",
+        authorOrSystem: "n8n Master Orchestrator",
+      },
+      {
+        id: `evt-appr-3-${apprBaseTime}`,
+        incidentId: incident.id,
+        timestamp: new Date(apprBaseTime + 2000).toISOString(),
+        title: "Drone 01 mission created",
+        description: "UAV Echo-1 transitioned to AIRBORNE_PATROL over designated evacuation corridor.",
+        category: "RESOURCE",
+        severity: "INFO",
+        authorOrSystem: "Drone Flight Controller",
+      },
+      {
+        id: `evt-appr-4-${apprBaseTime}`,
+        incidentId: incident.id,
+        timestamp: new Date(apprBaseTime + 3000).toISOString(),
+        title: `${ambCount} ambulances assigned`,
+        description: `${ambCount} ambulances deployed to active evacuation corridor. En-route status confirmed.`,
+        category: "RESOURCE",
+        severity: "INFO",
+        authorOrSystem: "CAD 108 Dispatcher",
+      },
+    ];
+    setTimeline((prev) => [...approveEvents, ...prev]);
 
     // 3. Trigger n8n Critical Response approval workflow
     triggerAutomationWorkflow("APPROVE_CRITICAL_RESPONSE");
