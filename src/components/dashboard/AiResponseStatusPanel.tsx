@@ -82,7 +82,7 @@ export function AiResponseStatusPanel() {
             <div>
               <div className="flex items-center gap-1.5">
                 <CardTitle className="text-xs sm:text-sm font-mono tracking-wider text-slate-100 flex items-center gap-1">
-                  AI RESPONSE STATUS
+                  AI RECOMMENDATION
                 </CardTitle>
                 {isAiDecision ? (
                   <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
@@ -114,7 +114,7 @@ export function AiResponseStatusPanel() {
                 className="border-indigo-500/70 text-indigo-300 bg-indigo-950/50 text-[10px] font-mono px-2 py-0.5 font-bold shadow-sm shadow-indigo-950"
               >
                 <Sparkles className="h-3 w-3 mr-1 text-indigo-400" />
-                AI Decision
+                AI Recommendation
               </Badge>
             ) : (
               <Badge
@@ -122,7 +122,7 @@ export function AiResponseStatusPanel() {
                 className="border-amber-500/60 text-amber-300 bg-amber-950/40 text-[10px] font-mono px-2 py-0.5 font-semibold"
               >
                 <Cpu className="h-3 w-3 mr-1 text-amber-400" />
-                Fallback Decision
+                Deterministic Recommendation
               </Badge>
             )}
 
@@ -154,7 +154,7 @@ export function AiResponseStatusPanel() {
           <div className="p-2 rounded-lg bg-indigo-950/30 border border-indigo-800/40 flex items-center justify-between text-[11px] font-sans text-indigo-200">
             <div className="flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-              <span>AI Decision: Gemini cognitive situation synthesis active.</span>
+              <span>AI Recommendation: Gemini cognitive situation synthesis active.</span>
             </div>
             <span className="text-[10px] font-mono text-indigo-300 uppercase font-semibold">
               VERIFIED

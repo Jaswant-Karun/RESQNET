@@ -148,7 +148,7 @@ export function EscalationComparisonPanel() {
               <div className="flex items-center justify-between p-2 rounded bg-slate-950/50 border border-slate-800/60">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Ambulance className="h-3.5 w-3.5 text-cyan-400" />
-                  Resources:
+                  Resource Allocation:
                 </span>
                 <span className="font-bold text-cyan-300 text-[11px]">
                   2 Amb, 2 Rescue, 1 Drone
