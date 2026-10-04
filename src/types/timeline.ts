@@ -2,14 +2,17 @@ export type TimelineCategory =
   | "DETECTION"
   | "ANALYSIS"
   | "DECISION"
-  | "DISPATCH"
+  | "APPROVAL"
+  | "AUTOMATION"
+  | "RESOURCE"
   | "ESCALATION"
+  | "SYSTEM"
+  | "DISPATCH"
   | "STATUS_UPDATE"
   | "RESOLUTION"
   | "ENVIRONMENTAL"
   | "HAZARD"
   | "AI_DECISION"
-  | "RESOURCE"
   | "OPERATOR_APPROVAL";
 
 export interface TimelineEvent {

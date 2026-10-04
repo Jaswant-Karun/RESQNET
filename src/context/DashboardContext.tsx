@@ -34,6 +34,8 @@ import {
   WorkflowLogItem,
 } from "@/types";
 
+import { eventService, LogEventParams } from "@/lib/eventService";
+
 export type DashboardTab =
   | "overview"
   | "incidents"
@@ -65,6 +67,7 @@ interface DashboardContextType {
   plan: ResponsePlan;
   alerts: Alert[];
   timeline: TimelineEvent[];
+  addTimelineEvent: (params: LogEventParams | TimelineEvent) => TimelineEvent;
   approveAction: () => void;
   isActionApproved: boolean;
   rejectAction: (reason?: string) => void;
@@ -227,8 +230,29 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         message: "Cell broadcast draft queued for Zone A Highland corridor.",
       },
     ],
-  });
   const [isTriggeringAutomation, setIsTriggeringAutomation] = useState<boolean>(false);
+
+  // Subscribe to Common Event Service to capture all emitted events
+  useEffect(() => {
+    const unsub = eventService.subscribe((newEvent) => {
+      setTimeline((prev) => {
+        if (prev.some((e) => e.id === newEvent.id)) return prev;
+        return [newEvent, ...prev];
+      });
+    });
+    return unsub;
+  }, []);
+
+  /**
+   * Common Event Service dispatch method exposed to all modules and components
+   */
+  const addTimelineEvent = (params: LogEventParams | TimelineEvent): TimelineEvent => {
+    if ("id" in params) {
+      setTimeline((prev) => [params as TimelineEvent, ...prev]);
+      return params as TimelineEvent;
+    }
+    return eventService.logEvent(params);
+  };
 
   /**
    * Applies resource allocation, enforces availability caps, updates fleet statuses,
@@ -371,13 +395,92 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setRoads(scenario.roads);
     setSelectedZone(scenario.zones[0]);
 
-    // Timeline events
-    const allocEvent = createAllocationTimelineEvent(
-      initAlloc,
-      scenario.incident.id,
-      "Flood Response Initialized: 2 Ambulances (READY), 2 Rescue Teams (DEPLOYING), 1 Drone (MISSION CREATED)."
-    );
-    setTimeline([scenario.timelineEvent, allocEvent, ...MOCK_TIMELINE_EVENTS]);
+    // Complete Chronological Event Log for Flood Simulation
+    const baseTime = Date.now();
+    const floodEvents: TimelineEvent[] = [
+      {
+        id: `evt-fl-1-${baseTime}`,
+        incidentId: scenario.incident.id,
+        timestamp: new Date(baseTime).toISOString(),
+        title: "Flood simulation started",
+        description: "Hydro-sensor telemetry streams initiated across Adyar catchment basin. Continuous water depth monitoring active.",
+        category: "SYSTEM",
+        severity: "INFO",
+        authorOrSystem: "EOC Disaster Simulation Engine",
+      },
+      {
+        id: `evt-fl-2-${baseTime}`,
+        incidentId: scenario.incident.id,
+        timestamp: new Date(baseTime + 1000).toISOString(),
+        title: "Incident created",
+        description: "Disaster incident FL-902 categorized as active flood. Sensor Node-4 registered rapid crest increase.",
+        category: "DETECTION",
+        severity: "CRITICAL",
+        authorOrSystem: "Sensor Sentinel Grid Node-4",
+      },
+      {
+        id: `evt-fl-3-${baseTime}`,
+        incidentId: scenario.incident.id,
+        timestamp: new Date(baseTime + 2000).toISOString(),
+        title: "Risk analysis completed",
+        description: "Multi-criteria risk engine evaluated 1,240 civilians at risk. River basin overflow model verified.",
+        category: "ANALYSIS",
+        severity: "WARNING",
+        authorOrSystem: "Hydro-AI Risk Engine",
+      },
+      {
+        id: `evt-fl-4-${baseTime}`,
+        incidentId: scenario.incident.id,
+        timestamp: new Date(baseTime + 3000).toISOString(),
+        title: "Zone A classified as CRITICAL",
+        description: "Zone A water depth reached 2.4m, surpassing 2.0m danger threshold. Roads R1 and R3 impassable.",
+        category: "ANALYSIS",
+        severity: "CRITICAL",
+        authorOrSystem: "Autonomous Zone Classifier",
+      },
+      {
+        id: `evt-fl-5-${baseTime}`,
+        incidentId: scenario.incident.id,
+        timestamp: new Date(baseTime + 4000).toISOString(),
+        title: "Response plan generated",
+        description: "Designated evacuation corridor via Route R2 to Shelter B (Capacity: 700). High ground transit verified.",
+        category: "DECISION",
+        severity: "INFO",
+        authorOrSystem: "RESQNET Response Engine",
+      },
+      {
+        id: `evt-fl-6-${baseTime}`,
+        incidentId: scenario.incident.id,
+        timestamp: new Date(baseTime + 5000).toISOString(),
+        title: "Human approval requested",
+        description: "Mandatory human-in-the-loop clearance required: Evacuate Zone A (1,240 pop) via Route R2 → Shelter B.",
+        category: "APPROVAL",
+        severity: "WARNING",
+        authorOrSystem: "HITL Security Guardrail",
+      },
+      {
+        id: `evt-fl-7-${baseTime}`,
+        incidentId: scenario.incident.id,
+        timestamp: new Date(baseTime + 6000).toISOString(),
+        title: "Drone 01 mission created",
+        description: "UAV Echo-1 flight plan programmed: Corridor survey along Route R2 and Zone A perimeter recon.",
+        category: "RESOURCE",
+        severity: "INFO",
+        authorOrSystem: "Drone Fleet Command",
+      },
+      {
+        id: `evt-fl-8-${baseTime}`,
+        incidentId: scenario.incident.id,
+        timestamp: new Date(baseTime + 7000).toISOString(),
+        title: "2 ambulances assigned",
+        description: "Ambulances AMB-01 and AMB-02 pre-positioned at Station North for rapid medical extrication.",
+        category: "RESOURCE",
+        severity: "INFO",
+        authorOrSystem: "CAD 108 Dispatcher",
+      },
+    ];
+
+    setTimeline([...floodEvents, ...MOCK_TIMELINE_EVENTS]);
 
     // Set immediate deterministic baseline, then query Gemini server route
     const instantFallbackPlan = generateResponsePlan(scenario.incident);
