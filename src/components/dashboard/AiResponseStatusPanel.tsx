@@ -142,7 +142,7 @@ export function AiResponseStatusPanel() {
           <div className="p-2 rounded-lg bg-amber-950/25 border border-amber-800/50 flex items-center justify-between text-[11px] font-sans text-amber-200">
             <div className="flex items-center gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span>{aiStatusMessage || "AI service unavailable — emergency fallback activated."}</span>
+              <span>{aiStatusMessage || "AI service unavailable — fallback decision engine active."}</span>
             </div>
             <span className="text-[10px] font-mono text-amber-400/80 uppercase font-semibold">
               SAFEGUARD ACTIVE
