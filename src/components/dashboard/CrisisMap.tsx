@@ -42,8 +42,13 @@ const CrisisMapLeaflet = dynamic(
   }
 );
 
-export function CrisisMap() {
-  const { incident, simulationStage, drones } = useDashboard();
+  const {
+    incident,
+    simulationStage,
+    drones,
+    simulateTileError,
+    setSimulateTileError,
+  } = useDashboard();
 
   // Layer Visibility Toggles
   const [layers, setLayers] = useState({
@@ -126,6 +131,19 @@ export function CrisisMap() {
               ELEVATION
             </button>
           </div>
+
+          {/* Map Tile Resilience Simulation Toggle */}
+          <button
+            onClick={() => setSimulateTileError(!simulateTileError)}
+            className={`px-2 py-1 rounded border text-[10px] font-mono transition-colors cursor-pointer flex items-center gap-1 font-bold ${
+              simulateTileError
+                ? "bg-amber-950/90 border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
+            }`}
+            title="Test Case 7: Toggle Map Tiles Unavailable"
+          >
+            <span>{simulateTileError ? "TILES OFFLINE (SIM)" : "TILES ONLINE"}</span>
+          </button>
 
           <button
             onClick={() => setShowLegend((v) => !v)}
