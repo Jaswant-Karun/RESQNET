@@ -13,6 +13,7 @@ import { ResourceAllocationPanel } from "@/components/dashboard/ResourceAllocati
 import { WorkflowOrchestrationPanel } from "@/components/dashboard/WorkflowOrchestrationPanel";
 import { EmergencyApprovalPanel } from "@/components/dashboard/EmergencyApprovalPanel";
 import { EscalationComparisonPanel } from "@/components/dashboard/EscalationComparisonPanel";
+import { ResqAiChatPanel } from "@/components/dashboard/ResqAiChatPanel";
 import { TacticalNotificationToast } from "@/components/dashboard/TacticalNotificationToast";
 
 export function OverviewView() {
@@ -32,7 +33,7 @@ export function OverviewView() {
       {/* 4. Top KPI Cards */}
       <TopKpiCards />
 
-      {/* 4. Main Center/Right Content Grid */}
+      {/* 5. Main Center/Right Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* LEFT / CENTER: Large Crisis Map Placeholder Area (8 cols) */}
         <div className="lg:col-span-8 flex flex-col">
@@ -45,7 +46,10 @@ export function OverviewView() {
         </div>
       </div>
 
-      {/* 4. n8n Workflow Orchestration Layer Panel */}
+      {/* 6. RESQ AI — Situation-Aware Response Assistant Panel */}
+      <ResqAiChatPanel compact />
+
+      {/* 7. n8n Workflow Orchestration Layer Panel */}
       <WorkflowOrchestrationPanel />
 
       {/* 6. Intelligent Resource Allocation Panel */}

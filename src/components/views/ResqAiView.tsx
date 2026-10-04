@@ -23,6 +23,8 @@ import {
   Workflow,
 } from "lucide-react";
 
+import { ResqAiChatPanel } from "@/components/dashboard/ResqAiChatPanel";
+
 export function ResqAiView() {
   const {
     incident,
@@ -37,91 +39,57 @@ export function ResqAiView() {
     isAiLoading,
   } = useDashboard();
 
-  // Ask RESQ AI interactive state
-  const [question, setQuestion] = useState("");
-  const [isAsking, setIsAsking] = useState(false);
-  const [aiAnswer, setAiAnswer] = useState<{
-    answer: string;
-    source: "GEMINI_AI" | "FALLBACK";
-    statusMessage: string;
-  } | null>(null);
-
-  const handleAskQuestion = async (customQ?: string) => {
-    const q = customQ || question;
-    if (!q.trim()) return;
-
-    setIsAsking(true);
-    try {
-      const res = await fetch("/api/ask-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: q,
-          incident,
-          simulateError: simulateApiFailure,
-        }),
-      });
-
-      const data = await res.json();
-      setAiAnswer({
-        answer: data.answer,
-        source: data.source || "FALLBACK",
-        statusMessage: data.statusMessage || "AI service unavailable — emergency fallback activated.",
-      });
-    } catch {
-      setAiAnswer({
-        answer: `[Emergency Fallback] Zone A is submerged at ${incident.metrics.waterLevelMeters}m depth with ${incident.metrics.affectedPopulationEstimated.toLocaleString()} residents affected. Roads ${incident.blockedRoads?.join(", ") || "R1, R3"} are blocked. Proceed via designated safe Route R2 to Shelter B.`,
-        source: "FALLBACK",
-        statusMessage: "AI service unavailable — emergency fallback activated.",
-      });
-    } finally {
-      setIsAsking(false);
-    }
-  };
-
-  const sampleQuestions = [
-    "What is the safest evacuation route from Zone A?",
-    "What is the operational status of Hospital H3?",
-    "How many rescue teams and boats are assigned to Zone A?",
-  ];
-
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-        <div>
-          <h2 className="text-lg font-bold font-mono text-white flex items-center gap-2">
-            <Bot className="h-5 w-5 text-indigo-400" />
-            RESQ AI ADAPTIVE REASONING ENGINE
-          </h2>
-          <p className="text-xs text-slate-400">
-            Gemini situation analysis, explanation, and natural-language reasoning backed by deterministic offline fallback.
-          </p>
+    <div className="space-y-6">
+      {/* 1. VIEW HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-2xl bg-indigo-950/80 border border-indigo-500/60 text-indigo-400 shadow-xl shadow-indigo-950/40">
+            <Bot className="h-7 w-7 text-indigo-400 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black font-mono tracking-wider text-white uppercase">
+                RESQ AI
+              </h1>
+              <Badge variant="outline" className="border-indigo-500/60 text-indigo-300 bg-indigo-950/60 font-mono text-[11px]">
+                <Sparkles className="h-3.5 w-3.5 mr-1 text-indigo-400" />
+                Gemini 2.5 Flash
+              </Badge>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400 font-sans italic mt-0.5">
+              &quot;Situation-aware response assistant&quot;
+            </p>
+          </div>
         </div>
+
         <div className="flex items-center gap-2">
-          <Badge variant="info">
-            {plan.decisionEngine === "GEMINI_AI" ? "ENGINE: GEMINI 2.5 FLASH" : "ENGINE: DETERMINISTIC FALLBACK"}
+          <Badge variant={simulationStage === "ESCALATED" ? "critical" : "info"} pulse={simulationStage === "ESCALATED"}>
+            {simulationStage === "ESCALATED" ? "CRITICAL ESCALATION CONTEXT" : "BASELINE SCENARIO CONTEXT"}
           </Badge>
-          <Badge variant="neutral">SAFETY: HUMAN GUARDRAILS ACTIVE</Badge>
+          <Badge variant="neutral" className="border-emerald-700/60 bg-emerald-950/40 text-emerald-300">
+            ZERO HALLUCINATION GUARDRAILS
+          </Badge>
         </div>
       </div>
 
-      {/* Simulator Trigger Banner inside AI View */}
+      {/* 2. SCENARIO REASONING BENCH (SIMULATE FLOOD & ESCALATION) */}
       <Card className="bg-slate-950 border-slate-800 p-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
             <div className="text-xs font-mono font-bold text-white uppercase flex items-center gap-2">
               <Cpu className="h-4 w-4 text-blue-400" />
-              Scenario Reasoning Bench
+              Interactive Simulation Controller
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Simulate disaster escalation to trigger dynamic recalculation of evacuation pathways and drone assets.
+              Trigger baseline flood or multi-hazard escalation to evaluate real-time adaptive AI reasoning.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button
               onClick={simulateFlood}
               variant="default"
-              className="font-mono text-xs cursor-pointer"
+              className="font-mono text-xs cursor-pointer bg-blue-600 hover:bg-blue-500"
             >
               <Waves className="h-3.5 w-3.5 mr-1.5" />
               Simulate Flood
@@ -129,7 +97,7 @@ export function ResqAiView() {
             <Button
               onClick={simulateEscalation}
               variant="destructive"
-              className="font-mono text-xs cursor-pointer"
+              className="font-mono text-xs cursor-pointer bg-red-600 hover:bg-red-500"
             >
               <Flame className="h-3.5 w-3.5 mr-1.5" />
               Simulate Escalation
@@ -137,7 +105,7 @@ export function ResqAiView() {
             <Button
               onClick={resetSimulation}
               variant="outline"
-              className="font-mono text-xs cursor-pointer"
+              className="font-mono text-xs cursor-pointer border-slate-700 text-slate-300 hover:text-white"
               title="Reset"
             >
               <RotateCcw className="h-3.5 w-3.5" />
@@ -146,96 +114,8 @@ export function ResqAiView() {
         </div>
       </Card>
 
-      {/* Interactive Ask RESQ AI Tactical Console (Trigger 3) */}
-      <Card className="bg-[#080d1a] border-slate-800">
-        <CardHeader className="p-4 bg-slate-950/80 border-b border-slate-800">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xs font-mono text-slate-200 uppercase flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-indigo-400" />
-              Interactive Tactical Query: Ask RESQ AI
-            </CardTitle>
-            <span className="text-[10px] font-mono text-slate-400">
-              Only queried on user question or simulation event
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 space-y-3 font-sans text-xs">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAskQuestion()}
-              placeholder="Ask RESQ AI a question (e.g. Which route is safe to evacuate Zone A?)"
-              className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-            />
-            <Button
-              onClick={() => handleAskQuestion()}
-              disabled={isAsking || !question.trim()}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              {isAsking ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Send className="h-3.5 w-3.5" />
-              )}
-              <span>Query AI</span>
-            </Button>
-          </div>
-
-          {/* Quick preset questions */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[10px] font-mono text-slate-400">Preset Scenarios:</span>
-            {sampleQuestions.map((q, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setQuestion(q);
-                  handleAskQuestion(q);
-                }}
-                className="text-[10px] font-mono text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded px-2 py-1 transition-colors cursor-pointer"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-
-          {/* AI Response Display */}
-          {aiAnswer && (
-            <div className="mt-3 p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] font-mono ${
-                      aiAnswer.source === "GEMINI_AI"
-                        ? "border-indigo-500/70 text-indigo-300 bg-indigo-950/50"
-                        : "border-amber-500/60 text-amber-300 bg-amber-950/40"
-                    }`}
-                  >
-                    {aiAnswer.source === "GEMINI_AI" ? (
-                      <span className="flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 text-indigo-400" />
-                        AI Decision
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <Cpu className="h-3 w-3 text-amber-400" />
-                        Fallback Decision
-                      </span>
-                    )}
-                  </Badge>
-                  <span className="text-[11px] text-slate-400">{aiAnswer.statusMessage}</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-200 leading-relaxed font-sans pt-1">
-                {aiAnswer.answer}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* 3. DEDICATED RESQ AI SITUATION-AWARE CHAT PANEL */}
+      <ResqAiChatPanel />
 
       {/* AI Pipeline Architecture Diagram */}
       <Card className="bg-[#080d1a] border-slate-800">
