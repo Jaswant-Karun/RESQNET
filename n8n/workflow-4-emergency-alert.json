@@ -1,0 +1,161 @@
+{
+  "name": "RESQNET - Workflow 4: Emergency Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "emergency-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-alert",
+      "name": "Critical Incident Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step: Generate Alert (CAP Protocol)\nconst payload = $input.first().json.body || $input.first().json;\nconst incident = payload.incident || {};\nconst zone = incident.primaryLocation?.name || 'Zone A';\n\nconst alertPayload = {\n  alertId: `CAP-${incident.code || 'ALERT'}-${Date.now().toString(36).toUpperCase()}`,\n  headline: `URGENT FLOOD EVACUATION: ${zone}`,\n  severity: 'Extreme',\n  urgency: 'Immediate',\n  certainty: 'Observed',\n  instruction: `Water level surge detected at ${incident.metrics?.waterLevelMeters || 3.2}m. Evacuate via Route R4 highland arterial. Avoid low-lying river bridges.`,\n  targetPolygons: [zone],\n  generatedAt: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...payload,\n    alertPayload\n  }\n}];"
+      },
+      "id": "node-generate-alert",
+      "name": "Generate Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.body?.alertApproved || $json.alertApproved || false }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-alert-human-approval",
+      "name": "Human Approval",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"Emergency Alert\",\n  \"status\": \"PENDING APPROVAL\",\n  \"emergencyAlert\": \"PENDING APPROVAL\",\n  \"alertPayload\": $json.alertPayload,\n  \"message\": \"Emergency Public Alert drafted. Commander signature required before broadcast.\",\n  \"timestamp\": new Date().toISOString()\n}",
+        "options": {}
+      },
+      "id": "node-respond-pending-alert",
+      "name": "Respond: Pending Approval",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [920, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/automation/mock-dispatch",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"service\": \"SIMULATED_CELL_BROADCAST_EAS\",\n  \"alertId\": $json.alertPayload.alertId,\n  \"headline\": $json.alertPayload.headline,\n  \"instruction\": $json.alertPayload.instruction,\n  \"simulationMode\": true,\n  \"disclaimer\": \"Simulated Emergency Broadcast: Prototype mode. External public sirens/EAS are NOT triggered.\"\n}",
+        "options": {}
+      },
+      "id": "node-publish-simulate-alert",
+      "name": "Publish/Simulate Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step: Log Alert to Audit Ledger\nconst data = $input.first().json;\n\nconst auditLog = {\n  auditId: `AUDIT-ALT-${Date.now()}`,\n  alertId: data.alertPayload?.alertId,\n  status: 'SIMULATION_BROADCAST_CONFIRMED',\n  loggedAt: new Date().toISOString(),\n  disclaimer: 'Prototype simulation: no real EAS broadcast.'\n};\n\nreturn [{\n  json: {\n    ...data,\n    auditLog,\n    emergencyAlert: 'SIMULATED'\n  }\n}];"
+      },
+      "id": "node-log-alert",
+      "name": "Log Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1160, 420]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"Emergency Alert\",\n  \"status\": \"PUBLISHED\",\n  \"emergencyAlert\": \"SIMULATED\",\n  \"alert\": $json.alertPayload,\n  \"auditLog\": $json.auditLog,\n  \"disclaimer\": \"Simulation mode: alert published to mock public notification receiver stubs.\",\n  \"timestamp\": new Date().toISOString()\n}",
+        "options": {}
+      },
+      "id": "node-respond-alert-published",
+      "name": "Respond: Alert Published",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1400, 420]
+    }
+  ],
+  "connections": {
+    "Critical Incident Webhook": {
+      "main": [
+        [
+          {
+            "node": "Generate Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Alert": {
+      "main": [
+        [
+          {
+            "node": "Human Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Approval": {
+      "main": [
+        [
+          {
+            "node": "Publish/Simulate Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Pending Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish/Simulate Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Alert": {
+      "main": [
+        [
+          {
+            "node": "Respond: Alert Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

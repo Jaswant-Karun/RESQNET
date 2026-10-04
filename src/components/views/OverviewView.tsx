@@ -10,6 +10,7 @@ import { useDashboard } from "@/context/DashboardContext";
 import { AlertCircle, AlertTriangle, Droplets, MapPin, Users } from "lucide-react";
 
 import { ResourceAllocationPanel } from "@/components/dashboard/ResourceAllocationPanel";
+import { WorkflowOrchestrationPanel } from "@/components/dashboard/WorkflowOrchestrationPanel";
 
 export function OverviewView() {
   const { incident, simulationStage } = useDashboard();
@@ -35,10 +36,13 @@ export function OverviewView() {
         </div>
       </div>
 
-      {/* 4. Intelligent Resource Allocation Panel */}
+      {/* 4. n8n Workflow Orchestration Layer Panel */}
+      <WorkflowOrchestrationPanel />
+
+      {/* 5. Intelligent Resource Allocation Panel */}
       <ResourceAllocationPanel />
 
-      {/* 5. BOTTOM: Incident Timeline */}
+      {/* 6. BOTTOM: Incident Timeline */}
       <IncidentTimeline />
     </div>
   );

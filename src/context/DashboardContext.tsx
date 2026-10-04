@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   generateDeterministicFloodScenario,
 } from "@/lib/flood-simulation-engine";
@@ -30,6 +30,8 @@ import {
   Shelter,
   TimelineEvent,
   Zone,
+  WorkflowOrchestrationState,
+  WorkflowLogItem,
 } from "@/types";
 
 export type DashboardTab =
@@ -39,7 +41,8 @@ export type DashboardTab =
   | "drones"
   | "plans"
   | "activity"
-  | "ai";
+  | "ai"
+  | "automation";
 
 export type SimulationStage = "NORMAL" | "FLOOD_ACTIVE" | "ESCALATED";
 
@@ -79,6 +82,14 @@ interface DashboardContextType {
   aiStatusMessage: string;
   simulateApiFailure: boolean;
   setSimulateApiFailure: (val: boolean) => void;
+
+  // n8n Workflow Orchestration Layer
+  workflowState: WorkflowOrchestrationState;
+  isTriggeringAutomation: boolean;
+  triggerAutomationWorkflow: (action?: string) => Promise<void>;
+  approveCriticalResponseWorkflow: () => Promise<void>;
+  dispatchDroneWorkflow: (droneId?: string) => Promise<void>;
+  approveEmergencyAlertWorkflow: () => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -152,6 +163,53 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     "AI service unavailable — emergency fallback activated."
   );
   const [simulateApiFailure, setSimulateApiFailure] = useState<boolean>(false);
+
+  // n8n Workflow Orchestration Layer States
+  const [workflowState, setWorkflowState] = useState<WorkflowOrchestrationState>({
+    orchestrator: "SIMULATION_MODE",
+    incidentIntake: "COMPLETED",
+    criticalResponse: "WAITING FOR APPROVAL",
+    droneWorkflow: "READY",
+    emergencyAlert: "PENDING APPROVAL",
+    isSimulationMode: true,
+    n8nWebhookConfigured: false,
+    lastTriggeredAt: new Date().toISOString(),
+    logs: [
+      {
+        id: "init-w1",
+        timestamp: new Date().toISOString(),
+        workflow: "Incident Intake",
+        status: "SUCCESS",
+        stepName: "Intake Verified",
+        message: "Initial scenario loaded: Incident FL-801-ADYAR intake validated.",
+      },
+      {
+        id: "init-w2",
+        timestamp: new Date().toISOString(),
+        workflow: "Critical Response",
+        status: "PENDING",
+        stepName: "Human Approval Gate",
+        message: "Incident is CRITICAL: Human approval safeguard armed.",
+      },
+      {
+        id: "init-w3",
+        timestamp: new Date().toISOString(),
+        workflow: "Drone Deployment",
+        status: "INFO",
+        stepName: "UAV Telemetry Sync",
+        message: "3 UAV units online and ready on pad.",
+      },
+      {
+        id: "init-w4",
+        timestamp: new Date().toISOString(),
+        workflow: "Emergency Alert",
+        status: "PENDING",
+        stepName: "CAP Draft Generated",
+        message: "Cell broadcast draft queued for Zone A Highland corridor.",
+      },
+    ],
+  });
+  const [isTriggeringAutomation, setIsTriggeringAutomation] = useState<boolean>(false);
 
   /**
    * Applies resource allocation, enforces availability caps, updates fleet statuses,
@@ -305,6 +363,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     // Call Gemini Situation Analysis (only on simulation trigger!)
     triggerAiAnalysis(scenario.incident);
+
+    // Trigger n8n Workflow Orchestration Layer for initial scenario
+    triggerAutomationWorkflow("TRIGGER_FULL_ORCHESTRATION");
   };
 
   // Deterministic simulateEscalation() function
@@ -432,10 +493,50 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     };
     setAlerts((prev) => [newAlert, ...prev]);
     setUnreadAlertCount((c) => c + 1);
+
+    // Trigger n8n Workflow Orchestration Layer for critical escalation
+    triggerAutomationWorkflow("TRIGGER_FULL_ORCHESTRATION");
   };
 
   const resetSimulation = () => {
     simulateFlood();
+  };
+
+  /**
+   * Dispatches payload to /api/automation/trigger (n8n or local simulation fallback)
+   */
+  const triggerAutomationWorkflow = async (action: string = "TRIGGER_FULL_ORCHESTRATION") => {
+    setIsTriggeringAutomation(true);
+    try {
+      const payload = {
+        incident,
+        responsePlan: plan,
+        resources: {
+          ambulances,
+          rescueTeams,
+          drones,
+        },
+        simulationMode: true,
+        action,
+      };
+
+      const res = await fetch("/api/automation/trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.state) {
+          setWorkflowState(data.state);
+        }
+      }
+    } catch (err) {
+      console.warn("[RESQNET Automation] Orchestrator unreachable, continuing in simulation mode.", err);
+    } finally {
+      setIsTriggeringAutomation(false);
+    }
   };
 
   const approveAction = () => {
@@ -447,6 +548,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       approvedAt: new Date().toISOString(),
       status: "APPROVED_ACTIVE",
     }));
+
+    // Trigger n8n Critical Response approval workflow
+    triggerAutomationWorkflow("APPROVE_CRITICAL_RESPONSE");
 
     const approvalEvent: TimelineEvent = {
       id: `evt-appr-${Date.now()}`,
@@ -461,6 +565,37 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     };
     setTimeline((prev) => [approvalEvent, ...prev]);
   };
+
+  const approveCriticalResponseWorkflow = async () => {
+    approveAction();
+  };
+
+  const dispatchDroneWorkflow = async (droneId?: string) => {
+    await triggerAutomationWorkflow("DEPLOY_DRONE");
+    setDrones((prev) =>
+      prev.map((d, index) => {
+        if (droneId ? d.id === droneId : index === 0) {
+          return {
+            ...d,
+            flightStatus: "AIRBORNE_PATROL",
+            altitudeMeters: 45,
+            groundSpeedKmH: 38,
+            telemetryLinkStrength: 98,
+          };
+        }
+        return d;
+      })
+    );
+  };
+
+  const approveEmergencyAlertWorkflow = async () => {
+    await triggerAutomationWorkflow("APPROVE_EMERGENCY_ALERT");
+  };
+
+  // Sync with automation layer on mount
+  useEffect(() => {
+    triggerAutomationWorkflow("TRIGGER_FULL_ORCHESTRATION");
+  }, []);
 
   const markAlertsRead = () => {
     setUnreadAlertCount(0);
@@ -500,6 +635,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         aiStatusMessage,
         simulateApiFailure,
         setSimulateApiFailure,
+        workflowState,
+        isTriggeringAutomation,
+        triggerAutomationWorkflow,
+        approveCriticalResponseWorkflow,
+        dispatchDroneWorkflow,
+        approveEmergencyAlertWorkflow,
       }}
     >
       {children}

@@ -1,0 +1,156 @@
+{
+  "name": "RESQNET - Workflow 1: Incident Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "incident-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-intake",
+      "name": "Webhook - Incident Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Validate Incident Payload\nconst payload = $input.first().json.body || $input.first().json;\nconst incident = payload.incident || payload;\n\nif (!incident || !incident.id || !incident.code) {\n  throw new Error('Invalid incident intake payload: missing incident id or code.');\n}\n\nreturn [{\n  json: {\n    isValid: true,\n    validatedAt: new Date().toISOString(),\n    incident: {\n      id: incident.id,\n      code: incident.code,\n      title: incident.title || 'Unclassified Disaster Event',\n      severity: incident.severity || 'CRITICAL',\n      status: incident.status || 'REPORTED',\n      primaryLocation: incident.primaryLocation || { name: 'Sector Alpha', coordinates: [13.01, 80.23] },\n      metrics: incident.metrics || {}\n    },\n    responsePlan: payload.responsePlan || null,\n    resources: payload.resources || null,\n    simulationMode: payload.simulationMode !== undefined ? payload.simulationMode : true\n  }\n}];"
+      },
+      "id": "node-validate-incident",
+      "name": "Validate Incident",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 2: Create / Update Incident in Workflow Context\nconst data = $input.first().json;\nconst incident = data.incident;\n\n// Normalize and record incident snapshot\nconst normalizedRecord = {\n  incidentId: incident.id,\n  code: incident.code,\n  intakeTimestamp: new Date().toISOString(),\n  severity: incident.severity,\n  waterLevel: incident.metrics?.waterLevelMeters || 0,\n  affectedPopulation: incident.metrics?.affectedPopulationEstimated || 0,\n  status: 'REGISTERED_IN_WORKFLOW_ORCHESTRATOR'\n};\n\nreturn [{\n  json: {\n    ...data,\n    normalizedRecord,\n    workflowStage: 'INCIDENT_INTAKE_COMPLETED'\n  }\n}];"
+      },
+      "id": "node-create-update-incident",
+      "name": "Create/Update Incident",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 3: Analyze Severity\nconst data = $input.first().json;\nconst severity = (data.incident?.severity || 'MEDIUM').toUpperCase();\n\nconst isCritical = severity === 'CRITICAL' || severity === 'CATASTROPHIC' || severity === 'HIGH';\n\nreturn [{\n  json: {\n    ...data,\n    analysis: {\n      severity,\n      isCritical,\n      requiresImmediateEocApproval: isCritical,\n      recommendedAction: isCritical ? 'ESCALATE_TO_CRITICAL_RESPONSE' : 'ROUTE_TO_STANDARD_MONITORING'\n    }\n  }\n}];"
+      },
+      "id": "node-analyze-severity",
+      "name": "Analyze Severity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.analysis.isCritical }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-branch-severity",
+      "name": "Branch: Check Critical",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"Incident Intake\",\n  \"status\": \"COMPLETED\",\n  \"branch\": \"CRITICAL_RESPONSE\",\n  \"incident\": $json.incident,\n  \"analysis\": $json.analysis,\n  \"nextWorkflow\": \"Critical Response (Workflow 2)\",\n  \"timestamp\": new Date().toISOString()\n}",
+        "options": {}
+      },
+      "id": "node-respond-critical",
+      "name": "Respond: Critical Branch",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"Incident Intake\",\n  \"status\": \"COMPLETED\",\n  \"branch\": \"STANDARD_MONITORING\",\n  \"incident\": $json.incident,\n  \"analysis\": $json.analysis,\n  \"timestamp\": new Date().toISOString()\n}",
+        "options": {}
+      },
+      "id": "node-respond-standard",
+      "name": "Respond: Standard Branch",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1320, 420]
+    }
+  ],
+  "connections": {
+    "Webhook - Incident Intake": {
+      "main": [
+        [
+          {
+            "node": "Validate Incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Incident": {
+      "main": [
+        [
+          {
+            "node": "Create/Update Incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create/Update Incident": {
+      "main": [
+        [
+          {
+            "node": "Analyze Severity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Severity": {
+      "main": [
+        [
+          {
+            "node": "Branch: Check Critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Branch: Check Critical": {
+      "main": [
+        [
+          {
+            "node": "Respond: Critical Branch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Standard Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

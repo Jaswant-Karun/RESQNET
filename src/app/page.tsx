@@ -9,6 +9,7 @@ import { DronesView } from "@/components/views/DronesView";
 import { ResponsePlansView } from "@/components/views/ResponsePlansView";
 import { ActivityLogView } from "@/components/views/ActivityLogView";
 import { ResqAiView } from "@/components/views/ResqAiView";
+import { AutomationView } from "@/components/views/AutomationView";
 
 export default function DashboardPage() {
   const { activeTab } = useDashboard();
@@ -22,6 +23,8 @@ export default function DashboardPage() {
       return <DronesView />;
     case "plans":
       return <ResponsePlansView />;
+    case "automation":
+      return <AutomationView />;
     case "activity":
       return <ActivityLogView />;
     case "ai":

@@ -7,6 +7,7 @@ import {
   AlertOctagon,
   Bot,
   FileCheck2,
+  GitBranch,
   LayoutDashboard,
   Navigation,
   Radio,
@@ -28,6 +29,7 @@ export function Sidebar({ className = "" }: SidebarProps) {
     plan,
     isActionApproved,
     timeline,
+    workflowState,
   } = useDashboard();
 
   const navItems: {
@@ -69,6 +71,13 @@ export function Sidebar({ className = "" }: SidebarProps) {
       icon: FileCheck2,
       badge: isActionApproved ? "APPROVED" : "PENDING",
       badgeColor: isActionApproved ? "emerald" : "amber",
+    },
+    {
+      id: "automation",
+      label: "Orchestration (n8n)",
+      icon: GitBranch,
+      badge: workflowState.isSimulationMode ? "SIM MODE" : "RUNNING",
+      badgeColor: workflowState.isSimulationMode ? "amber" : "emerald",
     },
     {
       id: "activity",

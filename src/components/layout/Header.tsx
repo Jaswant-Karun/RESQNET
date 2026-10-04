@@ -18,6 +18,7 @@ export function Header() {
     unreadAlertCount,
     markAlertsRead,
     setActiveTab,
+    workflowState,
   } = useDashboard();
 
   const [timeString, setTimeString] = useState<string>("");
@@ -93,16 +94,31 @@ export function Header() {
               <span className="text-emerald-400 font-bold">ONLINE</span>
             </div>
 
-            {/* SIMULATION MODE INDICATOR */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/60 border border-amber-800/80 font-mono text-[11px] text-amber-300 font-bold">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              <span>SIMULATION MODE</span>
-              {simulationStage === "ESCALATED" && (
-                <span className="text-red-400 ml-1 text-[10px] font-black underline">
-                  [ESCALATED]
-                </span>
-              )}
-            </div>
+            {/* AUTOMATION & SIMULATION MODE INDICATOR */}
+            {workflowState.isSimulationMode ? (
+              <div
+                onClick={() => setActiveTab("automation")}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/70 border border-amber-800/80 font-mono text-[11px] text-amber-300 font-bold cursor-pointer hover:bg-amber-900/80 transition-colors"
+                title="Workflow Orchestration: Running in Local Simulation Mode"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span>Automation: SIMULATION MODE</span>
+                {simulationStage === "ESCALATED" && (
+                  <span className="text-red-400 ml-1 text-[10px] font-black underline">
+                    [ESCALATED]
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div
+                onClick={() => setActiveTab("automation")}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/70 border border-emerald-800/80 font-mono text-[11px] text-emerald-300 font-bold cursor-pointer hover:bg-emerald-900/80 transition-colors"
+                title="n8n Live Workflow Connected"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>n8n Workflow: RUNNING</span>
+              </div>
+            )}
 
             {/* Notification Bell with Badge */}
             <div className="relative">

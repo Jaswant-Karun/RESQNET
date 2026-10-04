@@ -1,0 +1,130 @@
+{
+  "name": "RESQNET - Workflow 3: Drone Deployment",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "drone-deployment",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-drone-req",
+      "name": "Drone Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step: Check Available Drones\nconst payload = $input.first().json.body || $input.first().json;\nconst drones = payload.resources?.drones || [\n  {\n    id: 'drone-101',\n    callsign: 'UAV Echo-1',\n    model: 'Matrice 300 RTK',\n    flightStatus: 'STANDBY_PAD',\n    batteryPercentage: 94,\n    role: 'THERMAL_RECON'\n  },\n  {\n    id: 'drone-102',\n    callsign: 'UAV Talon-2',\n    model: 'Mavic 3 Thermal',\n    flightStatus: 'STANDBY_PAD',\n    batteryPercentage: 88,\n    role: 'SEARCH_AND_RESCUE'\n  },\n  {\n    id: 'drone-103',\n    callsign: 'UAV Lifeline-3',\n    model: 'Heavy-Lift Octocopter',\n    flightStatus: 'STANDBY_PAD',\n    batteryPercentage: 76,\n    role: 'SUPPLY_AIRDROP'\n  }\n];\n\nconst availableDrones = drones.filter(d => \n  d.batteryPercentage > 30 && \n  (d.flightStatus === 'STANDBY_PAD' || d.flightStatus === 'READY' || d.flightStatus === 'STANDBY')\n);\n\nreturn [{\n  json: {\n    ...payload,\n    totalFleetCount: drones.length,\n    availableDrones,\n    hasAvailableDrone: availableDrones.length > 0\n  }\n}];"
+      },
+      "id": "node-check-available-drones",
+      "name": "Check Available Drones",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step: Select Available Drone\nconst data = $input.first().json;\n\nif (!data.hasAvailableDrone || data.availableDrones.length === 0) {\n  throw new Error('No operational UAV units currently available on pad.');\n}\n\n// Select highest battery drone matching the mission\nconst selectedDrone = [...data.availableDrones].sort((a, b) => b.batteryPercentage - a.batteryPercentage)[0];\n\nreturn [{\n  json: {\n    ...data,\n    selectedDrone\n  }\n}];"
+      },
+      "id": "node-select-drone",
+      "name": "Select Available Drone",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step: Create Mission\nconst data = $input.first().json;\nconst drone = data.selectedDrone;\nconst targetZone = data.incident?.primaryLocation?.name || 'Zone A';\n\nconst mission = {\n  missionId: `MSN-${Date.now().toString(36).toUpperCase()}`,\n  droneId: drone.id,\n  droneCallsign: drone.callsign,\n  model: drone.model,\n  targetZone,\n  flightPattern: 'PERIMETER_GRID_RECON',\n  targetAltitudeMeters: 45,\n  payload: 'Thermal FLIR + Floatation Vest Drop',\n  flightStatus: 'MISSION_CREATED',\n  createdAt: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...data,\n    mission\n  }\n}];"
+      },
+      "id": "node-create-mission",
+      "name": "Create Mission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step: Update Mission Status (Takeoff clearance)\nconst data = $input.first().json;\n\nconst updatedMission = {\n  ...data.mission,\n  flightStatus: 'AIRBORNE_PATROL',\n  groundSpeedKmH: 38.5,\n  telemetryLinkStrength: 98,\n  clearedAt: new Date().toISOString()\n};\n\nreturn [{\n  json: {\n    ...data,\n    mission: updatedMission,\n    droneWorkflowStatus: 'IN_FLIGHT'\n  }\n}];"
+      },
+      "id": "node-update-mission-status",
+      "name": "Update Mission Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1160, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"Drone Deployment\",\n  \"droneWorkflow\": \"IN_FLIGHT\",\n  \"status\": \"READY\",\n  \"mission\": $json.mission,\n  \"dispatchedDrone\": $json.selectedDrone,\n  \"timestamp\": new Date().toISOString(),\n  \"disclaimer\": \"UAV Telemetry simulated in local prototype environment.\"\n}",
+        "options": {}
+      },
+      "id": "node-return-drone-result",
+      "name": "Return Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1400, 300]
+    }
+  ],
+  "connections": {
+    "Drone Request": {
+      "main": [
+        [
+          {
+            "node": "Check Available Drones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Available Drones": {
+      "main": [
+        [
+          {
+            "node": "Select Available Drone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Available Drone": {
+      "main": [
+        [
+          {
+            "node": "Create Mission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Mission": {
+      "main": [
+        [
+          {
+            "node": "Update Mission Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Mission Status": {
+      "main": [
+        [
+          {
+            "node": "Return Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

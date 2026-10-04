@@ -1,0 +1,234 @@
+{
+  "name": "RESQNET - Workflow 2: Critical Response",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "critical-response",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-critical",
+      "name": "Webhook - Incident",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [160, 320]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ ($json.body?.incident?.severity || $json.incident?.severity || 'CRITICAL').toUpperCase() }}",
+              "value2": "CRITICAL"
+            }
+          ]
+        }
+      },
+      "id": "node-check-severity",
+      "name": "Check Severity",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [380, 320]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.body?.responsePlan?.humanApproved || $json.responsePlan?.humanApproved || $json.body?.approved || false }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "node-human-approval-gate",
+      "name": "If Approved",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [620, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"Critical Response\",\n  \"status\": \"WAITING FOR APPROVAL\",\n  \"approvalRequired\": true,\n  \"message\": \"Incident is CRITICAL. Human approval required before allocating multi-agency strike resources.\",\n  \"incidentId\": $json.body?.incident?.id || $json.incident?.id,\n  \"timestamp\": new Date().toISOString()\n}",
+        "options": {}
+      },
+      "id": "node-respond-wait-approval",
+      "name": "Request Human Approval",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [880, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step: Allocate Resources (Intelligent Allocation Logic)\nconst payload = $input.first().json.body || $input.first().json;\nconst incident = payload.incident || {};\nconst requested = payload.responsePlan?.resourceAllocation || { ambulances: 2, rescueTeams: 2, drones: 1 };\n\nconst allocated = {\n  incidentId: incident.id || 'INC-ACTIVE',\n  assignedAmbulances: requested.ambulances || 2,\n  assignedRescueTeams: requested.rescueTeams || 2,\n  assignedDrones: requested.drones || 1,\n  priorityZone: incident.primaryLocation?.name || 'Zone A',\n  allocationTimestamp: new Date().toISOString(),\n  status: 'ALLOCATED_BY_N8N'\n};\n\nreturn [{\n  json: {\n    ...payload,\n    allocated,\n    prototypeDisclaimer: 'PROTOTYPE DEMONSTRATION: External real emergency services are not connected. Dispatch actions are simulated via mock endpoints.'\n  }\n}];"
+      },
+      "id": "node-allocate-resources",
+      "name": "Allocate Resources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 280]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/automation/mock-dispatch",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"service\": \"AMBULANCE_108_CAD\",\n  \"dispatchedUnits\": $json.allocated.assignedAmbulances,\n  \"destinationSector\": $json.allocated.priorityZone,\n  \"simulationMode\": true,\n  \"disclaimer\": \"Mock Ambulance Dispatch: Prototype hackathon simulation. No real vehicles mobilized.\"\n}",
+        "options": {}
+      },
+      "id": "node-trigger-ambulance",
+      "name": "Trigger Ambulance Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/automation/mock-dispatch",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"service\": \"SDRF_WATER_RESCUE\",\n  \"dispatchedTeams\": $json.allocated.assignedRescueTeams,\n  \"destinationSector\": $json.allocated.priorityZone,\n  \"simulationMode\": true,\n  \"disclaimer\": \"Mock Rescue Team Dispatch: Prototype hackathon simulation.\"\n}",
+        "options": {}
+      },
+      "id": "node-trigger-rescue",
+      "name": "Trigger Rescue Team Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Trigger Drone Workflow Sub-Execution\nconst data = $input.first().json;\n\nconst droneMission = {\n  droneCallsign: 'UAV-Echo-1',\n  model: 'Matrice 300 RTK',\n  missionType: 'THERMAL_SEARCH_CORRIDOR',\n  targetZone: data.allocated?.priorityZone || 'Zone A',\n  status: 'MISSION_CREATED',\n  airborneAt: new Date().toISOString(),\n  telemetryStreamActive: true\n};\n\nreturn [{\n  json: {\n    ...data,\n    droneMission\n  }\n}];"
+      },
+      "id": "node-trigger-drone",
+      "name": "Trigger Drone Workflow",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"Critical Response\",\n  \"status\": \"APPROVED\",\n  \"orchestrator\": \"COMPLETED\",\n  \"criticalResponse\": \"COMPLETED\",\n  \"allocated\": $json.allocated,\n  \"droneMission\": $json.droneMission,\n  \"ambulanceDispatch\": \"SIMULATED\",\n  \"rescueTeamDispatch\": \"SIMULATED\",\n  \"disclaimer\": \"External real emergency systems are NOT connected. All dispatches executed in prototype simulation mode.\",\n  \"updatedAt\": new Date().toISOString()\n}",
+        "options": {}
+      },
+      "id": "node-update-resqnet",
+      "name": "Update RESQNET",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"Critical Response\",\n  \"status\": \"NON_CRITICAL_BYPASSED\",\n  \"message\": \"Incident severity is non-critical. Critical multi-agency response not required.\"\n}",
+        "options": {}
+      },
+      "id": "node-non-critical-exit",
+      "name": "Non-Critical Exit",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [620, 480]
+    }
+  ],
+  "connections": {
+    "Webhook - Incident": {
+      "main": [
+        [
+          {
+            "node": "Check Severity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Severity": {
+      "main": [
+        [
+          {
+            "node": "If Approved",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Non-Critical Exit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Approved": {
+      "main": [
+        [
+          {
+            "node": "Allocate Resources",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Human Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Allocate Resources": {
+      "main": [
+        [
+          {
+            "node": "Trigger Ambulance Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Ambulance Workflow": {
+      "main": [
+        [
+          {
+            "node": "Trigger Rescue Team Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Rescue Team Workflow": {
+      "main": [
+        [
+          {
+            "node": "Trigger Drone Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Drone Workflow": {
+      "main": [
+        [
+          {
+            "node": "Update RESQNET",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
