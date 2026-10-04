@@ -106,15 +106,37 @@ export function generateResponsePlan(incident: Incident): ResponsePlan {
   // 2. Determine Priority Zones
   const priorityZones: string[] = [zoneName];
 
-  // 3. Determine Resource Allocation & Immediate Actions based on severity
+  // 3. Determine Resource Allocation & Immediate Actions based on severity & road impassability
   let resourceAllocation: ResourceAllocation;
   let immediateActions: string[];
   let evacuationRoute: string;
   let targetShelter: string;
   let approvalRequired: boolean;
 
-  if (riskLevel === "CRITICAL") {
-    // Exact hackathon scenario requirements
+  const isR2Blocked = blockedRoads.includes("R2");
+  const isEscalatedScenario = waterLevel >= 3.0 || affectedPop >= 2000 || isR2Blocked;
+
+  if (isEscalatedScenario) {
+    // ADAPTIVE DISASTER ESCALATION: Route R2 is submerged/blocked -> Dynamically re-route via R4 Highland Pass to Shelter C
+    resourceAllocation = {
+      ambulances: 4,
+      rescueTeams: 3,
+      drones: 2,
+    };
+    evacuationRoute = "R4";
+    targetShelter = "Shelter C";
+    approvalRequired = true;
+
+    immediateActions = [
+      `Emergency Evacuate ${zoneName} & Lowland Pockets via Route R4`,
+      "R2 Submerged & Impassable: Divert all convoys to Highland Arterial R4",
+      "Deploy 2 Drones (UAV Echo-1 & Talon-2) for Thermal Corridor Monitoring",
+      `Dispatch ${resourceAllocation.ambulances} ambulances to Highland Corridor R4`,
+      `Mobilize ${resourceAllocation.rescueTeams} SDRF motorized swiftwater rescue teams`,
+      `Reception center shifted to ${targetShelter} (Capacity: 1,500)`,
+    ];
+  } else if (riskLevel === "CRITICAL") {
+    // Baseline scenario requirements
     resourceAllocation = {
       ambulances: 2,
       rescueTeams: 2,
@@ -256,15 +278,18 @@ export function generateResponsePlan(incident: Incident): ResponsePlan {
   ];
 
   // 7. Evacuation Routes Plan
+  const destinationShelterId = targetShelter === "Shelter C" ? "shelter-c" : "shelter-b";
+  const roadIds = evacuationRoute === "R4" ? ["road-r4"] : ["road-r2"];
+
   const evacuationRoutes: EvacuationRoutePlan[] = [
     {
-      id: "route-plan-r2",
-      routeName: `Route ${evacuationRoute} (Kotturpuram High Bypass) -> ${targetShelter}`,
+      id: `route-plan-${evacuationRoute.toLowerCase()}`,
+      routeName: `Route ${evacuationRoute} (${evacuationRoute === "R4" ? "Highland Arterial Pass" : "Kotturpuram High Bypass"}) -> ${targetShelter}`,
       fromZoneId: incident.zoneId || "zone-a",
-      destinationShelterId: "shelter-b",
-      safetyScore: 94,
-      estimatedTransitMin: 11,
-      roadSegmentIds: ["road-r2"],
+      destinationShelterId,
+      safetyScore: evacuationRoute === "R4" ? 98 : 94,
+      estimatedTransitMin: evacuationRoute === "R4" ? 14 : 11,
+      roadSegmentIds: roadIds,
       activeEscortUnitId: "team-03",
       status: "OPEN",
     },
@@ -287,8 +312,8 @@ export function generateResponsePlan(incident: Incident): ResponsePlan {
     primaryObjectives: [
       `Rapid extraction of isolated civilians in ${zoneName}`,
       `Safe transit via Route ${evacuationRoute} bypassing submerged corridors`,
-      `Pre-reception readiness at ${targetShelter} (capacity: 700)`,
-      `Air-reconnaissance via Drone 01 to identify trapped clusters`,
+      `Pre-reception readiness at ${targetShelter} (${targetShelter === "Shelter C" ? "capacity: 1,500" : "capacity: 700"})`,
+      `Air-reconnaissance via Drones to identify trapped clusters and monitor dry arterial corridors`,
     ],
     actions,
     evacuationRoutes,
@@ -299,6 +324,7 @@ export function generateResponsePlan(incident: Incident): ResponsePlan {
     immediateActions,
     resourceAllocation,
     evacuationRoute,
+    targetShelter,
     publicAlert,
     explanation,
     approvalRequired,
