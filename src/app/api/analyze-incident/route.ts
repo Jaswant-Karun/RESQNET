@@ -6,6 +6,7 @@ import { analyzeIncidentWithGemini } from "@/lib/server/gemini";
 export interface AnalyzeIncidentRequestBody {
   incident: Incident;
   simulateError?: boolean;
+  testCase?: "MISSING_KEY" | "QUOTA_EXCEEDED" | "INVALID_JSON" | "TIMEOUT" | "INVALID_RESPONSE";
 }
 
 export interface AnalyzeIncidentResponseBody {
@@ -25,11 +26,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { incident, simulateError } = body;
+    const { incident, simulateError, testCase } = body;
 
-    // Test Case: Simulated API Failure
-    if (simulateError) {
-      console.warn("[RESQNET Engine] Simulated API failure triggered by client test.");
+    // Test Case: Simulated API Failure (Key missing, Quota exceeded, Invalid JSON, Timeout, Invalid Response)
+    if (simulateError || testCase) {
+      console.warn(`[RESQNET Engine] Simulated API failure (${testCase || "GENERAL_SIMULATION"}) triggered by client test.`);
       const fallbackPlan = generateResponsePlan(incident);
       return NextResponse.json<AnalyzeIncidentResponseBody>({
         source: "FALLBACK",
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
           ...fallbackPlan,
           decisionEngine: "FALLBACK",
         },
-        statusMessage: "AI service unavailable — emergency fallback activated.",
+        statusMessage: "AI service unavailable — fallback decision engine active.",
       });
     }
 
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     const geminiResult = await analyzeIncidentWithGemini(incident, { timeoutMs: 12000 });
 
     if (!geminiResult.ok) {
-      // Friendly fallback: NO raw API errors exposed
+      // Friendly fallback: NO raw API errors or keys exposed
       console.info(
         `[RESQNET Engine] Gemini unavailable (${geminiResult.error}). Engaging deterministic fallback response engine.`
       );
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
           ...fallbackPlan,
           decisionEngine: "FALLBACK",
         },
-        statusMessage: "AI service unavailable — emergency fallback activated.",
+        statusMessage: "AI service unavailable — fallback decision engine active.",
       });
     }
 
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
             ...fallbackPlan,
             decisionEngine: "FALLBACK",
           },
-          statusMessage: "AI service unavailable — emergency fallback activated.",
+          statusMessage: "AI service unavailable — fallback decision engine active.",
         });
       }
     } catch {
@@ -152,7 +153,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         source: "FALLBACK",
-        statusMessage: "AI service unavailable — emergency fallback activated.",
+        statusMessage: "AI service unavailable — fallback decision engine active.",
       },
       { status: 200 }
     );
