@@ -173,11 +173,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     emergencyAlert: "PENDING APPROVAL",
     isSimulationMode: true,
     n8nWebhookConfigured: false,
-    lastTriggeredAt: new Date().toISOString(),
+    lastTriggeredAt: undefined,
     logs: [
       {
         id: "init-w1",
-        timestamp: new Date().toISOString(),
+        timestamp: initialScenario.incident.detectedAt,
         workflow: "Incident Intake",
         status: "SUCCESS",
         stepName: "Intake Verified",
@@ -185,7 +185,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       },
       {
         id: "init-w2",
-        timestamp: new Date().toISOString(),
+        timestamp: initialScenario.incident.detectedAt,
         workflow: "Critical Response",
         status: "PENDING",
         stepName: "Human Approval Gate",
@@ -193,7 +193,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       },
       {
         id: "init-w3",
-        timestamp: new Date().toISOString(),
+        timestamp: initialScenario.incident.detectedAt,
         workflow: "Drone Deployment",
         status: "INFO",
         stepName: "UAV Telemetry Sync",
@@ -201,7 +201,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       },
       {
         id: "init-w4",
-        timestamp: new Date().toISOString(),
+        timestamp: initialScenario.incident.detectedAt,
         workflow: "Emergency Alert",
         status: "PENDING",
         stepName: "CAP Draft Generated",

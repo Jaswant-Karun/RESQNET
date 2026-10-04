@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,11 @@ export function WorkflowOrchestrationPanel() {
   } = useDashboard();
 
   const [showLogs, setShowLogs] = useState<boolean>(true);
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Status mapping
   const {
@@ -108,8 +113,8 @@ export function WorkflowOrchestrationPanel() {
               <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2 mt-0.5">
                 <span>Decides HOW response executes</span>
                 <span>•</span>
-                <span className="text-slate-500">
-                  {lastTriggeredAt
+                <span className="text-slate-500" suppressHydrationWarning>
+                  {mounted && lastTriggeredAt
                     ? `Last Cycle: ${new Date(lastTriggeredAt).toLocaleTimeString()}`
                     : "Armed & Synchronized"}
                 </span>
@@ -349,7 +354,9 @@ export function WorkflowOrchestrationPanel() {
                       <span>[{log.workflow}]</span>
                       {log.stepName && <span>• {log.stepName}</span>}
                     </span>
-                    <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    <span suppressHydrationWarning>
+                      {mounted ? new Date(log.timestamp).toLocaleTimeString() : ""}
+                    </span>
                   </div>
                   <div className="text-[11px]">{log.message}</div>
                   {log.simulatedTarget && (

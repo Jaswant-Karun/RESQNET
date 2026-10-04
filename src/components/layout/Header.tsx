@@ -62,7 +62,7 @@ export function Header() {
               <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
                 <span>EOC CENTRAL COMMAND</span>
                 <span>•</span>
-                <span className="text-emerald-400 font-semibold">{timeString || "SYNCHRONIZING..."}</span>
+                <span className="text-emerald-400 font-semibold" suppressHydrationWarning>{timeString || "SYNCHRONIZING..."}</span>
               </div>
             </div>
           </div>
