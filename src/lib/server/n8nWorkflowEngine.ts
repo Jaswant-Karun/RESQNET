@@ -19,6 +19,7 @@ export interface WorkflowExecutionResult {
   webhookUrl?: string;
   n8nResponse?: any;
   error?: string;
+  statusMessage?: string;
   state: WorkflowOrchestrationState;
 }
 
@@ -31,14 +32,23 @@ export interface WorkflowExecutionResult {
  */
 export async function executeAutomationWorkflow(
   payload: AutomationPayload,
-  action?: string
+  action?: string,
+  options?: {
+    simulateUnavailable?: boolean;
+    testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING";
+  }
 ): Promise<WorkflowExecutionResult> {
-  const webhookUrl = process.env.N8N_WEBHOOK_URL?.trim();
+  const isSimulateMissing = options?.testCase === "N8N_URL_MISSING";
+  const isSimulateUnavailable =
+    Boolean(options?.simulateUnavailable) || options?.testCase === "N8N_UNAVAILABLE";
+
+  const rawWebhookUrl = process.env.N8N_WEBHOOK_URL?.trim();
+  const webhookUrl = isSimulateMissing ? "" : rawWebhookUrl;
   const hasWebhookUrl = Boolean(webhookUrl && webhookUrl.length > 0);
   const now = new Date().toISOString();
 
-  // If webhook URL is configured, attempt live n8n orchestration first
-  if (hasWebhookUrl && webhookUrl) {
+  // If webhook URL is configured and not explicitly simulated unavailable, attempt live n8n orchestration first
+  if (hasWebhookUrl && webhookUrl && !isSimulateUnavailable) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -71,6 +81,7 @@ export async function executeAutomationWorkflow(
           webhookUrlConfigured: true,
           webhookUrl,
           n8nResponse: n8nData,
+          statusMessage: "n8n automation active — live execution connected.",
           state: liveState,
         };
       } else {
@@ -78,20 +89,21 @@ export async function executeAutomationWorkflow(
           `[RESQNET n8n Layer] n8n returned HTTP ${response.status}. Engaging local simulation fallback.`
         );
       }
-    } catch (err: any) {
+    } catch {
       console.info(
-        `[RESQNET n8n Layer] Live n8n webhook unreachable (${err?.message || "timeout"}). Engaging local simulation fallback.`
+        `[RESQNET n8n Layer] Live n8n webhook unreachable. Engaging local simulation fallback.`
       );
     }
   }
 
-  // Local Simulation Fallback (Clean Abstraction)
+  // Local Simulation Fallback (Clean Abstraction - Never Crashing)
   const simState = simulateWorkflowsLocally(payload, action, hasWebhookUrl, now);
   return {
     success: true,
     mode: "SIMULATION",
     webhookUrlConfigured: hasWebhookUrl,
     webhookUrl: webhookUrl || undefined,
+    statusMessage: "n8n unavailable — automation simulation active.",
     state: simState,
   };
 }
