@@ -127,7 +127,7 @@ export function WorkflowOrchestrationPanel() {
             {isSimulationMode ? (
               <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-amber-950/70 border border-amber-800/80 text-amber-300 font-mono text-xs font-bold shadow-inner">
                 <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                <span>Automation: SIMULATION MODE</span>
+                <span>n8n unavailable — automation simulation active.</span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-emerald-950/70 border border-emerald-800/80 text-emerald-300 font-mono text-xs font-bold shadow-inner">
@@ -156,6 +156,19 @@ export function WorkflowOrchestrationPanel() {
       </CardHeader>
 
       <CardContent className="p-4 space-y-4">
+        {/* n8n Status Banner when in simulation mode */}
+        {isSimulationMode && (
+          <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/60 flex items-center justify-between text-xs font-mono text-amber-200">
+            <div className="flex items-center gap-2">
+              <AlertOctagon className="h-4 w-4 text-amber-400 shrink-0" />
+              <span className="font-semibold">n8n unavailable — automation simulation active.</span>
+            </div>
+            <span className="text-[10px] text-amber-400/80 uppercase font-bold px-2 py-0.5 rounded bg-amber-950/80 border border-amber-700/60">
+              LOCAL AUTOMATION SIMULATION ACTIVE
+            </span>
+          </div>
+        )}
+
         {/* The 4 Core Workflow Status Cards (Grid Layout) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* WORKFLOW 1: Incident Intake */}
