@@ -68,13 +68,13 @@ export function Header() {
           </div>
 
           {/* Center: Current Incident Status Banner */}
-          <div className="hidden xl:flex items-center gap-2.5 px-3.5 py-1.5 rounded-md bg-slate-900/90 border border-slate-800 max-w-xl">
-            <Radio className="h-3.5 w-3.5 text-red-500 animate-pulse shrink-0" />
+          <div className="hidden xl:flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800/90 shadow-sm max-w-xl">
+            <Radio className="h-3.5 w-3.5 text-rose-500 animate-pulse shrink-0" />
             <div className="truncate text-xs font-mono">
-              <span className="text-slate-400">CURRENT INCIDENT: </span>
+              <span className="text-slate-400 font-semibold">SIMULATED INCIDENT: </span>
               <span className="text-white font-bold">{incident.code}</span>
-              <span className="text-slate-400"> — </span>
-              <span className="text-red-400 font-semibold truncate">{incident.title}</span>
+              <span className="text-slate-500"> — </span>
+              <span className="text-rose-400 font-semibold truncate">{incident.title}</span>
             </div>
             <Badge
               variant={incident.severity === "CRITICAL" ? "critical" : "warning"}
@@ -88,37 +88,26 @@ export function Header() {
           {/* Right Controls: Status, Sim Indicator, Notifications, Operator */}
           <div className="flex items-center gap-3">
             {/* System Status: ONLINE */}
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-900 border border-slate-800 font-mono text-[11px]">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 font-mono text-[11px] shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-slate-400">SYS:</span>
               <span className="text-emerald-400 font-bold">ONLINE</span>
             </div>
 
             {/* AUTOMATION & SIMULATION MODE INDICATOR */}
-            {workflowState.isSimulationMode ? (
-              <div
-                onClick={() => setActiveTab("automation")}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/70 border border-amber-800/80 font-mono text-[11px] text-amber-300 font-bold cursor-pointer hover:bg-amber-900/80 transition-colors"
-                title="Workflow Orchestration: Running in Local Simulation Mode"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span>Automation: SIMULATION MODE</span>
-                {simulationStage === "ESCALATED" && (
-                  <span className="text-red-400 ml-1 text-[10px] font-black underline">
-                    [ESCALATED]
-                  </span>
-                )}
-              </div>
-            ) : (
-              <div
-                onClick={() => setActiveTab("automation")}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/70 border border-emerald-800/80 font-mono text-[11px] text-emerald-300 font-bold cursor-pointer hover:bg-emerald-900/80 transition-colors"
-                title="n8n Live Workflow Connected"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>n8n Workflow: RUNNING</span>
-              </div>
-            )}
+            <div
+              onClick={() => setActiveTab("automation")}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-950/80 border border-amber-500/80 font-mono text-[11px] text-amber-300 font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)] cursor-pointer hover:bg-amber-900/90 transition-all"
+              title="Workflow Orchestration: Running in Simulation Mode"
+            >
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>SIMULATION MODE</span>
+              {simulationStage === "ESCALATED" && (
+                <span className="text-rose-400 ml-1 text-[10px] font-black uppercase">
+                  [ESCALATED]
+                </span>
+              )}
+            </div>
 
             {/* Notification Bell with Badge */}
             <div className="relative">
