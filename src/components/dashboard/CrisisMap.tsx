@@ -42,6 +42,7 @@ const CrisisMapLeaflet = dynamic(
   }
 );
 
+export function CrisisMap() {
   const {
     incident,
     simulationStage,
