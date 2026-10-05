@@ -223,12 +223,12 @@ export function createAllocationTimelineEvent(
   const remaining = allocation.remaining;
 
   const title = isCapped
-    ? "Tactical Asset Allocation Committed (Supply Capped)"
-    : "Tactical Asset Allocation Committed";
+    ? "Resource allocation approved by Cmdr Jaswant Karun (Supply Capped)"
+    : "Resource allocation approved by Cmdr Jaswant Karun";
 
   const description =
     contextMessage ||
-    `Allocated: ${assigned.ambulances} Ambulances (READY), ${assigned.rescueTeams} Rescue Teams (DEPLOYING), ${assigned.drones} Drone (MISSION CREATED). ` +
+    `Resource allocation approved by Cmdr Jaswant Karun: Allocated ${assigned.ambulances} Ambulances (READY), ${assigned.rescueTeams} Rescue Teams (DEPLOYING), ${assigned.drones} Drone (MISSION CREATED). ` +
       `Remaining Reserve: ${remaining.ambulances} Ambulances, ${remaining.rescueTeams} Rescue Teams, ${remaining.drones} Drones. ` +
       (isCapped ? `Notice: ${allocation.warnings.join(" ")}` : "");
 
@@ -240,7 +240,7 @@ export function createAllocationTimelineEvent(
     description,
     category: "RESOURCE",
     severity: isCapped ? "WARNING" : "INFO",
-    authorOrSystem: "RESQNET Intelligent Allocation Engine",
+    authorOrSystem: "Cmdr Jaswant Karun (COMMANDER)",
   };
 }
 
