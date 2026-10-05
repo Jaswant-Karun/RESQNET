@@ -67,7 +67,26 @@ export function CriticalRiskAlertBanner() {
       resourceAllocationState
     );
 
-    // Create activity event in Common Event Service
+    // 1. Create Risk Forecast in persistence layer
+    fetch("/api/risk-forecasts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        areaName: evaluation.shortName,
+        hazardType: (criticalArea.hazard || "FLOOD").toUpperCase(),
+        riskScore: evaluation.riskScore,
+        riskLevel: evaluation.riskLevel,
+        contributingFactors: criticalArea.factors || [
+          "Heavy rainfall forecast",
+          "High precipitation probability",
+          "Existing incident",
+          "Population exposure",
+        ],
+        source: "Open-Meteo & RESQNET Risk Engine",
+      }),
+    }).catch(() => {});
+
+    // 2. Create activity event in Common Event Service
     addTimelineEvent({
       id: `evt-risk-detect-${Date.now()}`,
       incidentId: incident.id,
