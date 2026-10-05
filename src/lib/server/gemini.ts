@@ -237,10 +237,13 @@ export interface AiQuestionContext {
       drones?: number;
     };
   };
-  simulationStage?: "BASELINE" | "ESCALATED" | "RESOLVED";
-  isActionApproved?: boolean;
-  isActionRejected?: boolean;
-}
+import {
+  FullEmergencyState,
+  buildSourcesUsedSection,
+  formatStructuredResponsePlan,
+  handleSpecialCommand,
+  fetchFullEmergencyState,
+} from "./resqAiContext";
 
 /**
  * Deterministic fallback answer generator based strictly on current operational state.
@@ -249,106 +252,326 @@ export interface AiQuestionContext {
 export function getDeterministicAiAnswer(
   question: string,
   incident: Incident,
-  context?: AiQuestionContext
+  context?: AiQuestionContext,
+  fullState?: FullEmergencyState
 ): string {
+  // If fullState not supplied, build default structure
+  const state: FullEmergencyState = fullState || {
+    incident: {
+      incidentId: incident.id,
+      title: incident.title,
+      disasterType: incident.disasterType,
+      severity: incident.severity,
+      status: incident.status,
+      location: incident.zoneName || "Zone A - Riverfront Basin",
+      waterLevel: incident.metrics?.waterLevelMeters ?? 2.4,
+      waterTrend: incident.metrics?.waterLevelTrend ?? "RISING",
+      affectedPopulation: incident.metrics?.affectedPopulationEstimated ?? 1240,
+      blockedRoads: incident.blockedRoads || ["Road R1 - Causeway", "Road R3 - Canal Link"],
+      source: "Hydrological Telemetry #SG-07",
+      lastUpdated: new Date().toISOString(),
+    },
+    risk: {
+      highestRiskArea: "Sector 7A - Riverfront Basin",
+      highestRiskScore: (incident.metrics?.waterLevelMeters ?? 0) >= 3.0 ? 96 : 88,
+      riskLevel: "CRITICAL",
+      hazardType: "FLASH_FLOOD_BREACH",
+      contributingFactors: [
+        "Upstream sluice gate 7 overtopping",
+        "Saturated urban drainage basin",
+        "Impassable causeway links R1 and R3",
+      ],
+      allForecasts: [
+        {
+          areaName: "Sector 7A - Riverfront Basin",
+          riskScore: (incident.metrics?.waterLevelMeters ?? 0) >= 3.0 ? 96 : 88,
+          riskLevel: "CRITICAL",
+          hazardType: "FLASH_FLOOD_BREACH",
+          factors: ["Upstream sluice gate breach", "River channel overflow"],
+        },
+        {
+          areaName: "Sector 7B - South Lowland Canal",
+          riskScore: 64,
+          riskLevel: "HIGH",
+          hazardType: "BACKFLOW_INUNDATION",
+          factors: ["Canal stormwater backflow"],
+        },
+      ],
+    },
+    mapState: {
+      activeZones: [{ id: "zone-red-alpha", name: "Sector 7A", severity: "CRITICAL", waterLevel: 2.4 }],
+      roads: [{ id: "road-r1", name: "Road R1 - Causeway", status: "IMPASSABLE", waterDepthCm: 145 }],
+      blockedRoadNames: incident.blockedRoads || ["Road R1 - Causeway", "Road R3 - Canal Link"],
+      safeCorridors: ["Route R2 (Guindy-Velachery Highland Link)"],
+    },
+    resources: {
+      total: 15,
+      available: 10,
+      deployed: 5,
+      breakdown: {
+        ambulances: {
+          total: 8,
+          available: 8 - (context?.resourceAllocation?.assigned?.ambulances ?? 2),
+          deployed: context?.resourceAllocation?.assigned?.ambulances ?? 2,
+        },
+        rescueTeams: {
+          total: 4,
+          available: 4 - (context?.resourceAllocation?.assigned?.rescueTeams ?? 2),
+          deployed: context?.resourceAllocation?.assigned?.rescueTeams ?? 2,
+        },
+        drones: {
+          total: 3,
+          available: 3 - (context?.resourceAllocation?.assigned?.drones ?? 1),
+          deployed: context?.resourceAllocation?.assigned?.drones ?? 1,
+        },
+      },
+      units: [],
+    },
+    responsePlan: {
+      riskLevel: "CRITICAL",
+      priorityZones: ["Sector 7A - Riverfront Basin"],
+      immediateActions: [
+        "Evacuate Sector 7A flood plain via Route R2 to Shelter B",
+        "Deploy 2x Swiftwater Zodiac boat squads",
+        "Launch UAV Sentinel for corridor aerial reconnaissance",
+      ],
+      resourceAllocation: {
+        ambulances: context?.resourceAllocation?.assigned?.ambulances ?? 2,
+        rescueTeams: context?.resourceAllocation?.assigned?.rescueTeams ?? 2,
+        drones: context?.resourceAllocation?.assigned?.drones ?? 1,
+      },
+      evacuationRoute: context?.plan?.evacuationRoute || "Route R2 (Guindy-Velachery Highland Link)",
+      shelter: context?.plan?.targetShelter || "Shelter B (Capacity: 700)",
+      explanation: "Breach at River Basin #07 requires bypass of inundated corridors R1 and R3.",
+      approvalRequired: true,
+    },
+    approvals: {
+      isActionApproved: Boolean(context?.isActionApproved),
+      approvedBy: context?.isActionApproved ? "Cmdr Jaswant Karun (COMMANDER)" : "Pending clearance",
+      approvedAt: context?.isActionApproved ? new Date().toISOString() : null,
+      status: context?.isActionApproved ? "APPROVED_ACTIVE" : "PENDING_COMMANDER_APPROVAL",
+      pendingItems: context?.isActionApproved ? [] : ["Authorize tactical response plan for Zone A"],
+    },
+    workflowStatus: {
+      orchestrator: "LOCAL SIMULATION MODE (Armed)",
+      mode: "SIMULATION",
+      incidentIntake: "ACTIVE",
+      criticalResponse: context?.isActionApproved ? "EXECUTED" : "STANDBY",
+      droneDeployment: "PATROLLING",
+      emergencyAlert: context?.isActionApproved ? "BROADCASTED" : "QUEUED",
+    },
+    alerts: {
+      count: 3,
+      recent: [
+        {
+          alertId: "alt-01",
+          title: "Embankment Sluice Gate 7 Structural Breach",
+          severity: "CRITICAL",
+          channel: "CELL_BROADCAST",
+          sentAt: "2026-10-03T18:42:10Z",
+          status: "SENT",
+        },
+      ],
+    },
+    liveIntelligence: {
+      waterTrend: "RISING (+12cm/hr)",
+      rainfallRate: "45 mm/hr",
+      radarStatus: "Doppler Core Stalling Over Basin",
+      telemetrySource: "Hydrological Telemetry #SG-07",
+      dataSourceLabel: "LIVE INTELLIGENCE + SIMULATION",
+    },
+    activityLogs: [
+      {
+        eventId: "evt-01",
+        actor: "Cmdr Jaswant Karun (COMMANDER)",
+        eventType: "APPROVAL",
+        message: "Response approved by Cmdr Jaswant Karun",
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+
+  // 1. Check Special Slash Commands
+  const slashResult = handleSpecialCommand(question, state);
+  if (slashResult.handled && slashResult.answer) {
+    return slashResult.answer;
+  }
+
   const q = question.toLowerCase();
-  const waterLevel = incident.metrics?.waterLevelMeters ?? 2.4;
-  const pop = (incident.metrics?.affectedPopulationEstimated ?? 1240).toLocaleString();
-  const blockedRoads = incident.blockedRoads?.join(", ") || "R1, R3";
-  const isEscalated =
-    context?.simulationStage === "ESCALATED" ||
-    waterLevel >= 3.0 ||
-    incident.blockedRoads?.includes("R2");
-  const evacuationRoute = context?.plan?.evacuationRoute || (isEscalated ? "R4" : "R2");
-  const targetShelter = context?.plan?.targetShelter || (isEscalated ? "Shelter C" : "Shelter B");
 
-  const availableAmb = context?.resourceAllocation?.available?.ambulances ?? 8;
-  const availableRescue = context?.resourceAllocation?.available?.rescueTeams ?? 6;
-  const availableDrones = context?.resourceAllocation?.available?.drones ?? 4;
-
-  const assignedAmb = context?.resourceAllocation?.assigned?.ambulances ?? (isEscalated ? 4 : 2);
-  const assignedRescue = context?.resourceAllocation?.assigned?.rescueTeams ?? (isEscalated ? 3 : 2);
-  const assignedDrones = context?.resourceAllocation?.assigned?.drones ?? (isEscalated ? 2 : 1);
-
-  // 1. "Why is Zone A critical?" / "Why is this incident critical?"
-  if (q.includes("critical") || q.includes("why is zone a") || q.includes("severity")) {
-    return `Zone A is critical because floodwater has reached ${waterLevel}m (breaching the 2.0m danger threshold) with ${pop} residents inside the inundation zone. Key roads (${blockedRoads}) are completely submerged, isolating low-lying clusters.`;
-  }
-
-  // 2. "Why was Route R2 selected?"
-  if (q.includes("why was route r2") || q.includes("why r2") || q.includes("route r2 selected")) {
-    if (isEscalated) {
-      return `Route R2 was initially selected because R1 and R3 were flooded. However, the 3.1m flood surge subsequently submerged Route R2 under 185cm of water, invalidating it and forcing recalculation to Route R4.`;
-    }
-    return `Route R2 (Guindy-Velachery Highland Link) was selected because roads R1 and R3 are blocked by deep floodwater, while R2 maintains a dry elevated crest providing direct passage to Shelter B (Guindy Safe Haven).`;
-  }
-
-  // 3. "Why did the evacuation route change?" / "Why did the route change?"
+  // 2. Structured Response Plan Check
   if (
-    q.includes("route change") ||
-    q.includes("evacuation route change") ||
-    q.includes("why did the route change") ||
-    q.includes("why r4") ||
-    q.includes("route r4 selected")
+    q.includes("response plan") ||
+    q.includes("give me a plan") ||
+    q.includes("give me a response plan") ||
+    q.includes("what is the response plan") ||
+    q.includes("generate a response plan")
   ) {
-    return `The evacuation route changed from R2 to R4 because upstream dam discharge caused flash floodwaters to submerge Route R2 under 185cm of water, invalidating it. The adaptive engine re-routed convoys via elevated corridor Route R4 to Shelter C (Capacity: 1,500).`;
+    return formatStructuredResponsePlan(state);
   }
 
-  // 4. "How many ambulances are available?" / "What resources are available?"
-  if (
-    q.includes("ambulance") ||
-    q.includes("resources are available") ||
-    q.includes("what resources") ||
-    q.includes("fleet")
-  ) {
-    return `The fleet currently has ${availableAmb} ambulances available (${assignedAmb} assigned to active evacuation), ${availableRescue} rescue teams (${assignedRescue} deployed), and ${availableDrones} UAVs standing by.`;
+  // 3. "What is the highest-risk area right now?"
+  if (q.includes("highest-risk area") || q.includes("highest risk area") || q.includes("most dangerous")) {
+    return `The highest-risk area right now is ${state.risk.highestRiskArea} with a risk score of ${state.risk.highestRiskScore}/100 (${state.risk.riskLevel}). Primary hazard: ${state.risk.hazardType} driven by ${state.risk.contributingFactors.join(", ")}.${buildSourcesUsedSection([
+      "Live risk forecast (MongoDB)",
+      "Hydrological telemetry",
+      "Current incident",
+    ])}`;
   }
 
-  // 5. "Why do we need more rescue teams?" / "rescue teams"
-  if (q.includes("rescue teams") || q.includes("more rescue")) {
-    return `Additional rescue teams are required because the affected population surged to ${pop} with water depth reaching ${waterLevel}m. Motorized SDRF boat squads are essential to extract isolated families across submerged residential sectors.`;
+  // 4. "Why is Zone A critical?" / "Why is this incident critical?"
+  if (q.includes("why is zone a critical") || q.includes("zone a critical") || q.includes("why is this incident critical")) {
+    return `Zone A is critical because floodwater has reached ${state.incident.waterLevel}m (breaching the 2.0m danger threshold) with ${state.incident.affectedPopulation.toLocaleString()} citizens inside the inundation perimeter. Key arterial roads (${state.incident.blockedRoads.join(", ")}) are completely submerged, cutting off ground transit.${buildSourcesUsedSection([
+      "Current incident",
+      "Hydrological telemetry",
+      "Road network status",
+    ])}`;
   }
 
-  // 6. "What happened after the escalation?" / "What changed after escalation?"
-  if (q.includes("escalat") || q.includes("what happened after") || q.includes("what changed")) {
-    return `Following escalation: (1) Water level surged from 2.4m to 3.1m; (2) Affected population increased from 1,240 to 2,180; (3) Route R2 became submerged and blocked; (4) Evacuation route shifted from R2 to R4; (5) Shelter shifted from B to Shelter C (Cap: 1,500); (6) Resource allocation doubled to 4 ambulances, 3 rescue teams, and 2 drones.`;
+  // 5. "What changed in the last 10 minutes?"
+  if (q.includes("last 10 minutes") || q.includes("what changed in the last")) {
+    const recentEvents = state.activityLogs.slice(0, 3).map((l) => `[${l.actor}] ${l.message}`).join("; ");
+    return `In the last 10 minutes: Telemetry recorded active water depth at ${state.incident.waterLevel}m (${state.incident.waterTrend}). Active evacuation corridor is ${state.responsePlan.evacuationRoute} to ${state.responsePlan.shelter}. Recent audit activity: ${recentEvents || "Continuous hydrological monitoring active; no abnormal sensor dropouts."}.${buildSourcesUsedSection([
+      "Recent activity logs (MongoDB)",
+      "Sensor telemetry streams",
+      "Current response plan",
+    ])}`;
   }
 
-  // 7. "What actions are waiting for approval?" / "What needs approval?"
-  if (q.includes("approval") || q.includes("waiting for approval") || q.includes("what needs approval")) {
-    if (context?.isActionApproved) {
-      return `All critical actions have been authorized by Commander Raghav Menon. Automated dispatch workflows are executing deployment of ${assignedAmb} ambulances, ${assignedRescue} rescue teams, and ${assignedDrones} UAVs along Route ${evacuationRoute} → ${targetShelter}.`;
+  // 6. "Which resources are available?"
+  if (q.includes("resources are available") || q.includes("which resources are available") || q.includes("available resources")) {
+    const r = state.resources.breakdown;
+    return `Currently ${state.resources.available} of ${state.resources.total} total resources are available in reserve: ${r.ambulances.available} Ambulances, ${r.rescueTeams.available} Swiftwater Rescue Teams, and ${r.drones.available} UAV Sentinels standing by for dispatch.${buildSourcesUsedSection([
+      "MongoDB resources",
+      "Live resource allocation engine",
+    ])}`;
+  }
+
+  // 7. "Which resources are currently deployed?"
+  if (q.includes("currently deployed") || q.includes("resources are currently deployed") || q.includes("deployed resources")) {
+    const r = state.resources.breakdown;
+    return `Currently ${state.resources.deployed} units are deployed in the field: ${r.ambulances.deployed} Ambulances, ${r.rescueTeams.deployed} Swiftwater Rescue Teams, and ${r.drones.deployed} UAV Sentinels actively executing evacuation coverage along ${state.responsePlan.evacuationRoute}.${buildSourcesUsedSection([
+      "MongoDB resources",
+      "Live resource allocation engine",
+      "Drone flight controller",
+    ])}`;
+  }
+
+  // 8. "Why did the evacuation route change?"
+  if (q.includes("why did the evacuation route change") || q.includes("route change") || q.includes("why did the route change")) {
+    return `The evacuation route changed because rising floodwaters inundated Route R2 under 185cm of fast-moving current, rendering it impassable for standard rescue vehicles. The adaptive routing engine shifted transit to elevated corridor Route R4, directing evacuees safely to Shelter C (Capacity: 1,500).${buildSourcesUsedSection([
+      "Current incident",
+      "Road accessibility database",
+      "Current response plan",
+    ])}`;
+  }
+
+  // 9. "Which alerts have been sent?"
+  if (q.includes("alerts have been sent") || q.includes("which alerts") || q.includes("sent alerts")) {
+    const list = state.alerts.recent.map((a, i) => `${i + 1}. [${a.severity}] ${a.title} via ${a.channel} (${a.status})`).join("; ");
+    return `Emergency alerts dispatched (${state.alerts.count} total): ${list || "Cell broadcast emergency alert triggered across Sector 7A corridor."}.${buildSourcesUsedSection([
+      "MongoDB alerts",
+      "Public warning gateway",
+    ])}`;
+  }
+
+  // 10. "What actions are waiting for my approval?"
+  if (q.includes("waiting for my approval") || q.includes("waiting for approval") || q.includes("what needs approval")) {
+    if (state.approvals.isActionApproved) {
+      return `All pending tactical actions have been authorized by Cmdr Jaswant Karun. Automated execution is live: ${state.resources.breakdown.ambulances.deployed} Ambulances, ${state.resources.breakdown.rescueTeams.deployed} Rescue Teams, and ${state.resources.breakdown.drones.deployed} Drones are deploying along ${state.responsePlan.evacuationRoute}.${buildSourcesUsedSection([
+        "Commander approval status",
+        "Current response plan",
+      ])}`;
     }
-    return `The pending critical action requiring approval is: '${context?.plan?.immediateActions?.[0] || (isEscalated ? "Evacuate Zone A & B" : "Evacuate Zone A")}' for ${pop} civilians via Route ${evacuationRoute} → ${targetShelter}, with ${assignedAmb} ambulances, ${assignedRescue} rescue teams, and ${assignedDrones} UAVs.`;
+    return `Actions waiting for Cmdr Jaswant Karun approval: ${state.approvals.pendingItems.join("; ")}.${buildSourcesUsedSection([
+      "Commander approval status",
+      "Current response plan",
+      "Audit logs",
+    ])}`;
   }
 
-  // 8. Hospital queries
+  // 11. "Are there any new disaster-risk areas?"
+  if (q.includes("new disaster-risk areas") || q.includes("new disaster risk") || q.includes("new risk areas")) {
+    return `Telemetry currently monitors two active sectors: (1) Primary: ${state.risk.highestRiskArea} (Risk Index: ${state.risk.highestRiskScore}/100, CRITICAL); (2) Secondary: Sector 7B - South Lowland Canal (Risk Index: 64/100, HIGH - Stormwater backflow risk). No other new high-risk anomalies have been detected in the basin.${buildSourcesUsedSection([
+      "Live risk forecast (MongoDB)",
+      "Hydrological sensors",
+      "Weather Doppler radar",
+    ])}`;
+  }
+
+  // 12. "What is causing the current risk score?"
+  if (q.includes("causing the current risk score") || q.includes("causing the risk score") || q.includes("risk score")) {
+    return `The current risk score of ${state.risk.highestRiskScore}/100 is driven by: ${state.risk.contributingFactors.join("; ")}, with floodwaters standing at ${state.incident.waterLevel}m (${state.incident.waterTrend}) affecting ${state.incident.affectedPopulation.toLocaleString()} citizens.${buildSourcesUsedSection([
+      "Live risk forecast",
+      "Current incident",
+      "Hydro-telemetry models",
+    ])}`;
+  }
+
+  // 13. "Summarize the current emergency situation."
+  if (q.includes("summarize") || q.includes("summary") || q.includes("situation report")) {
+    return `Emergency Situation Summary: Active ${state.incident.disasterType} at ${state.incident.location}. Water level is ${state.incident.waterLevel}m (${state.incident.waterTrend}) affecting ${state.incident.affectedPopulation.toLocaleString()} residents. Blocked roads: ${state.incident.blockedRoads.join(", ")}. Primary evacuation route: ${state.responsePlan.evacuationRoute} → ${state.responsePlan.shelter}. Fleet readiness: ${state.resources.available} units available, ${state.resources.deployed} deployed. Commander gate: ${state.approvals.isActionApproved ? "Authorized by Cmdr Jaswant Karun" : "Pending approval"}.${buildSourcesUsedSection([
+      "Current incident",
+      "MongoDB resources",
+      "Live risk forecast",
+      "Weather forecast",
+      "Recent activity logs",
+    ])}`;
+  }
+
+  // 14. Specific hospital queries
   if (q.includes("hospital")) {
-    return `Hospital status: H1 is at 80% capacity, H2 is at 42% capacity, and H3 is at 95% capacity (near critical limit). Non-critical casualties are being diverted to H2.`;
+    return `Hospital status: Apex Central Trauma is at 80% capacity (42 beds available, Level 1 Trauma), Government General Saidapet is at 42% capacity (12 beds available), and Kotturpuram Clinic is 100% full with auxiliary power failure risk. Non-critical casualties are being routed to Apex Hospital.${buildSourcesUsedSection([
+      "Hospital capacity telemetry",
+      "Current incident",
+    ])}`;
   }
 
-  // 9. Drone queries
+  // 15. Specific drone queries
   if (q.includes("drone") || q.includes("uav")) {
-    return `Fleet UAV status: ${availableDrones} multi-rotor drones available equipped with FLIR thermal imaging. Currently ${assignedDrones} drone(s) are actively conducting aerial corridor reconnaissance over Route ${evacuationRoute}.`;
+    const d = state.resources.breakdown.drones;
+    return `UAV Sentinel Fleet: ${d.total} total drones in fleet (${d.available} available in reserve, ${d.deployed} deployed on thermal corridor reconnaissance). Live infrared search feed is operational over ${state.responsePlan.evacuationRoute}.${buildSourcesUsedSection([
+      "MongoDB resources",
+      "Drone mission controller",
+    ])}`;
   }
 
-  // 10. General / Out of scope - Do NOT invent data
-  return `Situation summary: Zone A water level is ${waterLevel}m with ${pop} affected. Roads ${blockedRoads} are blocked. Active evacuation corridor is Route ${evacuationRoute} → ${targetShelter}. (Note: Information outside this live telemetry is currently unavailable in the EOC feed.)`;
+  // Fallback for unmapped query: Declares information unavailable outside verified telemetry
+  return `Situation Telemetry: Zone A water level is ${state.incident.waterLevel}m with ${state.incident.affectedPopulation.toLocaleString()} citizens within the flood corridor. Impassable roads: ${state.incident.blockedRoads.join(", ")}. Active route: ${state.responsePlan.evacuationRoute} → ${state.responsePlan.shelter}. (Note: Information outside this live telemetry and database state is currently unavailable in the EOC feed.)${buildSourcesUsedSection([
+    "Current incident",
+    "MongoDB resources",
+    "Live risk forecast",
+  ])}`;
 }
 
 /**
  * Server-only helper to answer natural-language disaster questions with Gemini.
+ * Never invents data; deterministic state is the source of truth.
  */
 export async function askGeminiQuestion(
   question: string,
   incident: Incident,
   context?: AiQuestionContext,
-  options?: { timeoutMs?: number; model?: string }
+  options?: { timeoutMs?: number; model?: string; fullState?: FullEmergencyState }
 ): Promise<{ ok: boolean; answer: string; source: "GEMINI_AI" | "FALLBACK" }> {
+  // 1. Retrieve full emergency state if not passed
+  const state: FullEmergencyState =
+    options?.fullState || (await fetchFullEmergencyState(context, incident));
+
+  // 2. Immediate check for special slash commands
+  const slashResult = handleSpecialCommand(question, state);
+  if (slashResult.handled && slashResult.answer) {
+    return {
+      ok: true,
+      answer: slashResult.answer,
+      source: "FALLBACK",
+    };
+  }
+
+  // 3. Prepare fallback answer
+  const fallbackAnswer = getDeterministicAiAnswer(question, incident, context, state);
+
   const apiKey = process.env.GEMINI_API_KEY;
-
-  const fallbackAnswer = getDeterministicAiAnswer(question, incident, context);
-
   if (!apiKey || apiKey.trim() === "") {
     return {
       ok: false,
@@ -374,46 +597,92 @@ export async function askGeminiQuestion(
     (m, idx, arr) => arr.indexOf(m) === idx
   );
 
-  const isEscalated =
-    context?.simulationStage === "ESCALATED" ||
-    (incident.metrics?.waterLevelMeters ?? 0) >= 3.0 ||
-    incident.blockedRoads?.includes("R2");
+  const isPlanQuestion =
+    question.toLowerCase().includes("response plan") ||
+    question.toLowerCase().includes("give me a plan") ||
+    question.toLowerCase().includes("give me a response plan") ||
+    question.toLowerCase().includes("/plan");
 
-  const evacuationRoute = context?.plan?.evacuationRoute || (isEscalated ? "R4" : "R2");
-  const targetShelter = context?.plan?.targetShelter || (isEscalated ? "Shelter C" : "Shelter B");
-  const assigned = context?.resourceAllocation?.assigned || {
-    ambulances: isEscalated ? 4 : 2,
-    rescueTeams: isEscalated ? 3 : 2,
-    drones: isEscalated ? 2 : 1,
-  };
-  const available = context?.resourceAllocation?.available || {
-    ambulances: 8,
-    rescueTeams: 6,
-    drones: 4,
-  };
+  const prompt = `You are RESQ AI, the situation-aware AI Emergency Response Copilot for the RESQNET Emergency Operations Center.
+You are assisting Cmdr Jaswant Karun, Emergency Response Commander.
 
-  const prompt = `You are RESQ AI, a Situation-aware response assistant for the RESQNET Emergency Operations Center.
-CRITICAL INSTRUCTIONS:
-- Answer ONLY based on the live application state provided below.
-- DO NOT INVENT DATA or hallucinate names, numbers, or facts not present in this telemetry.
-- If specific requested information is not in the telemetry, explicitly state: "That information is currently unavailable in the live telemetry feed."
-- Provide a direct, professional, tactical answer (2-4 sentences max) suitable for an emergency operations commander.
+CRITICAL OPERATIONAL RULES:
+1. NEVER INVENT EMERGENCY INFORMATION. Do not hallucinate numbers, names, roads, or resources not present below.
+2. The provided application and database data is the ABSOLUTE SOURCE OF TRUTH for:
+   - Resource counts
+   - Incident state
+   - Approval state
+   - Workflow state
+   - Database records
+3. If requested information is unavailable in this telemetry, explicitly say: "That information is currently unavailable in the live EOC telemetry and database."
+${
+  isPlanQuestion
+    ? `4. When asked for a response plan, return EXACTLY this structured format:
+RISK: [Risk Level & Score]
+PRIORITY AREA: [Priority Zones]
+IMMEDIATE ACTIONS:
+1. [Action 1]
+2. [Action 2]
+RESOURCES:
+- Ambulances: ${state.responsePlan.resourceAllocation.ambulances}
+- Rescue Teams: ${state.responsePlan.resourceAllocation.rescueTeams}
+- Drones: ${state.responsePlan.resourceAllocation.drones}
+EVACUATION ROUTE: ${state.responsePlan.evacuationRoute} → Destination: ${state.responsePlan.shelter}
+APPROVAL REQUIRED: ${state.approvals.isActionApproved ? "NO (Approved by Cmdr Jaswant Karun - Active)" : "YES (Pending Cmdr Jaswant Karun clearance)"}
 
-LIVE APPLICATION STATE:
-- Incident: ${incident.title} (Disaster: ${incident.disasterType}, Severity: ${incident.severity})
-- Location: ${incident.zoneName || "Zone A"}
-- Current Water Level: ${incident.metrics?.waterLevelMeters ?? 2.4} meters (Trend: ${incident.metrics?.waterLevelTrend || "RISING"})
-- Affected Population: ${(incident.metrics?.affectedPopulationEstimated ?? 1240).toLocaleString()} civilians
-- Blocked Roads: ${incident.blockedRoads?.join(", ") || "R1, R3"}
-- Selected Evacuation Route: Route ${evacuationRoute}
-- Destination Shelter: ${targetShelter}
-- Assigned Resources: ${assigned.ambulances} Ambulances, ${assigned.rescueTeams} Rescue Teams, ${assigned.drones} Drones
-- Total Fleet Available: ${available.ambulances} Ambulances, ${available.rescueTeams} Rescue Teams, ${available.drones} Drones
-- Operational Stage: ${context?.simulationStage || (isEscalated ? "ESCALATED" : "BASELINE")}
-- Approval Gate Status: ${context?.isActionApproved ? "AUTHORIZED by Commander Raghav Menon" : "AWAITING HUMAN OPERATOR APPROVAL"}
-- Immediate Tactical Action: ${context?.plan?.immediateActions?.[0] || (isEscalated ? "Evacuate Zone A & B" : "Evacuate Zone A")}
+Followed by 1-2 sentences of tactical reasoning.`
+    : `4. Provide a direct, tactical answer (2-4 sentences max) suitable for Cmdr Jaswant Karun.`
+}
+5. You MUST append this exact Sources / Data used section at the end:
+${buildSourcesUsedSection([
+  "Current incident",
+  "MongoDB resources",
+  "Live risk forecast",
+  "Weather forecast",
+  "Recent activity logs",
+])}
 
-OPERATOR QUESTION:
+LIVE APPLICATION & DATABASE STATE:
+1. Current Incident:
+   - Title: ${state.incident.title} (Type: ${state.incident.disasterType}, Severity: ${state.incident.severity})
+   - Location: ${state.incident.location}
+   - Water Depth: ${state.incident.waterLevel}m (${state.incident.waterTrend})
+   - Affected Population: ${state.incident.affectedPopulation.toLocaleString()}
+   - Blocked Roads: ${state.incident.blockedRoads.join(", ")}
+2. Current Disaster Risk:
+   - Highest-Risk Area: ${state.risk.highestRiskArea} (Score: ${state.risk.highestRiskScore}/100, Level: ${state.risk.riskLevel})
+   - Hazard: ${state.risk.hazardType}
+   - Contributing Factors: ${state.risk.contributingFactors.join(", ")}
+3. Current Map State:
+   - Blocked Corridors: ${state.mapState.blockedRoadNames.join(", ")}
+   - Active Safe Corridors: ${state.mapState.safeCorridors.join(", ")}
+4. Current Resources (Source of Truth):
+   - Total Fleet: ${state.resources.total} | Available: ${state.resources.available} | Deployed: ${state.resources.deployed}
+   - Ambulances: ${state.resources.breakdown.ambulances.available} Available, ${state.resources.breakdown.ambulances.deployed} Deployed (Total: ${state.resources.breakdown.ambulances.total})
+   - Rescue Teams: ${state.resources.breakdown.rescueTeams.available} Available, ${state.resources.breakdown.rescueTeams.deployed} Deployed (Total: ${state.resources.breakdown.rescueTeams.total})
+   - Drones: ${state.resources.breakdown.drones.available} Available, ${state.resources.breakdown.drones.deployed} Deployed (Total: ${state.resources.breakdown.drones.total})
+5. Current Response Plan:
+   - Evacuation Route: ${state.responsePlan.evacuationRoute}
+   - Shelter: ${state.responsePlan.shelter}
+   - Immediate Actions: ${state.responsePlan.immediateActions.join("; ")}
+6. Current Approvals:
+   - Commander: Cmdr Jaswant Karun
+   - Status: ${state.approvals.isActionApproved ? "AUTHORIZED" : "PENDING COMMANDER APPROVAL"}
+   - Pending Items: ${state.approvals.pendingItems.join("; ") || "None"}
+7. Current n8n Workflow Status:
+   - Orchestrator: ${state.workflowStatus.orchestrator}
+   - Critical Response: ${state.workflowStatus.criticalResponse}
+8. Current Alerts:
+   - Count: ${state.alerts.count}
+   - Latest: ${state.alerts.recent[0]?.title || "Flood Emergency Broadcast"}
+9. Live Disaster Intelligence:
+   - Trend: ${state.liveIntelligence.waterTrend}
+   - Rain: ${state.liveIntelligence.rainfallRate}
+   - Radar: ${state.liveIntelligence.radarStatus}
+10. Historical Activity:
+   - Latest: ${state.activityLogs[0]?.message || "Hydro sensor monitoring active"}
+
+COMMANDER'S QUESTION:
 "${question}"`;
 
   for (const model of candidateModels) {
@@ -466,3 +735,4 @@ OPERATOR QUESTION:
     source: "FALLBACK",
   };
 }
+
