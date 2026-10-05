@@ -122,12 +122,13 @@ async function runEmailAlertTests() {
 
   // TEST 6: HIGH Risk -> Commander email notification
   console.log("\n[TEST 6] Test alert level: HIGH (Expect: Commander email notification)...");
+  const testSectorHigh = `Sector-H-${Date.now().toString(36)}`;
   try {
     const res = await fetch(`${baseUrl}/api/alerts/email`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Cookie: cookieHeader },
       body: JSON.stringify({
-        area: "Zone H",
+        area: testSectorHigh,
         hazard: "Flood",
         riskScore: 68,
         riskLevel: "HIGH",
@@ -154,12 +155,13 @@ async function runEmailAlertTests() {
 
   // TEST 7: CRITICAL Risk -> Commander email notification + n8n automation
   console.log("\n[TEST 7] Test alert level: CRITICAL (Expect: Email + n8n automation)...");
+  const testSectorCrit = `Sector-D-${Date.now().toString(36)}`;
   try {
     const res = await fetch(`${baseUrl}/api/alerts/email`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Cookie: cookieHeader },
       body: JSON.stringify({
-        area: "Zone A",
+        area: testSectorCrit,
         hazard: "Flood",
         riskScore: 82,
         riskLevel: "CRITICAL",
@@ -187,14 +189,14 @@ async function runEmailAlertTests() {
     allPassed = false;
   }
 
-  // TEST 8: Alert Deduplication -> Repeated CRITICAL alert for Zone A within cooldown
-  console.log("\n[TEST 8] Test alert deduplication (Repeat CRITICAL alert for Zone A)...");
+  // TEST 8: Alert Deduplication -> Repeated CRITICAL alert for same sector within cooldown
+  console.log("\n[TEST 8] Test alert deduplication (Repeat CRITICAL alert for same sector)...");
   try {
     const res = await fetch(`${baseUrl}/api/alerts/email`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Cookie: cookieHeader },
       body: JSON.stringify({
-        area: "Zone A",
+        area: testSectorCrit,
         hazard: "Flood",
         riskScore: 82,
         riskLevel: "CRITICAL",
