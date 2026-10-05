@@ -67,20 +67,32 @@ interface DashboardContextType {
   rescueTeams: Resource[];
   drones: Drone[];
   plan: ResponsePlan;
+  setPlan: React.Dispatch<React.SetStateAction<ResponsePlan>>;
   alerts: Alert[];
   timeline: TimelineEvent[];
   addTimelineEvent: (params: LogEventParams | TimelineEvent) => TimelineEvent;
   approveAction: () => void;
   isActionApproved: boolean;
+  setIsActionApproved: (val: boolean) => void;
   rejectAction: (reason?: string) => void;
   isActionRejected: boolean;
+  setIsActionRejected: (val: boolean) => void;
   rejectionReason: string | null;
+  setRejectionReason: (reason: string | null) => void;
   notification: {
     type: "success" | "error" | "warning" | "info";
     title: string;
     message: string;
     timestamp: string;
   } | null;
+  setNotification: React.Dispatch<
+    React.SetStateAction<{
+      type: "success" | "error" | "warning" | "info";
+      title: string;
+      message: string;
+      timestamp: string;
+    } | null>
+  >;
   dismissNotification: () => void;
   selectedZone: Zone | null;
   setSelectedZone: (zone: Zone | null) => void;
@@ -90,6 +102,7 @@ interface DashboardContextType {
   // Intelligent Resource Allocation State & Methods
   resourceAllocationState: ResourceAllocationState;
   updateResourceAllocation: (requested?: Partial<ResourceAllocation>) => void;
+  applyAllocation?: (requested?: Partial<ResourceAllocation>) => void;
   resetResourceAllocation: () => void;
 
   // Gemini & Fallback states
@@ -104,7 +117,7 @@ interface DashboardContextType {
   isTriggeringAutomation: boolean;
   simulateN8nFailure: boolean;
   setSimulateN8nFailure: (val: boolean) => void;
-  triggerAutomationWorkflow: (action?: string, options?: { simulateUnavailable?: boolean; testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING" }) => Promise<void>;
+  triggerAutomationWorkflow: (action?: string, options?: { simulateUnavailable?: boolean; testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING"; [key: string]: unknown }) => Promise<void>;
   approveCriticalResponseWorkflow: () => Promise<void>;
   dispatchDroneWorkflow: (droneId?: string) => Promise<void>;
   approveEmergencyAlertWorkflow: () => Promise<void>;
@@ -1027,7 +1040,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
    */
   const triggerAutomationWorkflow = async (
     action: string = "TRIGGER_FULL_ORCHESTRATION",
-    options?: { simulateUnavailable?: boolean; testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING" }
+    options?: { simulateUnavailable?: boolean; testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING"; [key: string]: unknown }
   ) => {
     setIsTriggeringAutomation(true);
     try {
@@ -1043,6 +1056,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         action,
         simulateUnavailable: options?.simulateUnavailable ?? simulateN8nFailure,
         testCase: options?.testCase,
+        ...options,
       };
 
       const res = await fetch("/api/automation/trigger", {
@@ -1441,15 +1455,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         rescueTeams,
         drones,
         plan,
+        setPlan,
         alerts,
         timeline,
         addTimelineEvent,
         approveAction,
         isActionApproved,
+        setIsActionApproved,
         rejectAction,
         isActionRejected,
+        setIsActionRejected,
         rejectionReason,
+        setRejectionReason,
         notification,
+        setNotification,
         dismissNotification,
         selectedZone,
         setSelectedZone,
@@ -1457,6 +1476,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         markAlertsRead,
         resourceAllocationState,
         updateResourceAllocation,
+        applyAllocation: updateResourceAllocation,
         resetResourceAllocation,
         isAiLoading,
         aiStatusMessage,
