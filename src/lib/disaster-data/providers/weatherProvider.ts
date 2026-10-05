@@ -3,46 +3,90 @@ import { WeatherDataPoint, ProviderStatus } from "../types";
 export interface MonitoredLocation {
   id: string;
   name: string;
+  shortName?: string;
+  hazard?: string;
   latitude: number;
   longitude: number;
   elevationMeters: number;
+  polygonCoordinates?: [number, number][];
 }
 
 export const MONITORED_LOCATIONS: MonitoredLocation[] = [
   {
     id: "loc-kotturpuram",
     name: "Zone A - Kotturpuram Riverfront Basin",
+    shortName: "Zone A",
+    hazard: "Flood",
     latitude: 13.0142,
     longitude: 80.2335,
     elevationMeters: 5.3,
+    polygonCoordinates: [
+      [13.008, 80.224],
+      [13.018, 80.228],
+      [13.022, 80.239],
+      [13.011, 80.241],
+      [13.004, 80.232],
+    ],
   },
   {
     id: "loc-saidapet",
     name: "Zone B - Saidapet Causeway Corridor",
+    shortName: "Zone B",
+    hazard: "Flood",
     latitude: 13.0234,
     longitude: 80.2221,
     elevationMeters: 7.1,
+    polygonCoordinates: [
+      [13.016, 80.212],
+      [13.026, 80.215],
+      [13.028, 80.227],
+      [13.019, 80.225],
+    ],
   },
   {
     id: "loc-guindy",
     name: "Zone C - Guindy Highland Corridor",
+    shortName: "Zone C",
+    hazard: "Flash Flood",
     latitude: 13.0067,
     longitude: 80.2088,
     elevationMeters: 14.5,
+    polygonCoordinates: [
+      [13.001, 80.201],
+      [13.012, 80.203],
+      [13.014, 80.214],
+      [13.003, 80.212],
+    ],
   },
   {
     id: "loc-velachery",
     name: "Zone D - Velachery Lowland Depression",
+    shortName: "Zone D",
+    hazard: "Urban Flood",
     latitude: 12.975,
     longitude: 80.22,
     elevationMeters: 3.2,
+    polygonCoordinates: [
+      [12.968, 80.212],
+      [12.982, 80.214],
+      [12.984, 80.228],
+      [12.970, 80.226],
+    ],
   },
   {
     id: "loc-adyar-estuary",
     name: "Zone E - Adyar River Estuary Outflow",
+    shortName: "Zone E",
+    hazard: "Coastal Storm Surge",
     latitude: 13.01,
     longitude: 80.26,
     elevationMeters: 2.1,
+    polygonCoordinates: [
+      [13.004, 80.252],
+      [13.016, 80.255],
+      [13.018, 80.268],
+      [13.006, 80.265],
+    ],
   },
 ];
 

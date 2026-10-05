@@ -79,16 +79,22 @@ export interface RiskFactorContribution {
 export interface AreaRiskAssessment {
   areaId: string;
   areaName: string;
+  shortName?: string; // e.g. "Zone A"
+  hazard?: string; // e.g. "Flood"
+  forecastWindow?: string; // e.g. "Next 24 hours"
   latitude: number;
   longitude: number;
+  polygonCoordinates?: [number, number][];
+  radiusMeters?: number;
   elevationMeters?: number;
   riskScore: number; // 0–100 deterministic
   riskLevel: RiskLevel; // LOW (0-24), MODERATE (25-49), HIGH (50-74), CRITICAL (75-100)
   classification: "RESQNET_RISK_ASSESSMENT";
   contributingFactors: RiskFactorContribution[];
   explanation: string;
-  label: "RESQNET Risk Assessment";
-  disclaimer: "RESQNET deterministic risk assessment for emergency coordination. Not an official government meteorological warning.";
+  label: "RESQNET Risk Assessment" | "FORECAST / RISK ASSESSMENT";
+  disclaimer: "RESQNET deterministic risk assessment for emergency coordination. Not an official government meteorological warning." | "NOT AN OFFICIAL EMERGENCY WARNING";
+  dataSources?: string[];
   weatherSnapshot?: WeatherDataPoint;
   timestamp: string;
 }
