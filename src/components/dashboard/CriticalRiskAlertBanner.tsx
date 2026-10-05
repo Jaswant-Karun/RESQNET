@@ -140,7 +140,7 @@ export function CriticalRiskAlertBanner() {
             description: `Delivered ${evaluation.riskLevel} alert for ${evaluation.shortName} to ${data.recipient || "Commander"}. Message ID: ${data.messageId || "N/A"}.`,
             category: "DECISION",
             severity: "CRITICAL",
-            authorOrSystem: "RESQNET Email Alert Service (Resend)",
+            authorOrSystem: "RESQNET Emergency Email Service (Gmail SMTP)",
           });
         }
       })
