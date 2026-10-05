@@ -6,12 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import {
   Bell,
   Database,
+  Flame,
   LogOut,
   Radio,
   Shield,
+  Sparkles,
   UserCheck,
   Wifi,
 } from "lucide-react";
+import { CommanderProfilePanel } from "./CommanderProfilePanel";
 
 export function Header() {
   const {
@@ -26,7 +29,7 @@ export function Header() {
   } = useDashboard();
 
   const [timeString, setTimeString] = useState<string>("");
-  const [showAlertModal, setShowAlertModal] = useState<boolean>(false);
+  const [showCommanderPanel, setShowCommanderPanel] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<{ name: string; role: string }>({
     name: "Cmdr Jaswant Karun",
     role: "COMMANDER",
@@ -67,164 +70,193 @@ export function Header() {
   }, []);
 
   return (
-    <header className="border-b border-slate-800 bg-[#080d1a]/95 sticky top-0 z-50 backdrop-blur-md">
-      <div className="w-full px-4 sm:px-6 py-2.5">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          {/* Logo & Tagline */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-red-600 via-blue-600 to-indigo-700 shadow-md shadow-blue-900/30">
-              <Shield className="h-5 w-5 text-white" />
-              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black tracking-widest text-white uppercase">
-                  RESQ<span className="text-red-500">NET</span>
-                </span>
-                <span className="text-slate-600">|</span>
-                <span className="text-xs font-semibold text-slate-300 tracking-wider uppercase hidden sm:inline">
-                  Emergency Response Intelligence
+    <>
+      <header className="border-b border-slate-800 bg-[#080d1a]/95 sticky top-0 z-50 backdrop-blur-md">
+        <div className="w-full px-4 sm:px-6 py-2.5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            {/* Left: Brand Identity & Subtitle */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-red-600 via-blue-600 to-indigo-700 shadow-md shadow-blue-900/30 shrink-0">
+                <Shield className="h-5 w-5 text-white" />
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
-                <span>EOC CENTRAL COMMAND</span>
-                <span>•</span>
-                <span className="text-emerald-400 font-semibold" suppressHydrationWarning>{timeString || "SYNCHRONIZING..."}</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-black tracking-widest text-white uppercase font-sans">
+                    RESQ<span className="text-red-500">NET</span>
+                  </span>
+                  <span className="text-slate-600 hidden sm:inline">|</span>
+                  <span className="text-xs font-semibold text-slate-300 tracking-wider uppercase hidden sm:inline font-mono">
+                    Emergency Response Intelligence
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+                  <span>EOC CENTRAL COMMAND</span>
+                  <span>•</span>
+                  <span className="text-emerald-400 font-semibold" suppressHydrationWarning>
+                    {timeString || "SYNCHRONIZING..."}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Center: Current Incident Status Banner */}
-          <div className="hidden xl:flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800/90 shadow-sm max-w-xl">
-            <Radio className="h-3.5 w-3.5 text-rose-500 animate-pulse shrink-0" />
-            <div className="truncate text-xs font-mono">
-              <span className="text-slate-400 font-semibold">SIMULATED INCIDENT: </span>
-              <span className="text-white font-bold">{incident.code}</span>
-              <span className="text-slate-500"> — </span>
-              <span className="text-rose-400 font-semibold truncate">{incident.title}</span>
-            </div>
-            <Badge
-              variant={incident.severity === "CRITICAL" ? "critical" : "warning"}
-              pulse
-              className="shrink-0 text-[10px]"
-            >
-              {incident.status}
-            </Badge>
-          </div>
-
-          {/* Right Controls: Status, Sim Indicator, Notifications, Operator */}
-          <div className="flex items-center gap-3">
-            {/* System Status: ONLINE */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 font-mono text-[11px] shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-slate-400">SYS:</span>
-              <span className="text-emerald-400 font-bold">ONLINE</span>
+            {/* Center: Current Incident Status Banner */}
+            <div className="hidden 2xl:flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800/90 shadow-sm max-w-lg truncate">
+              <Radio className="h-3.5 w-3.5 text-rose-500 animate-pulse shrink-0" />
+              <div className="truncate text-xs font-mono">
+                <span className="text-slate-400 font-semibold">SIMULATED INCIDENT: </span>
+                <span className="text-white font-bold">{incident.code}</span>
+                <span className="text-slate-500"> — </span>
+                <span className="text-rose-400 font-semibold truncate">{incident.title}</span>
+              </div>
+              <Badge
+                variant={incident.severity === "CRITICAL" ? "critical" : "warning"}
+                pulse
+                className="shrink-0 text-[10px]"
+              >
+                {incident.status}
+              </Badge>
             </div>
 
-            {/* Database Persistence Status Badge */}
-            <div
-              onClick={() => refreshDatabaseData()}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-mono text-[11px] shadow-sm cursor-pointer transition-all ${
-                databaseState.mode === "mongodb" && databaseState.connected
-                  ? "bg-emerald-950/70 border-emerald-500/70 text-emerald-300 hover:bg-emerald-900/80"
-                  : databaseState.mode === "mongodb" && !databaseState.connected
-                  ? "bg-amber-950/70 border-amber-600/70 text-amber-300 hover:bg-amber-900/80"
-                  : "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850"
-              }`}
-              title={
-                databaseState.mode === "mongodb"
-                  ? databaseState.connected
-                    ? `MongoDB Atlas: Connected (${databaseState.latencyMs ?? 0}ms). Click to refresh.`
-                    : `MongoDB Mode: Offline fallback to local simulation (${databaseState.error || "Unreachable"}). Click to retry.`
-                  : "DATABASE_MODE=local (Deterministic Simulation Engine). Click to check status."
-              }
-            >
-              <Database className="h-3 w-3 shrink-0" />
-              {databaseState.mode === "mongodb" ? (
-                databaseState.connected ? (
-                  <>
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>DB: MONGODB</span>
-                  </>
+            {/* Right Controls: System, Data, Database, Automation, Commander, Logout */}
+            <div className="flex items-center gap-2.5 flex-wrap md:flex-nowrap">
+              {/* System: ONLINE */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 font-mono text-[11px] shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-slate-400">System:</span>
+                <span className="text-emerald-400 font-bold">ONLINE</span>
+              </div>
+
+              {/* Data: LIVE INTELLIGENCE + SIMULATION */}
+              <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-950/80 border border-blue-600/50 font-mono text-[11px] shadow-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                </span>
+                <span className="text-slate-400">Data:</span>
+                <span className="text-cyan-300 font-bold tracking-tight">LIVE INTELLIGENCE + SIMULATION</span>
+              </div>
+
+              {/* Database Persistence Status Badge */}
+              <div
+                onClick={() => refreshDatabaseData()}
+                className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-mono text-[11px] shadow-sm cursor-pointer transition-all ${
+                  databaseState.mode === "mongodb" && databaseState.connected
+                    ? "bg-emerald-950/70 border-emerald-500/70 text-emerald-300 hover:bg-emerald-900/80"
+                    : databaseState.mode === "mongodb" && !databaseState.connected
+                    ? "bg-amber-950/70 border-amber-600/70 text-amber-300 hover:bg-amber-900/80"
+                    : "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850"
+                }`}
+                title={
+                  databaseState.mode === "mongodb"
+                    ? databaseState.connected
+                      ? `MongoDB Atlas: Connected (${databaseState.latencyMs ?? 0}ms). Click to refresh.`
+                      : `MongoDB Mode: Offline fallback to local simulation (${databaseState.error || "Unreachable"}). Click to retry.`
+                    : "DATABASE_MODE=local (Deterministic Simulation Engine). Click to check status."
+                }
+              >
+                <Database className="h-3 w-3 shrink-0" />
+                {databaseState.mode === "mongodb" ? (
+                  databaseState.connected ? (
+                    <>
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>DB: MONGODB</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                      <span>DB: FALLBACK</span>
+                    </>
+                  )
                 ) : (
                   <>
-                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                    <span>DB: FALLBACK</span>
+                    <span className="h-2 w-2 rounded-full bg-sky-400" />
+                    <span>DB: LOCAL</span>
                   </>
-                )
-              ) : (
-                <>
-                  <span className="h-2 w-2 rounded-full bg-sky-400" />
-                  <span>DB: LOCAL</span>
-                </>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* AUTOMATION & SIMULATION MODE INDICATOR */}
-            <div
-              onClick={() => setActiveTab("automation")}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-950/80 border border-amber-500/80 font-mono text-[11px] text-amber-300 font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)] cursor-pointer hover:bg-amber-900/90 transition-all"
-              title="Workflow Orchestration: Running in Simulation Mode"
-            >
-              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-              <span>SIMULATION MODE</span>
-              {simulationStage === "ESCALATED" && (
-                <span className="text-rose-400 ml-1 text-[10px] font-black uppercase">
-                  [ESCALATED]
-                </span>
-              )}
-            </div>
-
-            {/* Notification Bell with Badge */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  markAlertsRead();
-                  setActiveTab("activity");
-                }}
-                className="relative p-1.5 rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-slate-700 transition-colors cursor-pointer"
-                title="View Live Tactical Alerts"
+              {/* AUTOMATION & SIMULATION MODE INDICATOR */}
+              <div
+                onClick={() => setActiveTab("automation")}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-950/80 border border-amber-500/80 font-mono text-[11px] text-amber-300 font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)] cursor-pointer hover:bg-amber-900/90 transition-all"
+                title="Workflow Orchestration: Running in Simulation Mode"
               >
-                <Bell className="h-4 w-4" />
-                {unreadAlertCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-mono font-bold text-white shadow-sm">
-                    {unreadAlertCount}
+                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>SIMULATION MODE</span>
+                {simulationStage === "ESCALATED" && (
+                  <span className="text-rose-400 ml-0.5 text-[10px] font-black uppercase">
+                    [ESCALATED]
                   </span>
                 )}
+              </div>
+
+              {/* Notification Bell with Badge */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    markAlertsRead();
+                    setActiveTab("activity");
+                  }}
+                  className="relative p-1.5 rounded-md border border-slate-800 bg-slate-900 text-slate-300 hover:text-white hover:border-slate-700 transition-colors cursor-pointer"
+                  title="View Live Tactical Alerts"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadAlertCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-mono font-bold text-white shadow-sm">
+                      {unreadAlertCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* COMMANDER Identity Display & Panel Trigger */}
+              <div
+                onClick={() => setShowCommanderPanel(true)}
+                className="flex items-center gap-2 pl-2 border-l border-slate-800 cursor-pointer hover:bg-slate-900/80 px-2 py-1 rounded-lg transition-all border border-transparent hover:border-slate-800"
+                title="View Commander Clearance & Authority Profile"
+              >
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 border border-blue-500/40 flex items-center justify-center text-blue-300 font-mono text-xs font-bold shadow-md shadow-blue-950/50 shrink-0">
+                  JK
+                </div>
+                <div className="text-left font-mono leading-tight">
+                  <div className="text-[10px] text-amber-400 font-extrabold tracking-wider uppercase flex items-center gap-1">
+                    <span>COMMANDER</span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  </div>
+                  <div className="text-slate-100 font-bold text-[11px] flex items-center gap-1">
+                    <span className="truncate max-w-[130px] sm:max-w-none">
+                      {currentUser.name}
+                    </span>
+                    <UserCheck className="h-3 w-3 text-emerald-400 shrink-0" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="p-1.5 px-2.5 rounded-md border border-slate-800 bg-slate-900 text-slate-400 hover:text-red-400 hover:border-red-900/60 hover:bg-red-950/40 transition-all cursor-pointer flex items-center gap-1.5 text-[11px] font-mono font-bold shadow-sm"
+                title="Sign out of command session"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">LOGOUT</span>
               </button>
             </div>
-
-            {/* Operator Profile: Commander */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-900 to-indigo-900 border border-blue-500/40 flex items-center justify-center text-blue-300 font-mono text-xs font-bold shadow-md shadow-blue-950/50 shrink-0">
-                JK
-              </div>
-              <div className="hidden lg:block text-left text-[11px] font-mono leading-tight">
-                <div className="text-slate-100 font-bold flex items-center gap-1">
-                  <span>{currentUser.name}</span>
-                  <UserCheck className="h-3 w-3 text-emerald-400" />
-                </div>
-                <div className="text-amber-400 font-extrabold text-[10px] tracking-wider uppercase">
-                  {currentUser.role}
-                </div>
-              </div>
-            </div>
-
-            {/* Sign Out Button */}
-            <button
-              onClick={handleLogout}
-              className="p-1.5 px-2.5 rounded-md border border-slate-800 bg-slate-900 text-slate-400 hover:text-red-400 hover:border-red-900/60 hover:bg-red-950/40 transition-all cursor-pointer flex items-center gap-1.5 text-[11px] font-mono font-bold ml-1 shadow-sm"
-              title="Sign out of command session"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">LOGOUT</span>
-            </button>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Interactive Commander Profile Panel Modal */}
+      <CommanderProfilePanel
+        isOpen={showCommanderPanel}
+        onClose={() => setShowCommanderPanel(false)}
+        onLogout={handleLogout}
+        onViewActivity={() => setActiveTab("activity")}
+      />
+    </>
   );
 }
