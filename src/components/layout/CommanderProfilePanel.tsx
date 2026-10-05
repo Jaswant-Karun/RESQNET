@@ -368,18 +368,6 @@ export function CommanderProfilePanel({
                     <span>{saveSuccessMsg}</span>
                   </div>
                 )}
-
-                <div className="text-[10px] text-slate-400 font-mono leading-tight pt-0.5">
-                  {emailConfig.smtpConfigured ? (
-                    <span className="text-emerald-400">
-                      🟢 <strong>SMTP Unrestricted Mode:</strong> Alerts will deliver directly to any email address you enter above.
-                    </span>
-                  ) : (
-                    <span>
-                      ℹ️ <strong>Resend Free Sandbox:</strong> Delivers to registered account (<strong className="text-sky-300">jksam37@gmail.com</strong>). To deliver to any other email without restrictions, add Gmail SMTP (<code>SMTP_USER</code> &amp; <code>SMTP_PASS</code>) to <code>.env.local</code>.
-                    </span>
-                  )}
-                </div>
               </div>
 
               <div className="p-2 rounded bg-black/40 border border-slate-800 space-y-1">
