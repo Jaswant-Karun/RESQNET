@@ -15,6 +15,7 @@ import { WorkflowOrchestrationPanel } from "@/components/dashboard/WorkflowOrche
 import { IncidentTimeline } from "@/components/dashboard/IncidentTimeline";
 import { ResilienceTestingPanel } from "@/components/dashboard/ResilienceTestingPanel";
 import { TacticalNotificationToast } from "@/components/dashboard/TacticalNotificationToast";
+import { CriticalRiskAlertBanner } from "@/components/dashboard/CriticalRiskAlertBanner";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertOctagon,
