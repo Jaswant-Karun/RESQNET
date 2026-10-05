@@ -99,6 +99,10 @@ export interface UserDocument {
   email: string;
   role: string;
   department?: string;
+  passwordHash?: string;
+  passwordSalt?: string;
+  hashAlgorithm?: string;
+  status?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -117,4 +121,57 @@ export interface DroneMissionDocument {
   completedAt?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface HospitalDocument {
+  _id?: ObjectId | string;
+  hospitalId: string;
+  name: string;
+  type: string;
+  location: string;
+  coordinates: MongoCoordinates;
+  totalBeds: number;
+  availableBeds: number;
+  icuTotal: number;
+  icuAvailable: number;
+  status: string;
+  contactRadio?: string;
+  updatedAt: string;
+}
+
+export interface ShelterDocument {
+  _id?: ObjectId | string;
+  shelterId: string;
+  name: string;
+  location: string;
+  coordinates: MongoCoordinates;
+  capacityPersons: number;
+  currentOccupancy: number;
+  availableCapacity: number;
+  status: string;
+  contactRadio?: string;
+  updatedAt: string;
+}
+
+export interface RoadDocument {
+  _id?: ObjectId | string;
+  roadId: string;
+  name: string;
+  status: "OPEN" | "RESTRICTED" | "IMPASSABLE" | "SUBMERGED" | string;
+  waterDepthMeters: number;
+  passableForHeavyVehicles: boolean;
+  lengthKm: number;
+  updatedAt: string;
+}
+
+export interface ZoneDocument {
+  _id?: ObjectId | string;
+  zoneId: string;
+  name: string;
+  severity: "CRITICAL" | "WARNING" | "WATCH" | "NORMAL" | string;
+  waterLevelMeters: number;
+  populationEstimate: number;
+  evacuationStatus: string;
+  coordinates: MongoCoordinates;
+  updatedAt: string;
 }

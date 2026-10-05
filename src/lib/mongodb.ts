@@ -35,6 +35,10 @@ export const COLLECTIONS = {
   RISK_FORECASTS: "riskForecasts",
   ACTIVITY_LOGS: "activityLogs",
   DRONE_MISSIONS: "droneMissions",
+  HOSPITALS: "hospitals",
+  SHELTERS: "shelters",
+  ROADS: "roads",
+  ZONES: "zones",
 } as const;
 
 const uri = process.env.MONGODB_URI || "";
