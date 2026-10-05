@@ -4,12 +4,14 @@ import React, { useState, useEffect } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
+  Check,
   CheckCircle2,
   Clock,
   Key,
   LogOut,
   Mail,
   Radio,
+  Save,
   Send,
   Shield,
   ShieldAlert,
@@ -33,6 +35,10 @@ export function CommanderProfilePanel({
   onViewActivity,
 }: CommanderProfilePanelProps) {
   const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [activeTargetEmail, setActiveTargetEmail] = useState<string>("jksam37@gmail.com");
+
   const [testAlertResult, setTestAlertResult] = useState<{
     success: boolean;
     message: string;
@@ -42,11 +48,15 @@ export function CommanderProfilePanel({
   const [emailConfig, setEmailConfig] = useState<{
     provider: string;
     configured: boolean;
+    smtpConfigured?: boolean;
+    resendConfigured?: boolean;
     commanderAlertEmail: string;
     cooldownMinutes: number;
   }>({
     provider: "Resend",
     configured: false,
+    smtpConfigured: false,
+    resendConfigured: false,
     commanderAlertEmail: "jksam37@gmail.com",
     cooldownMinutes: 10,
   });
@@ -56,22 +66,67 @@ export function CommanderProfilePanel({
   useEffect(() => {
     if (!isOpen) return;
 
+    const savedLocal =
+      typeof window !== "undefined"
+        ? localStorage.getItem("resqnet_target_recipient_email")
+        : null;
+
     fetch("/api/alerts/email")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const email = data.commanderAlertEmail || "jksam37@gmail.com";
+          const serverEmail = data.commanderAlertEmail || "jksam37@gmail.com";
+          const chosenEmail = savedLocal || serverEmail;
           setEmailConfig({
             provider: data.provider || "Resend",
             configured: Boolean(data.configured),
-            commanderAlertEmail: email,
+            smtpConfigured: Boolean(data.smtpConfigured),
+            resendConfigured: Boolean(data.resendConfigured),
+            commanderAlertEmail: chosenEmail,
             cooldownMinutes: data.cooldownMinutes || 10,
           });
-          setPreferredEmail(email);
+          setPreferredEmail(chosenEmail);
+          setActiveTargetEmail(chosenEmail);
         }
       })
       .catch(() => {});
   }, [isOpen]);
+
+  const handleSaveTargetEmail = async () => {
+    const trimmed = preferredEmail.trim();
+    if (!trimmed || !trimmed.includes("@")) {
+      setTestAlertResult({
+        success: false,
+        message: "Please enter a valid recipient email address before saving.",
+      });
+      return;
+    }
+
+    setIsSavingEmail(true);
+    setSaveSuccessMsg(null);
+
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("resqnet_target_recipient_email", trimmed);
+      }
+      setActiveTargetEmail(trimmed);
+
+      const res = await fetch("/api/alerts/email", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetEmail: trimmed }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSaveSuccessMsg(`Target recipient locked: ${trimmed}`);
+        setTimeout(() => setSaveSuccessMsg(null), 3500);
+      }
+    } catch (e) {
+      console.warn("Error saving recipient email:", e);
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
 
   const handleSendTestAlert = async () => {
     const destinationEmail = preferredEmail.trim();
@@ -82,6 +137,17 @@ export function CommanderProfilePanel({
       });
       return;
     }
+
+    // Automatically persist to localStorage and sync to server
+    if (typeof window !== "undefined") {
+      localStorage.setItem("resqnet_target_recipient_email", destinationEmail);
+    }
+    setActiveTargetEmail(destinationEmail);
+    fetch("/api/alerts/email", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetEmail: destinationEmail }),
+    }).catch(() => {});
 
     setIsSendingTestAlert(true);
     setTestAlertResult(null);
@@ -113,7 +179,7 @@ export function CommanderProfilePanel({
       if (res.ok && data.success) {
         setTestAlertResult({
           success: true,
-          message: `Test alert sent successfully to ${data.recipient || emailConfig.commanderAlertEmail}.`,
+          message: `Test alert sent successfully to ${data.recipient || destinationEmail}.`,
           details: data.message,
         });
       } else {
