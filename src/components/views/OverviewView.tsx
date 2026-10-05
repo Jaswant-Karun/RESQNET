@@ -111,6 +111,9 @@ export function OverviewView() {
       {/* 0. TACTICAL SIMULATION CONTROLS (SIMULATE FLOOD, SIMULATE ESCALATION, RESET) */}
       <SimulationControls />
 
+      {/* CRITICAL RISK DETECTION & COMMANDER REVIEW BANNER */}
+      <CriticalRiskAlertBanner />
+
       {/* ========================================================
           SECTION 1: INCIDENT STATUS
           Answers: 1. There is an emergency. 2. Where it is. 3. How severe it is.
