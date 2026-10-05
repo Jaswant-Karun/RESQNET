@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "node scripts/seed.mjs",
-    "test:auth": "node scripts/test_auth.mjs"
+    "test:auth": "node scripts/test_auth.mjs",
+    "test:ai": "node scripts/test_resq_ai.mjs"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.22",
