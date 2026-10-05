@@ -38,6 +38,7 @@ import { eventService, LogEventParams } from "@/lib/eventService";
 
 export type DashboardTab =
   | "overview"
+  | "risk-intelligence"
   | "incidents"
   | "resources"
   | "drones"
