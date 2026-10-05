@@ -54,14 +54,12 @@ export function CommanderProfilePanel({
     provider: string;
     configured: boolean;
     smtpConfigured?: boolean;
-    resendConfigured?: boolean;
     commanderAlertEmail: string;
     cooldownMinutes: number;
   }>({
-    provider: "Resend",
+    provider: "Gmail SMTP",
     configured: false,
     smtpConfigured: false,
-    resendConfigured: false,
     commanderAlertEmail: "",
     cooldownMinutes: 10,
   });
@@ -85,13 +83,12 @@ export function CommanderProfilePanel({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const serverEmail = data.commanderAlertEmail || "jksam37@gmail.com";
+          const serverEmail = data.commanderAlertEmail || "";
           const chosenEmail = savedLocal || serverEmail;
           setEmailConfig({
-            provider: data.provider || "Resend",
+            provider: data.provider || "Gmail SMTP",
             configured: Boolean(data.configured),
             smtpConfigured: Boolean(data.smtpConfigured),
-            resendConfigured: Boolean(data.resendConfigured),
             commanderAlertEmail: chosenEmail,
             cooldownMinutes: data.cooldownMinutes || 10,
           });
@@ -324,7 +321,7 @@ export function CommanderProfilePanel({
                     Emergency Email Alerts
                   </div>
                   <div className="text-[10px] text-slate-400 font-normal">
-                    Server-Side Dispatch (Resend Provider)
+                    Server-Side Dispatch (Gmail SMTP Provider)
                   </div>
                 </div>
               </div>
