@@ -345,7 +345,7 @@ export function CommanderProfilePanel({
                   </span>
                   <span className="text-emerald-400 font-semibold flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" />
-                    Active: {activeTargetEmail}
+                    Active: {activeTargetEmail || "Not Set"}
                   </span>
                 </div>
 
@@ -354,7 +354,7 @@ export function CommanderProfilePanel({
                     type="email"
                     value={preferredEmail}
                     onChange={(e) => setPreferredEmail(e.target.value)}
-                    placeholder="Enter email e.g. jksam37@gmail.com"
+                    placeholder="Enter recipient email e.g. abc@gmail.com"
                     className="flex-1 px-3 py-2 rounded-md bg-slate-900/90 border border-slate-700 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 text-white font-mono text-xs placeholder:text-slate-600 outline-none transition-all shadow-inner"
                   />
                   <button
