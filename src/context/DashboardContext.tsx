@@ -35,6 +35,7 @@ import {
 } from "@/types";
 
 import { eventService, LogEventParams } from "@/lib/eventService";
+import { LiveDisasterIntelligencePayload } from "@/lib/disaster-data/types";
 
 export type DashboardTab =
   | "overview"
