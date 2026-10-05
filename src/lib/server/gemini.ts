@@ -1,4 +1,11 @@
 import { Incident, RiskLevel } from "@/types";
+import {
+  FullEmergencyState,
+  buildSourcesUsedSection,
+  formatStructuredResponsePlan,
+  handleSpecialCommand,
+  fetchFullEmergencyState,
+} from "./resqAiContext";
 
 export interface GeminiResponseSchema {
   risk_level: RiskLevel;
