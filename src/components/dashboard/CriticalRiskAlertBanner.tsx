@@ -76,7 +76,7 @@ export function CriticalRiskAlertBanner() {
         hazardType: (criticalArea.hazard || "FLOOD").toUpperCase(),
         riskScore: evaluation.riskScore,
         riskLevel: evaluation.riskLevel,
-        contributingFactors: criticalArea.factors || [
+        contributingFactors: criticalArea.contributingFactors?.map((f) => f.name) || [
           "Heavy rainfall forecast",
           "High precipitation probability",
           "Existing incident",
