@@ -1,10 +1,12 @@
+import type { ObjectId } from "mongodb";
+
 export interface MongoCoordinates {
   latitude: number;
   longitude: number;
 }
 
 export interface IncidentDocument {
-  _id?: string;
+  _id?: ObjectId | string;
   incidentId: string;
   type: string;
   location: string;
@@ -21,7 +23,7 @@ export interface IncidentDocument {
 }
 
 export interface ResourceDocument {
-  _id?: string;
+  _id?: ObjectId | string;
   resourceId: string;
   type: string;
   name: string;
@@ -39,7 +41,7 @@ export interface ResourceAllocationDoc {
 }
 
 export interface ResponsePlanDocument {
-  _id?: string;
+  _id?: ObjectId | string;
   incidentId: string;
   riskLevel: string;
   priorityZones: string[];
@@ -53,7 +55,7 @@ export interface ResponsePlanDocument {
 }
 
 export interface AlertDocument {
-  _id?: string;
+  _id?: ObjectId | string;
   alertId: string;
   incidentId: string;
   type: string;
@@ -65,7 +67,7 @@ export interface AlertDocument {
 }
 
 export interface RiskForecastDocument {
-  _id?: string;
+  _id?: ObjectId | string;
   forecastId: string;
   areaName: string;
   latitude: number;
@@ -81,7 +83,7 @@ export interface RiskForecastDocument {
 }
 
 export interface ActivityLogDocument {
-  _id?: string;
+  _id?: ObjectId | string;
   eventId: string;
   eventType: string;
   message: string;
@@ -91,7 +93,7 @@ export interface ActivityLogDocument {
 }
 
 export interface UserDocument {
-  _id?: string;
+  _id?: ObjectId | string;
   userId: string;
   name: string;
   email: string;
@@ -102,7 +104,7 @@ export interface UserDocument {
 }
 
 export interface DroneMissionDocument {
-  _id?: string;
+  _id?: ObjectId | string;
   missionId: string;
   droneId: string;
   incidentId: string;
