@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Bell,
   Database,
+  LogOut,
   Radio,
   Shield,
   UserCheck,
@@ -26,6 +27,32 @@ export function Header() {
 
   const [timeString, setTimeString] = useState<string>("");
   const [showAlertModal, setShowAlertModal] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<{ name: string; role: string }>({
+    name: "Cmdr Jaswant Karun",
+    role: "COMMANDER",
+  });
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setCurrentUser({
+            name: data.user.name || "Cmdr Jaswant Karun",
+            role: data.user.role || "COMMANDER",
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      window.location.href = "/login";
+    }
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -170,19 +197,31 @@ export function Header() {
               </button>
             </div>
 
-            {/* Operator Profile Placeholder */}
+            {/* Operator Profile: Commander */}
             <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-              <div className="h-7 w-7 rounded-full bg-slate-800 border border-blue-500/50 flex items-center justify-center text-blue-400 font-mono text-xs font-bold shadow-inner">
-                RM
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-900 to-indigo-900 border border-blue-500/40 flex items-center justify-center text-blue-300 font-mono text-xs font-bold shadow-md shadow-blue-950/50 shrink-0">
+                JK
               </div>
               <div className="hidden lg:block text-left text-[11px] font-mono leading-tight">
-                <div className="text-slate-200 font-semibold flex items-center gap-1">
-                  <span>Cmdr. R. Menon</span>
+                <div className="text-slate-100 font-bold flex items-center gap-1">
+                  <span>{currentUser.name}</span>
                   <UserCheck className="h-3 w-3 text-emerald-400" />
                 </div>
-                <div className="text-slate-500 text-[10px]">Duty Commander</div>
+                <div className="text-amber-400 font-extrabold text-[10px] tracking-wider uppercase">
+                  {currentUser.role}
+                </div>
               </div>
             </div>
+
+            {/* Sign Out Button */}
+            <button
+              onClick={handleLogout}
+              className="p-1.5 px-2.5 rounded-md border border-slate-800 bg-slate-900 text-slate-400 hover:text-red-400 hover:border-red-900/60 hover:bg-red-950/40 transition-all cursor-pointer flex items-center gap-1.5 text-[11px] font-mono font-bold ml-1 shadow-sm"
+              title="Sign out of command session"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">LOGOUT</span>
+            </button>
           </div>
         </div>
       </div>

@@ -100,11 +100,12 @@ async function runSeed() {
     console.log("\n[1/10] Seeding Commander User Account...");
     const hashedPasswordData = hashPassword(commanderPassword);
     const commanderUser = {
-      userId: "usr-cmd-raghav-01",
-      name: "Col. Raghav Menon",
-      email: "raghav.menon@resqnet.gov.in",
+      userId: "usr-cmd-jaswant-01",
+      name: "Cmdr Jaswant Karun",
+      email: "jaswant@resqnet.gov.in",
       role: "COMMANDER",
       department: "State Disaster Management Authority (SDMA)",
+      avatar: "/avatars/commander.png",
       status: "ACTIVE",
       passwordHash: hashedPasswordData.hash,
       passwordSalt: hashedPasswordData.salt,
@@ -119,7 +120,20 @@ async function runSeed() {
       { $set: commanderUser },
       { upsert: true }
     );
-    console.log(`  -> Commander seeded: ${commanderUser.name} (${commanderUser.email}) [PASSWORD HASHED]`);
+
+    // Also support commander@resqnet.gov.in alias
+    const commanderAlias = {
+      ...commanderUser,
+      userId: "usr-cmd-alias-01",
+      email: "commander@resqnet.gov.in",
+    };
+    await db.collection("users").updateOne(
+      { email: commanderAlias.email },
+      { $set: commanderAlias },
+      { upsert: true }
+    );
+
+    console.log(`  -> Commander seeded: ${commanderUser.name} (${commanderUser.email} / ${commanderAlias.email}) [PASSWORD HASHED]`);
 
     // 2. Seed 3 Hospitals
     console.log("\n[2/10] Seeding 3 Hospitals...");
