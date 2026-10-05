@@ -9,6 +9,21 @@ async function runTests() {
   console.log("       RESQ AI EMERGENCY COPILOT TEST SUITE       ");
   console.log("=================================================");
 
+  // 1. Authenticate as Cmdr Jaswant Karun to obtain session cookie
+  console.log("Authenticating as Cmdr Jaswant Karun...");
+  const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "jaswant@resqnet.gov.in",
+      password: "ResqNet2026!Commander",
+    }),
+  });
+
+  const rawCookieHeader = loginRes.headers.get("set-cookie") || "";
+  const sessionCookie = rawCookieHeader.split(";")[0] || "";
+  console.log("Authenticated. Cookie:", sessionCookie.substring(0, 30) + "...\n");
+
   const sampleIncident = {
     id: "inc-flood-2026-08a",
     title: "Kotturpuram - Saidapet Embankment Corridor Breach",
@@ -47,7 +62,10 @@ async function runTests() {
   async function queryAi(question, simulateError = true) {
     const res = await fetch(`${BASE_URL}/api/ask-ai`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: sessionCookie,
+      },
       body: JSON.stringify({
         question,
         incident: sampleIncident,
@@ -72,13 +90,14 @@ async function runTests() {
   }
 
   // TEST 1: Special Command /status
-  console.log("\n[TEST 1] Special Command /status...");
+  console.log("[TEST 1] Special Command /status...");
   const statusRes = await queryAi("/status");
   assert(
-    "Returns formatted status report",
+    "Returns formatted status report with Data used block",
     statusRes.answer?.includes("[COMMAND CENTER STATUS REPORT]") &&
       statusRes.answer?.includes("System: ONLINE") &&
-      statusRes.answer?.includes("Data used:")
+      statusRes.answer?.includes("Data used:"),
+    statusRes.answer
   );
 
   // TEST 2: Special Command /risk
@@ -88,7 +107,8 @@ async function runTests() {
     "Returns live disaster risk assessment",
     riskRes.answer?.includes("[LIVE DISASTER RISK ASSESSMENT]") &&
       riskRes.answer?.includes("Highest-Risk Area:") &&
-      riskRes.answer?.includes("Contributing Factors:")
+      riskRes.answer?.includes("Contributing Factors:"),
+    riskRes.answer
   );
 
   // TEST 3: Special Command /resources
@@ -99,7 +119,8 @@ async function runTests() {
     resRes.answer?.includes("[COMMAND CENTER FLEET INVENTORY]") &&
       resRes.answer?.includes("AMBULANCES") &&
       resRes.answer?.includes("RESCUE TEAMS") &&
-      resRes.answer?.includes("DRONES")
+      resRes.answer?.includes("DRONES"),
+    resRes.answer
   );
 
   // TEST 4: Special Command /plan & Structured Response Plan
@@ -113,7 +134,8 @@ async function runTests() {
       planRes.answer?.includes("IMMEDIATE ACTIONS:") &&
       planRes.answer?.includes("RESOURCES:") &&
       planRes.answer?.includes("EVACUATION ROUTE:") &&
-      planRes.answer?.includes("APPROVAL REQUIRED:")
+      planRes.answer?.includes("APPROVAL REQUIRED:"),
+    planRes.answer
   );
 
   // TEST 5: Natural Language "Give me a response plan."
@@ -124,7 +146,8 @@ async function runTests() {
     nlPlanRes.answer?.includes("RISK:") &&
       nlPlanRes.answer?.includes("PRIORITY AREA:") &&
       nlPlanRes.answer?.includes("EVACUATION ROUTE:") &&
-      nlPlanRes.answer?.includes("APPROVAL REQUIRED:")
+      nlPlanRes.answer?.includes("APPROVAL REQUIRED:"),
+    nlPlanRes.answer
   );
 
   // TEST 6: Suggested Question: "What is the highest-risk area right now?"
@@ -133,7 +156,8 @@ async function runTests() {
   assert(
     "Identifies highest-risk area and risk score",
     qHighestRisk.answer?.includes("highest-risk area right now is") &&
-      qHighestRisk.answer?.includes("Data used:")
+      qHighestRisk.answer?.includes("Data used:"),
+    qHighestRisk.answer
   );
 
   // TEST 7: Suggested Question: "Why is Zone A critical?"
@@ -142,7 +166,8 @@ async function runTests() {
   assert(
     "Explains water level breach, affected citizens, and blocked roads",
     qZoneA.answer?.includes("Zone A is critical because floodwater has reached") &&
-      qZoneA.answer?.includes("Data used:")
+      qZoneA.answer?.includes("Data used:"),
+    qZoneA.answer
   );
 
   // TEST 8: Suggested Question: "What changed in the last 10 minutes?"
@@ -151,7 +176,8 @@ async function runTests() {
   assert(
     "Summarizes telemetry changes and recent activity",
     q10Min.answer?.includes("In the last 10 minutes:") &&
-      q10Min.answer?.includes("Data used:")
+      q10Min.answer?.includes("Data used:"),
+    q10Min.answer
   );
 
   // TEST 9: Suggested Question: "Which resources are available?" vs "deployed"
@@ -161,7 +187,8 @@ async function runTests() {
   assert(
     "Accurately reports available and deployed fleet breakdown",
     qAvail.answer?.includes("available in reserve") &&
-      qDep.answer?.includes("units are deployed in the field")
+      qDep.answer?.includes("units are deployed in the field"),
+    `Available: ${qAvail.answer} | Deployed: ${qDep.answer}`
   );
 
   // TEST 10: Suggested Question: "What actions are waiting for my approval?"
@@ -170,7 +197,8 @@ async function runTests() {
   assert(
     "Cites Cmdr Jaswant Karun approval status",
     qApproval.answer?.includes("Cmdr Jaswant Karun") &&
-      qApproval.answer?.includes("Data used:")
+      qApproval.answer?.includes("Data used:"),
+    qApproval.answer
   );
 
   // TEST 11: Unknown question test - Explicitly says information unavailable
@@ -179,7 +207,8 @@ async function runTests() {
   assert(
     "States information is currently unavailable without hallucinating",
     qUnknown.answer?.includes("Information outside this live telemetry and database state is currently unavailable") ||
-      qUnknown.answer?.includes("unavailable")
+      qUnknown.answer?.includes("unavailable"),
+    qUnknown.answer
   );
 
   // TEST 12: Sources / Data used section verification
@@ -187,7 +216,8 @@ async function runTests() {
   assert(
     "Answers include Sources / Data used block with timestamp",
     qApproval.answer?.includes("Data used:") &&
-      qApproval.answer?.includes("Timestamp:")
+      qApproval.answer?.includes("Timestamp:"),
+    qApproval.answer
   );
 
   console.log("\n=================================================");
