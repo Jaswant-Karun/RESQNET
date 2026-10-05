@@ -32,7 +32,8 @@ export function getMockIncidentDocument(): IncidentDocument {
     type: MOCK_FLOOD_INCIDENT.disasterType,
     location:
       MOCK_FLOOD_INCIDENT.primaryLocation.address ||
-      MOCK_FLOOD_INCIDENT.primaryLocation.name,
+      MOCK_FLOOD_INCIDENT.primaryLocation.name ||
+      "Adyar Embankment",
     coordinates: {
       latitude: MOCK_FLOOD_INCIDENT.primaryLocation.latitude,
       longitude: MOCK_FLOOD_INCIDENT.primaryLocation.longitude,
