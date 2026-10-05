@@ -462,6 +462,33 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     return unsub;
   }, []);
 
+  // Live Disaster Risk Intelligence state & synchronization
+  const [riskIntelligence, setRiskIntelligence] =
+    useState<LiveDisasterIntelligencePayload | null>(null);
+  const [isRiskIntelligenceLoading, setIsRiskIntelligenceLoading] =
+    useState<boolean>(false);
+
+  const refreshRiskIntelligence = async (force = false) => {
+    try {
+      setIsRiskIntelligenceLoading(true);
+      const res = await fetch(
+        `/api/risk-intelligence?stage=${simulationStage}&refresh=${force}`
+      );
+      const json = await res.json();
+      if (json.success && json.data) {
+        setRiskIntelligence(json.data);
+      }
+    } catch (err) {
+      console.warn("[DashboardContext] Failed to load live risk intelligence:", err);
+    } finally {
+      setIsRiskIntelligenceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshRiskIntelligence();
+  }, [simulationStage]);
+
   /**
    * Common Event Service dispatch method exposed to all modules and components
    */
