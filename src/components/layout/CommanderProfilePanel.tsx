@@ -37,7 +37,12 @@ export function CommanderProfilePanel({
   const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
-  const [activeTargetEmail, setActiveTargetEmail] = useState<string>("jksam37@gmail.com");
+  const [activeTargetEmail, setActiveTargetEmail] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("resqnet_target_recipient_email") || "";
+    }
+    return "";
+  });
 
   const [testAlertResult, setTestAlertResult] = useState<{
     success: boolean;
@@ -57,11 +62,16 @@ export function CommanderProfilePanel({
     configured: false,
     smtpConfigured: false,
     resendConfigured: false,
-    commanderAlertEmail: "jksam37@gmail.com",
+    commanderAlertEmail: "",
     cooldownMinutes: 10,
   });
 
-  const [preferredEmail, setPreferredEmail] = useState<string>("jksam37@gmail.com");
+  const [preferredEmail, setPreferredEmail] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("resqnet_target_recipient_email") || "";
+    }
+    return "";
+  });
 
   useEffect(() => {
     if (!isOpen) return;
