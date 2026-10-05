@@ -295,7 +295,7 @@ export async function fetchFullEmergencyState(
         id: r.id,
         name: r.name,
         status: isR2Blocked ? "IMPASSABLE" : r.status,
-        waterDepthCm: isR2Blocked ? 185 : r.currentWaterDepthCm,
+        waterDepthCm: isR2Blocked ? 185 : r.waterDepthCm,
       };
     }),
     blockedRoadNames: blockedRoads,
