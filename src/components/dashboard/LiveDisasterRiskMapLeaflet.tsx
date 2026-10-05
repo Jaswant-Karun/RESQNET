@@ -75,73 +75,169 @@ export function LiveDisasterRiskMapLeaflet({
 
     layerGroup.clearLayers();
 
-    // 1. LAYER: RESQNET RISK ASSESSMENTS (Circles with Risk-Level colors)
+    // 1. LAYER: RISK FORECAST AREAS (Circular / Polygon Zones)
     if (activeLayers.riskZones) {
       assessments.forEach((area) => {
+        const riskLevel = area.riskLevel;
+        // LOW: green, MODERATE: yellow, HIGH: orange, CRITICAL: red
         let color = "#10b981"; // Low (emerald)
         let fillColor = "#10b981";
-        if (area.riskLevel === "CRITICAL") {
+        if (riskLevel === "CRITICAL") {
           color = "#ef4444";
           fillColor = "#dc2626";
-        } else if (area.riskLevel === "HIGH") {
+        } else if (riskLevel === "HIGH") {
           color = "#f97316";
           fillColor = "#ea580c";
-        } else if (area.riskLevel === "MODERATE") {
+        } else if (riskLevel === "MODERATE") {
           color = "#eab308";
           fillColor = "#ca8a04";
         }
 
-        const circle = L.circle([area.latitude, area.longitude], {
-          radius: area.riskLevel === "CRITICAL" ? 1100 : area.riskLevel === "HIGH" ? 850 : 650,
-          color,
-          fillColor,
-          fillOpacity: 0.25,
-          weight: 2,
-          dashArray: area.riskLevel === "CRITICAL" ? "4, 4" : undefined,
+        const isCritical = riskLevel === "CRITICAL";
+        const shortArea =
+          area.shortName ||
+          (area.areaName.includes(" - ") ? area.areaName.split(" - ")[0] : area.areaName);
+        const hazard = area.hazard || "Flood";
+        const forecastWindow = area.forecastWindow || "Next 24 hours";
+
+        const factorList =
+          area.contributingFactors && area.contributingFactors.length > 0
+            ? area.contributingFactors
+                .slice(0, 4)
+                .map((f) => `<li style="margin-bottom: 2px;">- ${f.name}</li>`)
+                .join("")
+            : `<li>- Heavy rainfall forecast</li><li>- High precipitation probability</li><li>- Existing incident</li><li>- Population exposure</li>`;
+
+        const updatedTime = new Date(area.timestamp).toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
         });
 
-        const factorsHtml = area.contributingFactors
-          .slice(0, 3)
-          .map((f) => `<li style="margin-top:2px;">• <strong>${f.name}</strong>: ${f.description}</li>`)
-          .join("");
-
         const popupContent = `
-          <div style="font-family: ui-monospace, SFMono-Regular, monospace; min-width: 240px; color: #f8fafc; font-size: 11px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-bottom: 6px;">
-              <span style="background: #312e81; color: #a5b4fc; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 9px;">[RESQNET RISK ASSESSMENT]</span>
-              <span style="color: ${color}; font-weight: bold;">${area.riskLevel} (${area.riskScore}/100)</span>
+          <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; min-width: 250px; max-width: 290px; color: #f8fafc; padding: 12px; background: #070d19; border: 1.5px solid ${color}; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.85); line-height: 1.4;">
+            <!-- Label Header -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px; margin-bottom: 8px;">
+              <span style="background: rgba(99, 102, 241, 0.2); border: 1px solid #6366f1; color: #a5b4fc; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 9px; letter-spacing: 0.5px;">
+                FORECAST / RISK ASSESSMENT
+              </span>
+              <span style="font-size: 10px; font-weight: 800; color: ${color}; border: 1px solid ${color}; background: rgba(0,0,0,0.5); padding: 1px 6px; border-radius: 4px;">
+                ${riskLevel}
+              </span>
             </div>
-            <div style="font-size: 12px; font-weight: bold; color: #fff; margin-bottom: 4px;">${area.areaName}</div>
-            <div style="color: #94a3b8; margin-bottom: 6px; font-size: 10px;">Elevation: ${area.elevationMeters ?? "N/A"}m MSL | Lat: ${area.latitude.toFixed(4)}, Lon: ${area.longitude.toFixed(4)}</div>
-            <div style="background: #0f172a; padding: 6px; border-radius: 4px; border: 1px solid #1e293b; margin-bottom: 6px;">
-              <div style="color: #cbd5e1; font-weight: bold; margin-bottom: 2px; font-size: 10px;">Primary Contributing Factors:</div>
-              <ul style="margin: 0; padding-left: 4px; list-style: none; color: #94a3b8; font-size: 10px;">${factorsHtml}</ul>
+
+            <!-- Area -->
+            <div style="margin-bottom: 6px;">
+              <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Area:</div>
+              <div style="font-size: 13px; font-weight: bold; color: #ffffff;">${shortArea}</div>
             </div>
-            <div style="color: #64748b; font-size: 9px; font-style: italic;">
-              * Deterministic assessment for coordination. Not an official government warning.
+
+            <!-- Hazard -->
+            <div style="margin-bottom: 6px;">
+              <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Hazard:</div>
+              <div style="font-size: 12px; font-weight: bold; color: #38bdf8;">${hazard}</div>
+            </div>
+
+            <!-- Risk Score & Risk Level -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; background: #0b1329; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
+              <div>
+                <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Risk Score:</div>
+                <div style="font-size: 13px; font-weight: 800; color: ${color};">${area.riskScore}/100</div>
+              </div>
+              <div>
+                <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Risk Level:</div>
+                <div style="font-size: 12px; font-weight: bold; color: ${color};">${riskLevel}</div>
+              </div>
+            </div>
+
+            <!-- Forecast Window -->
+            <div style="margin-bottom: 6px; background: #0b1329; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
+              <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Forecast Window:</div>
+              <div style="font-size: 11px; font-weight: bold; color: #cbd5e1;">${forecastWindow}</div>
+            </div>
+
+            <!-- Main Factors -->
+            <div style="margin-bottom: 6px; background: #0f172a; padding: 6px 8px; border-radius: 6px; border: 1px solid #1e293b;">
+              <div style="font-size: 9px; color: #cbd5e1; font-weight: bold; margin-bottom: 3px; text-transform: uppercase;">Main Factors:</div>
+              <ul style="margin: 0; padding-left: 0; list-style: none; color: #94a3b8; font-size: 10px;">
+                ${factorList}
+              </ul>
+            </div>
+
+            <!-- Data Sources -->
+            <div style="margin-bottom: 6px; font-size: 10px; color: #94a3b8;">
+              <div style="font-size: 9px; color: #64748b; text-transform: uppercase; font-weight: 600;">Data Sources:</div>
+              <div style="color: #cbd5e1; font-weight: 500;">Open-Meteo<br/>RESQNET Risk Engine</div>
+            </div>
+
+            <!-- Last Updated -->
+            <div style="margin-bottom: 8px; font-size: 10px; color: #94a3b8;">
+              <div style="font-size: 9px; color: #64748b; text-transform: uppercase; font-weight: 600;">Last Updated:</div>
+              <div style="color: #cbd5e1; font-family: monospace;">${updatedTime}</div>
+            </div>
+
+            <!-- Mandatory Warning -->
+            <div style="border-top: 1px solid #1e293b; padding-top: 6px; font-size: 9px; color: #f59e0b; font-weight: bold; text-align: center; letter-spacing: 0.3px;">
+              ⚠️ NOT AN OFFICIAL EMERGENCY WARNING
             </div>
           </div>
         `;
 
-        circle.bindPopup(popupContent, { className: "tactical-popup" });
-        circle.on("click", () => onSelectArea?.(area));
-        layerGroup.addLayer(circle);
+        // Render circular or polygon risk zones
+        if (area.polygonCoordinates && area.polygonCoordinates.length > 0) {
+          const polygon = L.polygon(area.polygonCoordinates as L.LatLngTuple[], {
+            color,
+            fillColor,
+            fillOpacity: isCritical ? 0.32 : 0.22,
+            weight: isCritical ? 3.5 : 2,
+            dashArray: isCritical ? "5, 5" : undefined,
+          });
+          polygon.bindPopup(popupContent, { className: "tactical-risk-popup", maxWidth: 320 });
+          polygon.on("click", () => onSelectArea?.(area));
+          layerGroup.addLayer(polygon);
+        } else {
+          const circle = L.circle([area.latitude, area.longitude], {
+            radius: isCritical ? 1100 : riskLevel === "HIGH" ? 850 : 650,
+            color,
+            fillColor,
+            fillOpacity: isCritical ? 0.32 : 0.22,
+            weight: isCritical ? 3.5 : 2,
+            dashArray: isCritical ? "5, 5" : undefined,
+          });
+          circle.bindPopup(popupContent, { className: "tactical-risk-popup", maxWidth: 320 });
+          circle.on("click", () => onSelectArea?.(area));
+          layerGroup.addLayer(circle);
+        }
 
         // Marker pill in center
         const badgeIcon = L.divIcon({
           className: "custom-risk-badge",
           html: `
-            <div style="background: #090e1d; border: 1.5px solid ${color}; color: ${color}; padding: 2px 6px; border-radius: 6px; font-family: monospace; font-size: 10px; font-weight: bold; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.6); display: flex; align-items: center; gap: 4px;">
-              <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${color};"></span>
-              <span>${area.areaName.split(" - ")[0]}: ${area.riskScore}</span>
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%); cursor: pointer;">
+              ${
+                isCritical
+                  ? `<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; width: 34px; height: 34px; border-radius: 9999px; background: ${color}; opacity: 0.55; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>`
+                  : ""
+              }
+              <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background: #070d19; border: 2px solid ${color}; box-shadow: 0 0 12px ${color}; color: ${color}; font-weight: 800; font-family: monospace; font-size: 11px; z-index: 10;">
+                ${area.riskScore}
+              </div>
+              <div style="margin-top: 3px; background: rgba(7, 13, 25, 0.95); border: 1.5px solid ${color}; color: ${color}; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-family: monospace; font-weight: 800; white-space: nowrap; box-shadow: 0 3px 8px rgba(0,0,0,0.85); z-index: 11; display: flex; align-items: center; gap: 4px;">
+                <span style="font-size: 8px; background: ${color}; color: #000; padding: 0 3px; border-radius: 2px; font-weight: 900;">FORECAST</span>
+                <span>${shortArea} [${riskLevel}]</span>
+              </div>
             </div>
           `,
-          iconSize: [80, 24],
-          iconAnchor: [40, 12],
+          iconSize: [30, 46],
+          iconAnchor: [15, 23],
         });
 
         const badgeMarker = L.marker([area.latitude, area.longitude], { icon: badgeIcon });
-        badgeMarker.bindPopup(popupContent, { className: "tactical-popup" });
+        badgeMarker.bindPopup(popupContent, { className: "tactical-risk-popup", maxWidth: 320 });
         badgeMarker.on("click", () => onSelectArea?.(area));
         layerGroup.addLayer(badgeMarker);
       });
