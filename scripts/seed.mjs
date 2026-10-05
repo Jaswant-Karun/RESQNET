@@ -572,6 +572,52 @@ async function runSeed() {
     );
     console.log(`  -> Response Plan seeded for Incident: ${samplePlan.incidentId}`);
 
+    // 11. Seed Activity Logs with Commander Identity
+    console.log("\n[11/11] Seeding Activity Logs with Commander Identity...");
+    const sampleActivityLogs = [
+      {
+        eventId: "evt-act-01",
+        eventType: "DETECTION",
+        message: "Critical Water Surge & Embankment Breach Detected in Kotturpuram sector.",
+        actor: "River Basin Hydro-Sensor #07",
+        incidentId: sampleIncident.incidentId,
+        timestamp: "2026-10-03T18:42:00Z",
+      },
+      {
+        eventId: "evt-act-02",
+        eventType: "RESOURCE",
+        message: "Resource allocation approved by Cmdr Jaswant Karun: Confirmed deployment matrix 4 Ambulances, 3 Rescue Boats, 2 UAV Sentinels.",
+        actor: "Cmdr Jaswant Karun (COMMANDER)",
+        incidentId: sampleIncident.incidentId,
+        timestamp: "2026-10-03T19:25:00Z",
+      },
+      {
+        eventId: "evt-act-03",
+        eventType: "APPROVAL",
+        message: "Response approved by Cmdr Jaswant Karun: Tactical evacuation plan validated and signed off. Corridor R2 activated.",
+        actor: "Cmdr Jaswant Karun (COMMANDER)",
+        incidentId: sampleIncident.incidentId,
+        timestamp: "2026-10-03T19:30:00Z",
+      },
+      {
+        eventId: "evt-act-04",
+        eventType: "AUTOMATION",
+        message: "Emergency alert approved by Cmdr Jaswant Karun: Emergency cell broadcast broadcasted to 1,240 citizens in flood risk corridors.",
+        actor: "Cmdr Jaswant Karun (COMMANDER)",
+        incidentId: sampleIncident.incidentId,
+        timestamp: "2026-10-03T19:35:00Z",
+      },
+    ];
+
+    for (const log of sampleActivityLogs) {
+      await db.collection("activityLogs").updateOne(
+        { eventId: log.eventId },
+        { $set: log },
+        { upsert: true }
+      );
+    }
+    console.log(`  -> Activity Logs seeded (${sampleActivityLogs.length} events with Cmdr Jaswant Karun approvals)`);
+
     // --- VERIFICATION STEP ---
     console.log("\n=================================================");
     console.log("       VERIFYING MONGODB DATABASE CONTENTS       ");
@@ -586,6 +632,7 @@ async function runSeed() {
       { name: "zones", min: 3, label: "Flood Zones" },
       { name: "incidents", min: 1, label: "Incidents" },
       { name: "responsePlans", min: 1, label: "Response Plans" },
+      { name: "activityLogs", min: 3, label: "Activity Logs (Commander approvals)" },
     ];
 
     let allPassed = true;
