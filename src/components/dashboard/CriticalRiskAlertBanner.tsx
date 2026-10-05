@@ -103,6 +103,43 @@ export function CriticalRiskAlertBanner() {
       triggerAutomationWorkflow("RISK_FORECAST_ALERT", evaluation.n8nPayload);
     }
 
+    // 3. Dispatch Emergency Email Alert to Commander (Resend Provider)
+    fetch("/api/alerts/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        area: evaluation.shortName,
+        hazard: criticalArea.hazard || "Flood",
+        riskScore: evaluation.riskScore,
+        riskLevel: evaluation.riskLevel,
+        forecastWindow: criticalArea.forecastWindow || "Next 24 hours",
+        contributingFactors: criticalArea.contributingFactors?.map((f) => f.name) || [
+          "Heavy rainfall",
+          "High precipitation probability",
+          "Population exposure",
+          "Existing flood conditions",
+        ],
+        recommendedAction: "Review evacuation response plan.",
+        incidentId: incident.id,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.status === "SENT") {
+          addTimelineEvent({
+            id: `evt-email-${Date.now()}`,
+            incidentId: incident.id,
+            timestamp: new Date().toISOString(),
+            title: "Emergency Email Alert Dispatched to Commander",
+            description: `Delivered ${evaluation.riskLevel} alert for ${evaluation.shortName} to ${data.recipient || "Commander"}. Message ID: ${data.messageId || "N/A"}.`,
+            category: "DECISION",
+            severity: "CRITICAL",
+            authorOrSystem: "RESQNET Email Alert Service (Resend)",
+          });
+        }
+      })
+      .catch(() => {});
+
     setHasLoggedRiskEvent(true);
   }, [
     isCritical,
