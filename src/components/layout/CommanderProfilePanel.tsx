@@ -319,9 +319,9 @@ export function CommanderProfilePanel({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 border border-slate-700 text-slate-300">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 border border-slate-700 text-slate-300">
                 <span className={`h-1.5 w-1.5 rounded-full ${emailConfig.configured ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
-                <span>{emailConfig.configured ? "RESEND ACTIVE" : "SIMULATION READY"}</span>
+                <span>{emailConfig.provider ? emailConfig.provider.toUpperCase() : "LIVE READY"}</span>
               </div>
             </div>
 
@@ -333,19 +333,52 @@ export function CommanderProfilePanel({
                     <Mail className="h-3.5 w-3.5 text-red-400" />
                     Target Recipient Email:
                   </span>
-                  <span className="text-slate-500 font-normal">Type preferred address</span>
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Active: {activeTargetEmail}
+                  </span>
                 </div>
-                <div className="relative flex items-center">
+
+                <div className="flex items-center gap-1.5">
                   <input
                     type="email"
                     value={preferredEmail}
                     onChange={(e) => setPreferredEmail(e.target.value)}
                     placeholder="Enter email e.g. jksam37@gmail.com"
-                    className="w-full px-3 py-2 rounded-md bg-slate-900/90 border border-slate-700 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 text-white font-mono text-xs placeholder:text-slate-600 outline-none transition-all shadow-inner"
+                    className="flex-1 px-3 py-2 rounded-md bg-slate-900/90 border border-slate-700 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 text-white font-mono text-xs placeholder:text-slate-600 outline-none transition-all shadow-inner"
                   />
+                  <button
+                    onClick={handleSaveTargetEmail}
+                    disabled={isSavingEmail}
+                    className="px-3 py-2 rounded-md bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-600 text-slate-200 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    title="Lock this email address as the target for all emergency alerts"
+                  >
+                    {isSavingEmail ? (
+                      <Zap className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5 text-emerald-400" />
+                    )}
+                    <span>SAVE</span>
+                  </button>
                 </div>
-                <div className="text-[10px] text-slate-500 font-mono leading-tight">
-                  ℹ️ Resend Free Tier delivers to registered account email (<strong className="text-sky-400">jksam37@gmail.com</strong>).
+
+                {saveSuccessMsg && (
+                  <div className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 animate-in fade-in">
+                    <Check className="h-3 w-3" />
+                    <span>{saveSuccessMsg}</span>
+                  </div>
+                )}
+
+                <div className="text-[10px] text-slate-400 font-mono leading-tight pt-0.5">
+                  {emailConfig.smtpConfigured ? (
+                    <span className="text-emerald-400">
+                      🟢 <strong>SMTP Unrestricted Mode:</strong> Alerts will deliver directly to any email address you enter above.
+                    </span>
+                  ) : (
+                    <span>
+                      ℹ️ <strong>Resend Free Sandbox:</strong> Delivers to registered account (<strong className="text-sky-300">jksam37@gmail.com</strong>). To deliver to any other email without restrictions, add Gmail SMTP (<code>SMTP_USER</code> &amp; <code>SMTP_PASS</code>) to <code>.env.local</code>.
+                    </span>
+                  )}
                 </div>
               </div>
 
