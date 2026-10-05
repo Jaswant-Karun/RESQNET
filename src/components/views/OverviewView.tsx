@@ -101,7 +101,7 @@ function SectionHeader({
 }
 
 export function OverviewView() {
-  const { incident, simulationStage } = useDashboard();
+  const { incident, simulationStage, setActiveTab } = useDashboard();
 
   const isEscalated = simulationStage === "ESCALATED";
 
@@ -130,6 +130,44 @@ export function OverviewView() {
 
         {/* KPI Summary Cards */}
         <TopKpiCards />
+      </section>
+
+      {/* ========================================================
+          NEW MODULE: LIVE DISASTER RISK MAP
+      ======================================================== */}
+      <section className="space-y-3.5">
+        <SectionHeader
+          number="MODULE"
+          title="LIVE DISASTER RISK MAP"
+          badgeText="OPEN-METEO + GDACS + NASA FIRMS"
+          badgeColor="red"
+          icon={ShieldAlert}
+          description="Multisource observed hazards, meteorological forecasts, and deterministic risk scoring"
+        />
+
+        <div className="p-4 rounded-xl bg-[#080d1a] border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+              <strong className="text-white font-mono text-sm uppercase">
+                Zone A - Kotturpuram Riverfront Basin (Risk Score: {isEscalated ? "96" : "88"}/100 • CRITICAL)
+              </strong>
+            </div>
+            <p className="text-xs text-slate-400 font-mono">
+              Live multisource intelligence correlated: Open-Meteo precipitation forecast, GDACS regional alerts, and RESQNET deterministic risk engine.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setActiveTab("risk-intelligence")}
+              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold transition-all shadow-lg shadow-indigo-950/40 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>Launch Live Disaster Risk Intelligence</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* ========================================================
