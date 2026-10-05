@@ -23,6 +23,7 @@ export function SimulationControls() {
     simulationStage,
     simulationStatus,
     incident,
+    databaseState,
   } = useDashboard();
 
   return (
@@ -42,6 +43,21 @@ export function SimulationControls() {
               <Badge variant="neutral" className="border-amber-600/50 bg-amber-950/40 text-amber-300 font-bold font-mono text-[10px]">
                 SIMULATION MODE
               </Badge>
+              {databaseState.mode === "mongodb" ? (
+                databaseState.connected ? (
+                  <Badge variant="success" className="font-mono text-[10px] bg-emerald-950/80 text-emerald-300 border-emerald-600/60">
+                    MONGODB ATLAS LIVE
+                  </Badge>
+                ) : (
+                  <Badge variant="warning" className="font-mono text-[10px] bg-amber-950/80 text-amber-300 border-amber-600/60">
+                    MONGODB FALLBACK
+                  </Badge>
+                )
+              ) : (
+                <Badge variant="neutral" className="font-mono text-[10px] bg-slate-900 text-slate-400 border-slate-700">
+                  DB: LOCAL
+                </Badge>
+              )}
               <Badge
                 variant={
                   simulationStage === "ESCALATED"
