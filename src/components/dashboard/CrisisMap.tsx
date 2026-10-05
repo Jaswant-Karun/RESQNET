@@ -377,6 +377,3 @@ export function CrisisMap() {
     </Card>
   );
 }
-    </Card>
-  );
-}
