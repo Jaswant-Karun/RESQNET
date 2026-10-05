@@ -51,8 +51,13 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 6. Handle Dashboard and any other protected page routes
-  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+  // 6. Handle Dashboard, Risk Intelligence, and any other protected page routes
+  if (
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/risk-intelligence" ||
+    pathname.startsWith("/risk-intelligence/")
+  ) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", req.url);
       return NextResponse.redirect(loginUrl);
