@@ -113,6 +113,20 @@ interface DashboardContextType {
   activeResilienceTest: string | null;
   triggerResilienceTest: (testId: string) => Promise<void>;
   resetAllResilienceTests: () => void;
+
+  // MongoDB & Data Persistence Layer
+  databaseState: DatabaseState;
+  refreshDatabaseData: () => Promise<void>;
+}
+
+export interface DatabaseState {
+  mode: "local" | "mongodb";
+  configured: boolean;
+  connected: boolean;
+  source: "mongodb" | "local_simulation";
+  latencyMs?: number;
+  error?: string;
+  loading: boolean;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -331,6 +345,104 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     ],
   });
   const [isTriggeringAutomation, setIsTriggeringAutomation] = useState<boolean>(false);
+
+  // MongoDB Atlas Persistent Data Layer State
+  const [databaseState, setDatabaseState] = useState<DatabaseState>({
+    mode: "local",
+    configured: false,
+    connected: false,
+    source: "local_simulation",
+    loading: true,
+  });
+
+  const refreshDatabaseData = async () => {
+    try {
+      const res = await fetch("/api/db-status");
+      if (!res.ok) throw new Error("Status check response was not ok");
+      const statusData = await res.json();
+
+      const isMongoReady = statusData.mode === "mongodb" && statusData.connected;
+
+      setDatabaseState({
+        mode: statusData.mode || "local",
+        configured: Boolean(statusData.configured),
+        connected: Boolean(statusData.connected),
+        source: isMongoReady ? "mongodb" : "local_simulation",
+        latencyMs: statusData.latencyMs,
+        error: statusData.error,
+        loading: false,
+      });
+
+      // When MongoDB is active and connected, hydrate dashboard from persistent MongoDB collections
+      if (isMongoReady) {
+        const [incRes, planRes, altRes] = await Promise.allSettled([
+          fetch("/api/incidents").then((r) => r.json()),
+          fetch("/api/response-plans").then((r) => r.json()),
+          fetch("/api/alerts").then((r) => r.json()),
+        ]);
+
+        if (incRes.status === "fulfilled" && incRes.value?.success && incRes.value.data?.[0]) {
+          const liveInc = incRes.value.data[0];
+          setIncident((prev) => ({
+            ...prev,
+            id: liveInc.incidentId || prev.id,
+            severity: (liveInc.severity as any) || prev.severity,
+            status: (liveInc.status as any) || prev.status,
+            metrics: {
+              ...prev.metrics,
+              waterLevelMeters: liveInc.waterLevel ?? prev.metrics.waterLevelMeters,
+              affectedPopulationEstimated:
+                liveInc.affectedPopulation ?? prev.metrics.affectedPopulationEstimated,
+            },
+          }));
+        }
+
+        if (planRes.status === "fulfilled" && planRes.value?.success && planRes.value.data?.[0]) {
+          const livePlan = planRes.value.data[0];
+          setPlan((prev) => ({
+            ...prev,
+            riskLevel: (livePlan.riskLevel as any) || prev.riskLevel,
+            priorityZones: livePlan.priorityZones || prev.priorityZones,
+            immediateActions: livePlan.immediateActions || prev.immediateActions,
+            resourceAllocation: livePlan.resourceAllocation || prev.resourceAllocation,
+            evacuationRoute: livePlan.evacuationRoute || prev.evacuationRoute,
+            targetShelter: livePlan.shelter || prev.targetShelter,
+            explanation: livePlan.explanation || prev.explanation,
+          }));
+        }
+
+        if (altRes.status === "fulfilled" && altRes.value?.success && Array.isArray(altRes.value.data)) {
+          const liveAlerts = altRes.value.data;
+          if (liveAlerts.length > 0) {
+            setAlerts(
+              liveAlerts.map((a: any) => ({
+                id: a.alertId || `alt-${Math.random()}`,
+                incidentId: a.incidentId,
+                code: (a.alertId || "ALERT").toUpperCase(),
+                title: `${a.type || "EMERGENCY"} ALERT`,
+                message: `Broadcast to ${a.recipient || "Public"} via ${a.channel || "Broadcast"}`,
+                severity: a.severity || "CRITICAL",
+                timestamp: a.sentAt || new Date().toISOString(),
+                source: "DAM_AUTHORITY",
+                acknowledged: a.status === "ACKNOWLEDGED",
+              }))
+            );
+          }
+        }
+      }
+    } catch {
+      setDatabaseState((prev) => ({
+        ...prev,
+        source: "local_simulation",
+        connected: false,
+        loading: false,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    refreshDatabaseData();
+  }, []);
 
   // Subscribe to Common Event Service to capture all emitted events
   useEffect(() => {
@@ -1330,6 +1442,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         activeResilienceTest,
         triggerResilienceTest,
         resetAllResilienceTests,
+        databaseState,
+        refreshDatabaseData,
       }}
     >
       {children}
