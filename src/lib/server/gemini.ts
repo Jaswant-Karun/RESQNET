@@ -244,13 +244,10 @@ export interface AiQuestionContext {
       drones?: number;
     };
   };
-import {
-  FullEmergencyState,
-  buildSourcesUsedSection,
-  formatStructuredResponsePlan,
-  handleSpecialCommand,
-  fetchFullEmergencyState,
-} from "./resqAiContext";
+  simulationStage?: "BASELINE" | "ESCALATED" | "RESOLVED";
+  isActionApproved?: boolean;
+  isActionRejected?: boolean;
+}
 
 /**
  * Deterministic fallback answer generator based strictly on current operational state.
