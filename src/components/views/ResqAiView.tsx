@@ -57,8 +57,8 @@ export function ResqAiView() {
                 Gemini 2.5 Flash
               </Badge>
             </div>
-            <p className="text-xs sm:text-sm text-slate-400 font-sans italic mt-0.5">
-              &quot;Situation-aware response assistant&quot;
+            <p className="text-xs sm:text-sm text-indigo-300 font-mono tracking-wide mt-0.5 font-semibold">
+              AI Emergency Response Copilot
             </p>
           </div>
         </div>
