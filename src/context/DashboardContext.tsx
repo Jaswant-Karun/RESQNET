@@ -119,6 +119,11 @@ interface DashboardContextType {
   // MongoDB & Data Persistence Layer
   databaseState: DatabaseState;
   refreshDatabaseData: () => Promise<void>;
+
+  // Live Disaster Risk Intelligence Layer
+  riskIntelligence: LiveDisasterIntelligencePayload | null;
+  isRiskIntelligenceLoading: boolean;
+  refreshRiskIntelligence: (force?: boolean) => Promise<void>;
 }
 
 export interface DatabaseState {
