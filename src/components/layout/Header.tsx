@@ -97,6 +97,45 @@ export function Header() {
               <span className="text-emerald-400 font-bold">ONLINE</span>
             </div>
 
+            {/* Database Persistence Status Badge */}
+            <div
+              onClick={() => refreshDatabaseData()}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-mono text-[11px] shadow-sm cursor-pointer transition-all ${
+                databaseState.mode === "mongodb" && databaseState.connected
+                  ? "bg-emerald-950/70 border-emerald-500/70 text-emerald-300 hover:bg-emerald-900/80"
+                  : databaseState.mode === "mongodb" && !databaseState.connected
+                  ? "bg-amber-950/70 border-amber-600/70 text-amber-300 hover:bg-amber-900/80"
+                  : "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850"
+              }`}
+              title={
+                databaseState.mode === "mongodb"
+                  ? databaseState.connected
+                    ? `MongoDB Atlas: Connected (${databaseState.latencyMs ?? 0}ms). Click to refresh.`
+                    : `MongoDB Mode: Offline fallback to local simulation (${databaseState.error || "Unreachable"}). Click to retry.`
+                  : "DATABASE_MODE=local (Deterministic Simulation Engine). Click to check status."
+              }
+            >
+              <Database className="h-3 w-3 shrink-0" />
+              {databaseState.mode === "mongodb" ? (
+                databaseState.connected ? (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>DB: MONGODB</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                    <span>DB: FALLBACK</span>
+                  </>
+                )
+              ) : (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-sky-400" />
+                  <span>DB: LOCAL</span>
+                </>
+              )}
+            </div>
+
             {/* AUTOMATION & SIMULATION MODE INDICATOR */}
             <div
               onClick={() => setActiveTab("automation")}
