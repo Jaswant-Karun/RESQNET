@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -8,11 +8,15 @@ import {
   Clock,
   Key,
   LogOut,
+  Mail,
   Radio,
+  Send,
   Shield,
   ShieldAlert,
+  Sparkles,
   User,
   X,
+  Zap,
 } from "lucide-react";
 
 interface CommanderProfilePanelProps {
@@ -28,6 +32,94 @@ export function CommanderProfilePanel({
   onLogout,
   onViewActivity,
 }: CommanderProfilePanelProps) {
+  const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
+  const [testAlertResult, setTestAlertResult] = useState<{
+    success: boolean;
+    message: string;
+    details?: string;
+  } | null>(null);
+
+  const [emailConfig, setEmailConfig] = useState<{
+    provider: string;
+    configured: boolean;
+    commanderAlertEmail: string;
+    cooldownMinutes: number;
+  }>({
+    provider: "Resend",
+    configured: false,
+    commanderAlertEmail: "jaswant@resqnet.gov.in",
+    cooldownMinutes: 10,
+  });
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    fetch("/api/alerts/email")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setEmailConfig({
+            provider: data.provider || "Resend",
+            configured: Boolean(data.configured),
+            commanderAlertEmail: data.commanderAlertEmail || "jaswant@resqnet.gov.in",
+            cooldownMinutes: data.cooldownMinutes || 10,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
+
+  const handleSendTestAlert = async () => {
+    setIsSendingTestAlert(true);
+    setTestAlertResult(null);
+
+    try {
+      const res = await fetch("/api/alerts/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isTest: true,
+          area: "Zone A",
+          hazard: "Flood",
+          riskScore: 82,
+          riskLevel: "CRITICAL",
+          forecastWindow: "Next 24 hours",
+          contributingFactors: [
+            "Heavy rainfall",
+            "High precipitation probability",
+            "Population exposure",
+            "Existing flood conditions",
+          ],
+          recommendedAction: "Review evacuation response plan.",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setTestAlertResult({
+          success: true,
+          message: `Test alert sent successfully to ${data.recipient || emailConfig.commanderAlertEmail}.`,
+          details: data.message,
+        });
+      } else {
+        setTestAlertResult({
+          success: false,
+          message: data.error || data.message || "Failed to dispatch test alert.",
+          details: res.status === 403 ? "Only authenticated COMMANDER can send test alerts." : undefined,
+        });
+      }
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      setTestAlertResult({
+        success: false,
+        message: `Network error sending test alert: ${errMsg}`,
+      });
+    } finally {
+      setIsSendingTestAlert(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -36,19 +128,19 @@ export function CommanderProfilePanel({
       <div className="fixed inset-0" onClick={onClose} />
 
       {/* Modal Dialog Card */}
-      <div className="relative z-10 w-full max-w-md bg-[#080d1a] border border-slate-700/80 rounded-2xl shadow-2xl shadow-blue-950/50 overflow-hidden font-mono">
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] bg-[#080d1a] border border-slate-700/80 rounded-2xl shadow-2xl shadow-blue-950/50 overflow-hidden font-mono flex flex-col">
         {/* Top Accent Header */}
-        <div className="bg-gradient-to-r from-blue-900/80 via-slate-900 to-indigo-900/80 p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-900/80 via-slate-900 to-indigo-900/80 p-4 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-lg bg-blue-950 border border-blue-600/50 text-blue-400">
               <Shield className="h-5 w-5" />
             </div>
             <div>
               <div className="text-xs font-bold text-white uppercase tracking-wider">
-                EOC OPERATOR CLEARANCE
+                COMMANDER SETTINGS & CLEARANCE
               </div>
               <div className="text-[10px] text-slate-400 font-normal">
-                Command Center Personnel Verification
+                Operator Clearance & Emergency Alerts Configuration
               </div>
             </div>
           </div>
@@ -61,8 +153,8 @@ export function CommanderProfilePanel({
           </button>
         </div>
 
-        {/* Commander Details Body */}
-        <div className="p-5 space-y-4">
+        {/* Commander Details & Settings Body */}
+        <div className="p-5 space-y-4 overflow-y-auto">
           {/* Avatar & Primary Info */}
           <div className="flex items-center gap-4 p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/90 shadow-inner">
             <div className="relative">
@@ -90,8 +182,7 @@ export function CommanderProfilePanel({
 
           {/* Structured Key Details Matrix */}
           <div className="grid grid-cols-2 gap-2 text-xs">
-            {/* Field: Name */}
-            <div className="p-3 rounded-lg bg-slate-900/70 border border-slate-800 space-y-1">
+            <div className="p-2.5 rounded-lg bg-slate-900/70 border border-slate-800 space-y-0.5">
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
                 Name
               </div>
@@ -100,8 +191,7 @@ export function CommanderProfilePanel({
               </div>
             </div>
 
-            {/* Field: Role */}
-            <div className="p-3 rounded-lg bg-slate-900/70 border border-slate-800 space-y-1">
+            <div className="p-2.5 rounded-lg bg-slate-900/70 border border-slate-800 space-y-0.5">
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
                 Role
               </div>
@@ -110,8 +200,7 @@ export function CommanderProfilePanel({
               </div>
             </div>
 
-            {/* Field: Authority */}
-            <div className="p-3 rounded-lg bg-slate-900/70 border border-slate-800 space-y-1">
+            <div className="p-2.5 rounded-lg bg-slate-900/70 border border-slate-800 space-y-0.5">
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
                 Authority
               </div>
@@ -120,8 +209,7 @@ export function CommanderProfilePanel({
               </div>
             </div>
 
-            {/* Field: Status */}
-            <div className="p-3 rounded-lg bg-slate-900/70 border border-slate-800 space-y-1">
+            <div className="p-2.5 rounded-lg bg-slate-900/70 border border-slate-800 space-y-0.5">
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
                 Status
               </div>
@@ -130,6 +218,102 @@ export function CommanderProfilePanel({
                 <span>ON DUTY</span>
               </div>
             </div>
+          </div>
+
+          {/* ============================================================ */}
+          {/* COMMANDER SETTINGS: EMERGENCY EMAIL ALERT SYSTEM */}
+          {/* ============================================================ */}
+          <div className="p-3.5 rounded-xl bg-gradient-to-br from-slate-900 via-slate-950 to-red-950/40 border border-slate-700/80 shadow-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-red-950/80 border border-red-600/60 text-red-300">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-black text-white uppercase tracking-wider">
+                    Emergency Email Alerts
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-normal">
+                    Server-Side Dispatch (Resend Provider)
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 border border-slate-700 text-slate-300">
+                <span className={`h-1.5 w-1.5 rounded-full ${emailConfig.configured ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                <span>{emailConfig.configured ? "RESEND ACTIVE" : "SIMULATION READY"}</span>
+              </div>
+            </div>
+
+            {/* Recipient and Protocol Details */}
+            <div className="space-y-1.5 text-[11px] font-mono">
+              <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-slate-800">
+                <span className="text-slate-400">Commander Alert Email:</span>
+                <span className="text-sky-300 font-bold">{emailConfig.commanderAlertEmail}</span>
+              </div>
+
+              <div className="p-2 rounded bg-black/40 border border-slate-800 space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase font-semibold">Alert Level Routing Rules:</div>
+                <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-300">
+                  <div>• <span className="text-emerald-400 font-bold">LOW:</span> No email</div>
+                  <div>• <span className="text-amber-400 font-bold">MODERATE:</span> Dashboard only</div>
+                  <div>• <span className="text-orange-400 font-bold">HIGH:</span> Commander email</div>
+                  <div>• <span className="text-red-400 font-bold">CRITICAL:</span> Email + n8n</div>
+                </div>
+              </div>
+
+              <div className="text-[10px] text-slate-400 flex items-center justify-between px-1">
+                <span>Deduplication Cooldown:</span>
+                <span className="text-slate-200 font-bold">{emailConfig.cooldownMinutes} minutes</span>
+              </div>
+            </div>
+
+            {/* SEND TEST ALERT Button */}
+            <div className="pt-1">
+              <button
+                onClick={handleSendTestAlert}
+                disabled={isSendingTestAlert}
+                className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-600 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-950/60 transition-all border border-red-400/50 cursor-pointer"
+                title="Send a test emergency alert to the authenticated commander"
+              >
+                {isSendingTestAlert ? (
+                  <>
+                    <Zap className="h-4 w-4 animate-spin" />
+                    <span>SENDING TEST ALERT...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    <span>SEND TEST ALERT</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Test Alert Dispatch Feedback */}
+            {testAlertResult && (
+              <div
+                className={`p-2.5 rounded-lg border text-[11px] leading-relaxed animate-in fade-in duration-200 ${
+                  testAlertResult.success
+                    ? "bg-emerald-950/60 border-emerald-500/60 text-emerald-200"
+                    : "bg-red-950/60 border-red-500/60 text-red-200"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold">
+                  {testAlertResult.success ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
+                  )}
+                  <span>{testAlertResult.message}</span>
+                </div>
+                {testAlertResult.details && (
+                  <p className="text-[10px] text-slate-300 mt-1 pl-5">
+                    {testAlertResult.details}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Required Explicit Hackathon Disclaimer Callout */}
