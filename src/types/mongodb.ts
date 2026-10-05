@@ -99,6 +99,7 @@ export interface UserDocument {
   email: string;
   role: string;
   department?: string;
+  avatar?: string;
   passwordHash?: string;
   passwordSalt?: string;
   hashAlgorithm?: string;
