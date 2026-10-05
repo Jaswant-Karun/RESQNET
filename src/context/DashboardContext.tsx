@@ -1184,7 +1184,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setPlan((prev) => ({
       ...prev,
       humanApproved: true,
-      approvedBy: "Commander Raghav Menon (EOC Chief)",
+      approvedBy: "Cmdr Jaswant Karun (COMMANDER)",
       approvedAt: now,
       status: "APPROVED_ACTIVE",
     }));
@@ -1204,11 +1204,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         id: `evt-appr-1-${apprBaseTime}`,
         incidentId: incident.id,
         timestamp: new Date(apprBaseTime).toISOString(),
-        title: "Response approved",
-        description: `Commander Raghav Menon granted clearance for: Evacuate Zone A via ${routeText}. Clearance confirmed.`,
+        title: "Response approved by Cmdr Jaswant Karun",
+        description: `Cmdr Jaswant Karun granted clearance for: Evacuate Zone A via ${routeText}. Clearance confirmed.`,
         category: "APPROVAL",
         severity: "INFO",
-        authorOrSystem: "Incident Commander Raghav Menon",
+        authorOrSystem: "Cmdr Jaswant Karun (COMMANDER)",
       },
       {
         id: `evt-appr-2-${apprBaseTime}`,
