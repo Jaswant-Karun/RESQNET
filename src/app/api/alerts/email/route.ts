@@ -80,10 +80,10 @@ export async function POST(req: NextRequest) {
       incidentId: body.incidentId || "FL-902",
       commanderName: session?.name || body.commanderName || "Cmdr Jaswant Karun",
       commanderEmail:
-        body.commanderEmail ||
         process.env.COMMANDER_ALERT_EMAIL ||
+        body.commanderEmail ||
         session?.email ||
-        "jaswant@resqnet.gov.in",
+        "jksam37@gmail.com",
       isTest: Boolean(body.isTest),
     };
 
