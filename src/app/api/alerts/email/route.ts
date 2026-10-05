@@ -7,30 +7,15 @@ import { AlertDocument } from "@/types";
 export async function GET(req: NextRequest) {
   try {
     const resendConfigured = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.length > 5);
-    const alertFrom = process.env.ALERT_FROM_EMAIL || "RESQNET Emergency Command <onboarding@resend.dev>";
-    const alertRecipient = process.env.COMMANDER_ALERT_EMAIL || "jaswant@resqnet.gov.in";
-    const cooldownMin = parseInt(process.env.ALERT_COOLDOWN_MINUTES || "10", 10);
-
-    // Fetch recent email alerts from MongoDB if active
-    let recentAlerts: AlertDocument[] = [];
-    if (isMongoActive()) {
-      try {
-        const db = await getDatabase();
-        recentAlerts = await db
-          .collection<AlertDocument>(COLLECTIONS.ALERTS)
-          .find({ channel: "EMAIL" })
-          .sort({ sentAt: -1 })
-          .limit(10)
-          .toArray();
-      } catch (err) {
-        console.warn("[API /api/alerts/email] MongoDB query warning:", err);
-      }
-    }
+    const smtpConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+    const activeProvider = smtpConfigured ? "SMTP (Gmail/Custom)" : resendConfigured ? "Resend" : "Simulation";
 
     return NextResponse.json({
       success: true,
-      provider: "Resend",
-      configured: resendConfigured,
+      provider: activeProvider,
+      configured: resendConfigured || smtpConfigured,
+      smtpConfigured,
+      resendConfigured,
       alertFromEmail: alertFrom,
       commanderAlertEmail: alertRecipient,
       cooldownMinutes: cooldownMin,
