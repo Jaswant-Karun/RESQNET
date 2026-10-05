@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./.vscode/compose-spec.json
 services:
   resqnet-n8n:
     image: n8nio/n8n:latest
