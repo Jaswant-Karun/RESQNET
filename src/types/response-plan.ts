@@ -72,5 +72,5 @@ export interface ResponsePlan {
   publicAlert: string;
   explanation: string;
   approvalRequired: boolean;
-  decisionEngine: "FALLBACK" | "GEMINI_AI";
+  decisionEngine: "FALLBACK" | "GEMINI_AI" | "DETERMINISTIC";
 }
