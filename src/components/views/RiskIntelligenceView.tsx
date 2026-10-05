@@ -171,6 +171,9 @@ export function RiskIntelligenceView() {
         </div>
       </div>
 
+      {/* CRITICAL RISK DETECTION & COMMANDER REVIEW BANNER */}
+      <CriticalRiskAlertBanner />
+
       {/* 2. STRICT TAXONOMY DISCLOSURE BAR */}
       <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono grid grid-cols-2 md:grid-cols-4 gap-2 text-slate-300">
         <div className="flex items-center gap-1.5 p-2 rounded-lg bg-slate-900/60 border border-slate-800">
