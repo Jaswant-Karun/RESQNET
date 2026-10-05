@@ -250,7 +250,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
                 activeIncident: {
                   location: incident.primaryLocation.name,
                   waterLevelMeters: incident.metrics.waterLevelMeters,
-                  affectedPopulation: incident.metrics.affectedPopulation,
+                  affectedPopulation: incident.metrics.affectedPopulationEstimated,
                   blockedRoads: incident.blockedRoads,
                 },
                 simulationStage,
