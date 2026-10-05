@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Navigation,
   Radio,
+  ShieldAlert,
   Truck,
 } from "lucide-react";
 
@@ -43,6 +44,13 @@ export function Sidebar({ className = "" }: SidebarProps) {
       id: "overview",
       label: "Overview",
       icon: LayoutDashboard,
+    },
+    {
+      id: "risk-intelligence",
+      label: "Risk Intelligence",
+      icon: ShieldAlert,
+      badge: "LIVE GIS",
+      badgeColor: "red",
     },
     {
       id: "incidents",
