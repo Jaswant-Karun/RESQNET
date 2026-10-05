@@ -784,9 +784,9 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
     drones,
     plan,
     simulationStage,
-    layers,
     isActionApproved,
     setSelectedZone,
+    riskIntelligence,
   ]);
 
   return (
