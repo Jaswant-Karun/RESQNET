@@ -35,8 +35,8 @@ import {
   Waves,
   Wind,
   X,
-} from "lucide-react";
 import { LiveDisasterRiskMap } from "@/components/dashboard/LiveDisasterRiskMap";
+import { CriticalRiskAlertBanner } from "@/components/dashboard/CriticalRiskAlertBanner";
 import {
   AreaRiskAssessment,
   GdacsAlertEvent,
