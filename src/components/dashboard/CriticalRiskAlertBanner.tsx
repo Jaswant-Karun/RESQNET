@@ -132,7 +132,7 @@ export function CriticalRiskAlertBanner() {
 
       // Apply recommended resource allocation
       if (responsePlan.resourceAllocation && applyAllocation) {
-        applyAllocation(responsePlan.resourceAllocation, incident);
+        applyAllocation(responsePlan.resourceAllocation);
       }
 
       // Create activity event
