@@ -103,7 +103,12 @@ export function CriticalRiskAlertBanner() {
       triggerAutomationWorkflow("RISK_FORECAST_ALERT", evaluation.n8nPayload);
     }
 
-    // 3. Dispatch Emergency Email Alert to Commander (Resend Provider)
+    // 3. Dispatch Emergency Email Alert to Commander (using configured recipient email)
+    const savedTargetEmail =
+      typeof window !== "undefined"
+        ? localStorage.getItem("resqnet_target_recipient_email")?.trim()
+        : null;
+
     fetch("/api/alerts/email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -121,6 +126,7 @@ export function CriticalRiskAlertBanner() {
         ],
         recommendedAction: "Review evacuation response plan.",
         incidentId: incident.id,
+        commanderEmail: savedTargetEmail || undefined,
       }),
     })
       .then((res) => res.json())
