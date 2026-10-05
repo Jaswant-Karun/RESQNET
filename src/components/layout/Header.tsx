@@ -5,6 +5,7 @@ import { useDashboard } from "@/context/DashboardContext";
 import { Badge } from "@/components/ui/badge";
 import {
   Bell,
+  Database,
   Radio,
   Shield,
   UserCheck,
@@ -19,6 +20,8 @@ export function Header() {
     markAlertsRead,
     setActiveTab,
     workflowState,
+    databaseState,
+    refreshDatabaseData,
   } = useDashboard();
 
   const [timeString, setTimeString] = useState<string>("");
