@@ -350,10 +350,10 @@ This is an AI-assisted risk assessment and not an official emergency warning.
   }
 
   // 5. Dispatch via SMTP (Gmail/Custom) or Resend HTTP API
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-  const fromEmail = process.env.ALERT_FROM_EMAIL || "RESQNET Emergency Command <onboarding@resend.dev>";
+  const resendApiKey = getDynamicEnv("RESEND_API_KEY");
+  const smtpUser = getDynamicEnv("SMTP_USER");
+  const smtpPass = getDynamicEnv("SMTP_PASS");
+  const fromEmail = getDynamicEnv("ALERT_FROM_EMAIL", "RESQNET Emergency Command <onboarding@resend.dev>");
   
   let messageId: string | undefined;
   let dispatchSuccess = false;
@@ -496,10 +496,11 @@ This is an AI-assisted risk assessment and not an official emergency warning.
       alertId,
       messageId,
       recipient: commanderEmail,
-      n8nTriggered,
-      message: resendApiKey
+      message: activeProvider === "SMTP"
+        ? `Emergency alert email delivered to ${commanderEmail} via SMTP.`
+        : activeProvider === "RESEND"
         ? `Emergency alert email delivered to ${commanderEmail} via Resend.`
-        : `Emergency alert simulated to ${commanderEmail} (Configure RESEND_API_KEY for live delivery).`,
+        : `Emergency alert simulated to ${commanderEmail} (Configure SMTP or RESEND_API_KEY for live delivery).`,
       alertDoc,
     };
   } else {
