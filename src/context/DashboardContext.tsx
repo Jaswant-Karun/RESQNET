@@ -1478,6 +1478,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         resetAllResilienceTests,
         databaseState,
         refreshDatabaseData,
+        riskIntelligence,
+        isRiskIntelligenceLoading,
+        refreshRiskIntelligence,
       }}
     >
       {children}
