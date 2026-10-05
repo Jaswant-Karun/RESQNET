@@ -8,6 +8,7 @@ import {
   Database,
   Flame,
   LogOut,
+  Mail,
   Radio,
   Shield,
   Sparkles,
@@ -212,6 +213,16 @@ export function Header() {
                   )}
                 </button>
               </div>
+
+              {/* Emergency Email Alert Settings Button */}
+              <button
+                onClick={() => setShowCommanderPanel(true)}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-950/70 border border-red-600/60 hover:bg-red-900/80 text-red-200 text-xs font-mono font-bold transition-all cursor-pointer shadow-sm shadow-red-950/40"
+                title="Open Emergency Email Alert Settings & Send Test Alert"
+              >
+                <Mail className="h-3.5 w-3.5 text-red-400" />
+                <span>ALERT SETTINGS</span>
+              </button>
 
               {/* COMMANDER Identity Display & Panel Trigger */}
               <div
