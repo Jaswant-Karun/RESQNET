@@ -10,6 +10,7 @@ import {
   Bot,
   CheckCircle2,
   Cpu,
+  Database,
   Flame,
   HelpCircle,
   Info,
@@ -23,6 +24,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Terminal,
   Trash2,
   User,
   Waves,
@@ -53,20 +55,19 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
     isActionApproved,
     isActionRejected,
     simulateApiFailure,
-    setSimulateApiFailure,
   } = useDashboard();
 
   const isEscalated = simulationStage === "ESCALATED";
 
-  // Messages state with an initial situation-aware greeting
+  // Initial situation-aware greeting
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "msg-welcome",
       sender: "assistant",
-      text: "Operational greetings, Commander. I am RESQ AI, your situation-aware response assistant synchronized with live EOC telemetry. I track live water levels, impassable road corridors, dynamic resource routing, and human-in-the-loop approval gates. How can I assist with tactical operations?",
+      text: "Operational greetings, Cmdr Jaswant Karun. I am RESQ AI, your situation-aware AI Emergency Response Copilot synchronized with MongoDB Atlas and live EOC telemetry. I track active incident telemetry, multi-hazard risk forecasts, fleet readiness, evacuation corridors, and commander approval gates. How can I assist with tactical operations?",
       timestamp: "Just now",
       source: "GEMINI_AI",
-      statusMessage: "Connected to live EOC telemetry feed",
+      statusMessage: "Synchronized with MongoDB Atlas & Live Telemetry",
     },
   ]);
 
@@ -81,22 +82,31 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Suggested questions specified in prompt
-  const suggestedQuestions = [
-    "Why is this incident critical?",
-    "Why did the route change?",
-    "What resources are available?",
-    "What needs approval?",
-    "What changed after escalation?",
+  // The 12 exact suggested questions required by the prompt
+  const primarySuggestedQuestions = [
+    "What is the highest-risk area right now?",
+    "Why is Zone A critical?",
+    "What changed in the last 10 minutes?",
+    "Which resources are available?",
+    "Which resources are currently deployed?",
+    "Why did the evacuation route change?",
+    "Which alerts have been sent?",
+    "What actions are waiting for my approval?",
+    "Are there any new disaster-risk areas?",
+    "What is causing the current risk score?",
+    "Summarize the current emergency situation.",
+    "Give me a response plan.",
   ];
 
-  const secondaryQuestions = [
-    "Why is Zone A critical?",
-    "Why was Route R2 selected?",
-    "How many ambulances are available?",
-    "Why do we need more rescue teams?",
-    "What happened after the escalation?",
-    "What actions are waiting for approval?",
+  // Special command-style capabilities specified in the prompt
+  const specialCommands = [
+    { cmd: "/status", label: "/status", desc: "Overall command-center status" },
+    { cmd: "/risk", label: "/risk", desc: "Disaster risk forecast" },
+    { cmd: "/resources", label: "/resources", desc: "Fleet inventory breakdown" },
+    { cmd: "/incidents", label: "/incidents", desc: "Active disaster telemetry" },
+    { cmd: "/alerts", label: "/alerts", desc: "Dispatched emergency broadcasts" },
+    { cmd: "/plan", label: "/plan", desc: "Structured response plan" },
+    { cmd: "/summary", label: "/summary", desc: "Operations situation summary" },
   ];
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -156,7 +166,11 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
           second: "2-digit",
         }),
         source: data.source || "FALLBACK",
-        statusMessage: data.statusMessage || (data.source === "GEMINI_AI" ? "Situation-Aware Gemini Intelligence" : "Deterministic Offline Fallback"),
+        statusMessage:
+          data.statusMessage ||
+          (data.source === "GEMINI_AI"
+            ? "Situation-Aware Gemini Response"
+            : "Deterministic State Fallback Engine"),
         stageSnapshot: isEscalated ? "ESCALATED" : "BASELINE",
       };
 
@@ -164,8 +178,8 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
     } catch {
       // Direct client fallback if API completely unreachable
       const fallbackText = isEscalated
-        ? "Emergency fallback: Zone A & B water level is 3.1m (critical). Route R2 is submerged. Convoys re-routed via Route R4 to Shelter C (Capacity: 1,500) with 4 Ambulances, 3 Rescue Teams, and 2 Drones."
-        : "Emergency fallback: Zone A water level is 2.4m (critical). Roads R1 and R3 are blocked. Evacuate via Route R2 to Shelter B with 2 Ambulances, 2 Rescue Teams, and 1 Drone.";
+        ? `Emergency command fallback: Zone A & B water level is 3.1m (critical). Route R2 is submerged. Convoys re-routed via Route R4 to Shelter C (Capacity: 1,500) with 4 Ambulances, 3 Rescue Teams, and 2 Drones.\n\nData used:\n- Current incident\n- Fallback rule engine\nTimestamp: ${new Date().toISOString()}`
+        : `Emergency command fallback: Zone A water level is 2.4m (critical). Roads R1 and R3 are blocked. Evacuate via Route R2 to Shelter B with 2 Ambulances, 2 Rescue Teams, and 1 Drone.\n\nData used:\n- Current incident\n- Fallback rule engine\nTimestamp: ${new Date().toISOString()}`;
 
       const errorAiMessage: ChatMessage = {
         id: `ai-err-${Date.now()}`,
@@ -192,21 +206,57 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
       {
         id: `msg-${Date.now()}`,
         sender: "assistant",
-        text: "Mission log cleared. RESQ AI standby for live tactical inquiries.",
+        text: "Mission log cleared. RESQ AI standby for live tactical inquiries from Cmdr Jaswant Karun.",
         timestamp: "Just now",
         source: "GEMINI_AI",
-        statusMessage: "Connected to live EOC telemetry feed",
+        statusMessage: "Synchronized with MongoDB Atlas & Live Telemetry",
       },
     ]);
+  };
+
+  /**
+   * Formats text content to highlight structured response plans and Sources Used blocks
+   */
+  const renderMessageContent = (text: string) => {
+    const isPlan = text.includes("=== TACTICAL RESPONSE PLAN ===") || text.includes("RISK:");
+    const sourcesIdx = text.indexOf("Data used:");
+
+    if (sourcesIdx === -1) {
+      return <p className="whitespace-pre-line font-sans leading-relaxed">{text}</p>;
+    }
+
+    const mainBody = text.substring(0, sourcesIdx).trim();
+    const sourcesBlock = text.substring(sourcesIdx).trim();
+
+    return (
+      <div className="space-y-3">
+        <div
+          className={`whitespace-pre-line font-sans leading-relaxed ${
+            isPlan ? "p-3 rounded-xl bg-slate-950/80 border border-indigo-500/30 text-slate-100 font-mono text-xs" : ""
+          }`}
+        >
+          {mainBody}
+        </div>
+        <div className="p-2.5 rounded-lg bg-[#040814] border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+          <div className="flex items-center gap-1.5 text-indigo-400 font-bold uppercase text-[10px]">
+            <Database className="h-3 w-3" />
+            <span>Verified Sources / Telemetry Trace</span>
+          </div>
+          <p className="whitespace-pre-line text-slate-300 text-[10px] leading-tight">
+            {sourcesBlock}
+          </p>
+        </div>
+      </div>
+    );
   };
 
   return (
     <Card
       className={`border-2 border-slate-800 bg-[#070b16] shadow-2xl flex flex-col font-sans overflow-hidden ${
-        compact ? "h-[560px]" : "min-h-[700px]"
+        compact ? "h-[580px]" : "min-h-[720px]"
       } ${className}`}
     >
-      {/* 1. HEADER: RESQ AI & SITUATION-AWARE SUBTITLE */}
+      {/* 1. HEADER: RESQ AI & AI Emergency Response Copilot */}
       <CardHeader className="py-3 px-4 sm:px-6 bg-slate-950/90 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-900/80 to-blue-950/80 border border-indigo-500/50 text-indigo-400 shadow-lg shadow-indigo-950/40">
@@ -229,11 +279,11 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
                 className="text-[9px] font-mono uppercase"
                 pulse={isEscalated}
               >
-                {isEscalated ? "ESCALATED CONTEXT" : "BASELINE CONTEXT"}
+                {isEscalated ? "ESCALATED TELEMETRY" : "BASELINE TELEMETRY"}
               </Badge>
             </div>
-            <p className="text-xs text-slate-400 font-sans italic mt-0.5">
-              &quot;Situation-aware response assistant&quot;
+            <p className="text-xs text-indigo-300 font-mono tracking-wide mt-0.5 font-semibold">
+              AI Emergency Response Copilot
             </p>
           </div>
         </div>
@@ -267,11 +317,12 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
         </div>
       </CardHeader>
 
-      {/* 2. LIVE TELEMETRY CONTEXT STRIP (SHOWS ASSISTANT IS AWARE OF CURRENT STATE) */}
+      {/* 2. LIVE TELEMETRY CONTEXT STRIP */}
       <div className="bg-[#0b1224] border-b border-slate-800/80 px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
         <div className="flex items-center gap-1.5 text-slate-400">
           <Radio className="h-3 w-3 text-emerald-400 animate-pulse" />
-          <span className="text-slate-400 font-bold">SYNCHRONIZED TELEMETRY:</span>
+          <span className="text-slate-400 font-bold">OPERATOR:</span>
+          <span className="text-indigo-300 font-bold">Cmdr Jaswant Karun</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-300">
@@ -290,13 +341,6 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
           </span>
 
           <span className="flex items-center gap-1">
-            <span className="text-slate-500">Blocked:</span>
-            <strong className="text-amber-300">
-              {incident.blockedRoads?.join(", ") || "R1, R3"}
-            </strong>
-          </span>
-
-          <span className="flex items-center gap-1">
             <span className="text-slate-500">Route:</span>
             <strong className="text-emerald-300">
               {plan.evacuationRoute || (isEscalated ? "R4" : "R2")} → {plan.targetShelter || (isEscalated ? "Shelter C" : "Shelter B")}
@@ -304,9 +348,16 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
           </span>
 
           <span className="flex items-center gap-1">
+            <span className="text-slate-500">Fleet:</span>
+            <strong className="text-amber-300">
+              {resourceAllocationState?.available?.ambulances ?? 6} Amb / {resourceAllocationState?.available?.rescueTeams ?? 4} Teams / {resourceAllocationState?.available?.drones ?? 2} Drones Avail
+            </strong>
+          </span>
+
+          <span className="flex items-center gap-1">
             <span className="text-slate-500">Gate:</span>
             <strong className={isActionApproved ? "text-emerald-400" : "text-amber-400"}>
-              {isActionApproved ? "APPROVED" : "PENDING"}
+              {isActionApproved ? "AUTHORIZED" : "PENDING"}
             </strong>
           </span>
         </div>
@@ -345,7 +396,7 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
 
               {/* Message Bubble */}
               <div
-                className={`max-w-[85%] sm:max-w-[78%] rounded-2xl p-3.5 shadow-xl text-xs sm:text-sm leading-relaxed transition-all ${
+                className={`max-w-[85%] sm:max-w-[80%] rounded-2xl p-3.5 shadow-xl text-xs sm:text-sm leading-relaxed transition-all ${
                   isUser
                     ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-tr-none"
                     : "bg-slate-900/90 border border-slate-800/90 text-slate-100 rounded-tl-none"
@@ -365,8 +416,8 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
                         }
                       >
                         {msg.source === "GEMINI_AI"
-                          ? "Gemini Intelligence"
-                          : "Deterministic Rule Fallback"}
+                          ? "Situation-Aware Gemini Copilot"
+                          : "Deterministic Rule Fallback Engine"}
                       </span>
                     </div>
 
@@ -376,8 +427,8 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
                   </div>
                 )}
 
-                {/* Message Body */}
-                <p className="whitespace-pre-line font-sans">{msg.text}</p>
+                {/* Message Body with structured plan formatting */}
+                {renderMessageContent(msg.text)}
 
                 {/* Subtitle / status note */}
                 {!isUser && msg.statusMessage && (
@@ -403,7 +454,7 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
             </div>
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl rounded-tl-none p-3.5 text-xs text-slate-300 flex items-center gap-2">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-400" />
-              <span>Analyzing live telemetry & calculating situation-aware reasoning...</span>
+              <span>Querying MongoDB state & synthesizing situation-aware tactical reasoning...</span>
             </div>
           </div>
         )}
@@ -411,16 +462,34 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
         <div ref={messagesEndRef} />
       </CardContent>
 
-      {/* 4. SUGGESTED QUESTIONS CHIP BAR */}
-      <div className="bg-slate-950/90 border-t border-slate-800/80 p-3 space-y-2">
+      {/* 4. SPECIAL COMMANDS BAR (/status, /risk, /resources, etc.) */}
+      <div className="bg-[#080d1e] border-t border-slate-800/90 px-3 py-1.5 flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono">
+        <span className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1 shrink-0">
+          <Terminal className="h-3 w-3 text-indigo-400" />
+          Commands:
+        </span>
+        {specialCommands.map((sc) => (
+          <button
+            key={sc.cmd}
+            onClick={() => handleSendMessage(sc.cmd)}
+            disabled={isLoading}
+            className="text-[10px] font-mono bg-slate-900 hover:bg-indigo-950 border border-slate-700/80 hover:border-indigo-400 text-indigo-300 hover:text-white px-2 py-0.5 rounded cursor-pointer transition-all shrink-0 disabled:opacity-50"
+            title={sc.desc}
+          >
+            {sc.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 5. SUGGESTED QUESTIONS CHIP BAR (ALL 12 QUESTIONS FROM PROMPT) */}
+      <div className="bg-slate-950/90 border-t border-slate-800/80 p-3 space-y-1.5">
         <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 font-bold uppercase">
           <HelpCircle className="h-3 w-3 text-indigo-400" />
-          <span>Suggested Questions:</span>
+          <span>Situation-Aware Suggested Inquiries:</span>
         </div>
 
-        {/* Primary 5 Suggested Questions from User Prompt */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {suggestedQuestions.map((q, idx) => (
+        <div className="flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto pr-1">
+          {primarySuggestedQuestions.map((q, idx) => (
             <button
               key={idx}
               onClick={() => handleSendMessage(q)}
@@ -431,30 +500,16 @@ export function ResqAiChatPanel({ compact = false, className = "" }: ResqAiChatP
             </button>
           ))}
         </div>
-
-        {/* Secondary Tactical Drill-Down Chips */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-          {secondaryQuestions.map((q, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleSendMessage(q)}
-              disabled={isLoading}
-              className="text-[10px] font-mono bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-md transition-all cursor-pointer text-left disabled:opacity-50"
-            >
-              • {q}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* 5. INPUT FOOTER */}
+      {/* 6. INPUT FOOTER */}
       <CardFooter className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
         <input
           type="text"
           value={inputQuestion}
           onChange={(e) => setInputQuestion(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-          placeholder="Ask RESQ AI (e.g. Why did the route change? What needs approval?)..."
+          placeholder="Ask RESQ AI (e.g. /status, Give me a response plan, Why did route change?)..."
           disabled={isLoading}
           className="flex-1 bg-slate-900/90 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none transition-colors"
         />
