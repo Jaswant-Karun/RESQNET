@@ -65,13 +65,19 @@ async function setActiveCommanderEmail(email: string): Promise<void> {
 
 export async function GET(req: NextRequest) {
   try {
-    const resendKey = getDynamicEnv("RESEND_API_KEY");
-    const resendConfigured = Boolean(resendKey && resendKey.length > 5);
     const smtpUser = getDynamicEnv("SMTP_USER");
     const smtpPass = getDynamicEnv("SMTP_PASS");
-    const smtpConfigured = Boolean(smtpUser && smtpPass);
-    const activeProvider = smtpConfigured ? "SMTP (Gmail/Custom)" : resendConfigured ? "Resend" : "Simulation";
-    const alertFrom = getDynamicEnv("ALERT_FROM_EMAIL", "RESQNET Emergency Command <onboarding@resend.dev>");
+    const isConfigured = Boolean(
+      smtpUser &&
+      smtpPass &&
+      !smtpUser.includes("your-gmail-address") &&
+      !smtpPass.includes("your-google-app-password")
+    );
+    const activeProvider = isConfigured ? "Gmail SMTP" : "Simulation";
+    const alertFrom =
+      getDynamicEnv("EMAIL_FROM") ||
+      getDynamicEnv("ALERT_FROM_EMAIL") ||
+      (smtpUser ? `RESQNET Emergency Command <${smtpUser}>` : "RESQNET Emergency Command <alerts@resqnet.gov.in>");
     const alertRecipient = await getActiveCommanderEmail();
     const cooldownMin = parseInt(getDynamicEnv("ALERT_COOLDOWN_MINUTES", "10"), 10);
 
@@ -94,9 +100,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       provider: activeProvider,
-      configured: resendConfigured || smtpConfigured,
-      smtpConfigured,
-      resendConfigured,
+      configured: isConfigured,
+      smtpConfigured: isConfigured,
       alertFromEmail: alertFrom,
       commanderAlertEmail: alertRecipient,
       cooldownMinutes: cooldownMin,
