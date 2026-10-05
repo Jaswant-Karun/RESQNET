@@ -1371,11 +1371,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const approveEmergencyAlertWorkflow = async () => {
     await triggerAutomationWorkflow("APPROVE_EMERGENCY_ALERT");
     addTimelineEvent({
-      title: "Emergency public alert authorized",
-      description: "Cell broadcast emergency alert triggered across Zone A corridor.",
+      title: "Emergency alert approved by Cmdr Jaswant Karun",
+      description: "Cell broadcast emergency alert triggered across Zone A corridor following Cmdr Jaswant Karun authorization.",
       category: "AUTOMATION",
       severity: "WARNING",
-      authorOrSystem: "EOC Public Warning Service",
+      authorOrSystem: "Cmdr Jaswant Karun (COMMANDER)",
     });
   };
 
