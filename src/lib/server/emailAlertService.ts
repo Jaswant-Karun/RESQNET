@@ -23,6 +23,29 @@ function getDynamicEnv(key: string, defaultValue = ""): string {
   return process.env[key] || defaultValue;
 }
 
+/**
+ * Format sender address using EMAIL_FROM or ALERT_FROM_EMAIL with fallback to SMTP_USER.
+ */
+function getSenderAddress(smtpUser?: string): string {
+  const customFrom =
+    getDynamicEnv("EMAIL_FROM") || getDynamicEnv("ALERT_FROM_EMAIL");
+  if (customFrom && customFrom.trim().length > 0) {
+    const trimmed = customFrom.trim();
+    if (trimmed.includes("<") && trimmed.includes(">")) {
+      return trimmed;
+    }
+    return `RESQNET Emergency Command <${trimmed}>`;
+  }
+  if (smtpUser && smtpUser.trim().length > 0) {
+    return `RESQNET Emergency Command <${smtpUser.trim()}>`;
+  }
+  return "RESQNET Emergency Command <alerts@resqnet.gov.in>";
+}
+
+/**
+ * Dispatches an email via Gmail SMTP / Nodemailer.
+ * Supports any recipient provider (Gmail, Outlook, Yahoo, corporate, etc.)
+ */
 async function sendViaNodemailer(
   recipient: string,
   subject: string,
@@ -35,27 +58,41 @@ async function sendViaNodemailer(
   const user = getDynamicEnv("SMTP_USER");
   const pass = getDynamicEnv("SMTP_PASS");
 
-  if (!user || !pass) {
-    return { success: false, error: "SMTP credentials (SMTP_USER / SMTP_PASS) not configured." };
+  if (!user || !pass || user.includes("your-gmail-address") || pass.includes("your-google-app-password")) {
+    return {
+      success: false,
+      error: "Gmail SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS (Google App Password) in .env.local.",
+    };
   }
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass },
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass },
+    });
 
-  const from = getDynamicEnv("ALERT_FROM_EMAIL", `RESQNET Emergency Command <${user}>`);
-  const info = await transporter.sendMail({
-    from,
-    to: recipient,
-    subject,
-    text,
-    html,
-  });
+    const from = getSenderAddress(user);
 
-  return { success: true, messageId: info.messageId };
+    console.info(`[EmailAlertService] Dispatching emergency alert via Gmail SMTP to: ${recipient}`);
+
+    const info = await transporter.sendMail({
+      from,
+      to: recipient,
+      subject,
+      text,
+      html,
+    });
+
+    console.info(`[EmailAlertService] Successfully delivered via Gmail SMTP. Message ID: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (err: unknown) {
+    const rawError = err instanceof Error ? err.message : String(err);
+    // Log failure safely without exposing SMTP passwords or credentials
+    console.error(`[EmailAlertService] Gmail SMTP dispatch failed to recipient [${recipient}]: ${rawError}`);
+    return { success: false, error: rawError };
+  }
 }
 
 export type RiskAlertLevel = "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
@@ -95,8 +132,8 @@ interface DeduplicationRecord {
 const alertDeduplicationCache = new Map<string, DeduplicationRecord>();
 
 /**
- * RESQNET Emergency Email Alert Service
- * 
+ * RESQNET Emergency Email Alert Service (Gmail SMTP Provider)
+ *
  * Rules:
  * - LOW: No email
  * - MODERATE: Dashboard notification only (no email)
@@ -121,7 +158,7 @@ export async function sendEmergencyEmailAlert(
     recommendedAction = "Review evacuation response plan.",
     incidentId = "FL-902",
     commanderName = "Cmdr Jaswant Karun",
-    commanderEmail = process.env.COMMANDER_ALERT_EMAIL || "jaswant@resqnet.gov.in",
+    commanderEmail = getDynamicEnv("COMMANDER_ALERT_EMAIL", "jksam37@gmail.com"),
     isTest = false,
   } = options;
 
@@ -143,14 +180,13 @@ export async function sendEmergencyEmailAlert(
   }
 
   // Cooldown window in milliseconds (default: 10 minutes)
-  const cooldownMinutes = parseInt(process.env.ALERT_COOLDOWN_MINUTES || "10", 10);
+  const cooldownMinutes = parseInt(getDynamicEnv("ALERT_COOLDOWN_MINUTES", "10"), 10);
   const cooldownMs = cooldownMinutes * 60 * 1000;
   const now = Date.now();
   const cacheKey = `${area.toUpperCase()}_${riskLevel}`;
 
   // 2. Alert Deduplication Check
   if (!isTest) {
-    // Check in-memory cache
     const cached = alertDeduplicationCache.get(cacheKey);
     if (cached && now - cached.timestamp < cooldownMs) {
       const remainingSec = Math.ceil((cooldownMs - (now - cached.timestamp)) / 1000);
@@ -162,7 +198,6 @@ export async function sendEmergencyEmailAlert(
       };
     }
 
-    // Check MongoDB for recent alerts if active
     if (isMongoActive()) {
       try {
         const db = await getDatabase();
@@ -199,10 +234,6 @@ export async function sendEmergencyEmailAlert(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const dashboardUrl = `${appUrl}/dashboard`;
 
-  const factorsFormatted = contributingFactors
-    .map((f) => `- ${f}`)
-    .join("\n");
-
   const plainTextContent = `RESQNET EMERGENCY ALERT
 
 Commander:
@@ -224,7 +255,7 @@ Forecast:
 ${forecastWindow}
 
 Contributing Factors:
-${factorsFormatted}
+${contributingFactors.map((f) => `- ${f}`).join("\n")}
 
 Recommended Action:
 ${recommendedAction}
@@ -236,28 +267,27 @@ Important:
 This is an AI-assisted risk assessment and not an official emergency warning.
 `;
 
-  const htmlContent = `
-<!DOCTYPE html>
-<html>
+  const htmlContent = `<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>${subject}</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #050811; color: #f1f5f9; margin: 0; padding: 24px; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #0b1120; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; }
-    .header { background: linear-gradient(135deg, ${riskLevel === "CRITICAL" ? "#7f1d1d" : "#7c2d12"}, #0b1120); padding: 24px; border-bottom: 2px solid ${riskLevel === "CRITICAL" ? "#ef4444" : "#f97316"}; }
-    .badge { display: inline-block; padding: 4px 10px; font-size: 11px; font-weight: 800; border-radius: 6px; text-transform: uppercase; background-color: ${riskLevel === "CRITICAL" ? "#dc2626" : "#ea580c"}; color: #ffffff; letter-spacing: 0.05em; font-family: monospace; }
-    .title { font-size: 20px; font-weight: 900; margin: 12px 0 4px 0; color: #ffffff; letter-spacing: 0.05em; text-transform: uppercase; }
-    .subtitle { font-size: 12px; color: #94a3b8; font-family: monospace; margin: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b0f19; color: #f3f4f6; margin: 0; padding: 24px 0; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #111827; border: 1px solid #1f2937; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); }
+    .header { background: linear-gradient(135deg, #1e1b4b, #311042); padding: 24px; border-bottom: 2px solid ${riskLevel === "CRITICAL" ? "#ef4444" : "#f97316"}; }
+    .badge { display: inline-block; font-size: 11px; font-weight: 800; font-family: monospace; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; background-color: ${riskLevel === "CRITICAL" ? "#991b1b" : "#9a3412"}; color: #ffffff; margin-bottom: 12px; }
+    .title { font-size: 22px; font-weight: 900; color: #ffffff; margin: 0 0 6px 0; letter-spacing: -0.02em; }
+    .subtitle { font-size: 13px; color: #94a3b8; margin: 0; }
     .content { padding: 24px; }
-    .grid { display: table; width: 100%; margin: 16px 0; border-collapse: collapse; }
-    .grid-row { display: table-row; }
-    .grid-cell { display: table-cell; padding: 10px; border-bottom: 1px solid #1e293b; font-size: 13px; }
-    .grid-label { color: #94a3b8; font-family: monospace; text-transform: uppercase; font-size: 11px; width: 35%; }
-    .grid-val { color: #f8fafc; font-weight: 700; }
-    .factors-box { background-color: #080d1a; border: 1px solid #1e293b; border-radius: 8px; padding: 14px; margin: 16px 0; }
-    .factors-title { font-size: 11px; font-family: monospace; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; font-weight: 700; }
-    .factors-list { margin: 0; padding-left: 20px; font-size: 13px; color: #cbd5e1; }
+    .grid { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .grid-row { border-bottom: 1px solid #1e293b; }
+    .grid-cell { padding: 10px 0; font-size: 13px; }
+    .grid-label { color: #94a3b8; font-weight: 600; width: 38%; }
+    .grid-val { color: #f8fafc; font-weight: 700; font-family: monospace; }
+    .factors-box { background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 14px 16px; margin: 16px 0; }
+    .factors-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.05em; margin-bottom: 8px; font-family: monospace; }
+    .factors-list { margin: 0; padding-left: 18px; color: #cbd5e1; font-size: 13px; line-height: 1.6; }
     .factors-list li { margin-bottom: 4px; }
     .action-box { background: rgba(220, 38, 38, 0.1); border-left: 4px solid ${riskLevel === "CRITICAL" ? "#ef4444" : "#f97316"}; padding: 14px; border-radius: 0 8px 8px 0; margin: 16px 0; }
     .btn-container { text-align: center; margin: 28px 0; }
@@ -336,7 +366,7 @@ This is an AI-assisted risk assessment and not an official emergency warning.
     riskScore,
     riskLevel,
     hazard,
-    provider: "RESEND",
+    provider: "GMAIL_SMTP",
   };
 
   // Save PENDING attempt to MongoDB if available
@@ -349,80 +379,48 @@ This is an AI-assisted risk assessment and not an official emergency warning.
     }
   }
 
-  // 5. Dispatch via SMTP (Gmail/Custom) or Resend HTTP API
-  const resendApiKey = getDynamicEnv("RESEND_API_KEY");
+  // 5. Dispatch via Gmail SMTP (Nodemailer)
   const smtpUser = getDynamicEnv("SMTP_USER");
   const smtpPass = getDynamicEnv("SMTP_PASS");
-  const fromEmail = getDynamicEnv("ALERT_FROM_EMAIL", "RESQNET Emergency Command <onboarding@resend.dev>");
-  
+
   let messageId: string | undefined;
   let dispatchSuccess = false;
   let errorMessage: string | undefined;
-  let activeProvider = "RESEND";
+  let activeProvider = "GMAIL_SMTP";
 
-  // Provider Option A: Direct SMTP (Gmail/Any SMTP) - Sends to ANY email with NO domain verification needed
-  if (smtpUser && smtpPass) {
+  const isConfigured = Boolean(
+    smtpUser &&
+    smtpPass &&
+    !smtpUser.includes("your-gmail-address") &&
+    !smtpPass.includes("your-google-app-password")
+  );
+
+  if (isConfigured) {
     try {
-      const smtpRes = await sendViaNodemailer(commanderEmail, subject, plainTextContent, htmlContent);
+      const smtpRes = await sendViaNodemailer(
+        commanderEmail,
+        subject,
+        plainTextContent,
+        htmlContent
+      );
       if (smtpRes.success) {
         messageId = smtpRes.messageId;
         dispatchSuccess = true;
-        activeProvider = "SMTP";
+        activeProvider = "GMAIL_SMTP";
       } else {
         errorMessage = smtpRes.error;
       }
     } catch (smtpErr) {
       errorMessage = smtpErr instanceof Error ? smtpErr.message : String(smtpErr);
-      console.warn("[EmailAlertService] SMTP dispatch failed, attempting Resend fallback:", errorMessage);
+      console.error("[EmailAlertService] Unexpected SMTP dispatch error:", errorMessage);
     }
-  }
-
-  // Provider Option B: Resend HTTP API
-  if (!dispatchSuccess && resendApiKey) {
-    try {
-      const resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: [commanderEmail],
-          subject,
-          text: plainTextContent,
-          html: htmlContent,
-        }),
-      });
-
-      const resendData = await resendRes.json();
-
-      if (resendRes.ok) {
-        messageId = resendData.id;
-        dispatchSuccess = true;
-        activeProvider = "RESEND";
-      } else {
-        errorMessage = resendData.message || resendData.error || `HTTP ${resendRes.status}`;
-        console.error("[EmailAlertService] Resend API error:", errorMessage);
-
-        // Friendly handling for Resend's free tier domain restriction
-        if (errorMessage && errorMessage.includes("You can only send testing emails to your own email address")) {
-          errorMessage = `Resend Domain Restriction: Free testing tier only permits delivering to your registered Resend account email. To deliver directly to '${commanderEmail}', either: 1) Verify your domain at resend.com/domains, or 2) Add Gmail SMTP (SMTP_USER & SMTP_PASS) in .env.local to send to any recipient without domain verification.`;
-        }
-      }
-    } catch (fetchErr) {
-      errorMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-      console.error("[EmailAlertService] Resend fetch failed:", errorMessage);
-    }
-  }
-
-  // Provider Option C: Graceful simulation fallback when neither live provider is configured
-  if (!dispatchSuccess && !resendApiKey && (!smtpUser || !smtpPass)) {
+  } else {
+    // Graceful development simulation when credentials are not yet entered in .env.local
     messageId = `msg-sim-${Date.now().toString(36)}`;
     dispatchSuccess = true;
-    activeProvider = "RESEND_SIMULATED";
+    activeProvider = "SMTP_SIMULATION";
     console.info(
-      `[EmailAlertService] Live email credentials not configured. Dispatched simulated alert to ${commanderEmail}: "${subject}"`
+      `[EmailAlertService] SMTP credentials not set in .env.local. Dispatched simulated alert to ${commanderEmail}: "${subject}"`
     );
   }
 
@@ -496,11 +494,11 @@ This is an AI-assisted risk assessment and not an official emergency warning.
       alertId,
       messageId,
       recipient: commanderEmail,
-      message: activeProvider === "SMTP"
-        ? `Emergency alert email delivered to ${commanderEmail} via SMTP.`
-        : activeProvider === "RESEND"
-        ? `Emergency alert email delivered to ${commanderEmail} via Resend.`
-        : `Emergency alert simulated to ${commanderEmail} (Configure SMTP or RESEND_API_KEY for live delivery).`,
+      n8nTriggered,
+      message:
+        activeProvider === "GMAIL_SMTP"
+          ? `Emergency alert email delivered to ${commanderEmail} via Gmail SMTP.`
+          : `Emergency alert simulated for ${commanderEmail} (Add SMTP_USER & SMTP_PASS in .env.local for live delivery).`,
       alertDoc,
     };
   } else {
