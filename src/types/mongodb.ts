@@ -62,8 +62,18 @@ export interface AlertDocument {
   severity: string;
   recipient: string;
   channel: string;
-  status: string;
+  status: "PENDING" | "SENT" | "FAILED" | string;
   sentAt: string;
+  subject?: string;
+  content?: string;
+  area?: string;
+  riskScore?: number;
+  riskLevel?: string;
+  hazard?: string;
+  errorMessage?: string;
+  provider?: string;
+  messageId?: string;
+  deduplicated?: boolean;
 }
 
 export interface RiskForecastDocument {
