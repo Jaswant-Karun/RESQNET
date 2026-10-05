@@ -1,5 +1,41 @@
 import { getDatabase, isMongoActive, COLLECTIONS } from "@/lib/mongodb";
 import { AlertDocument } from "@/types";
+import nodemailer from "nodemailer";
+
+async function sendViaNodemailer(
+  recipient: string,
+  subject: string,
+  text: string,
+  html: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = parseInt(process.env.SMTP_PORT || "465", 10);
+  const secure = process.env.SMTP_SECURE !== "false";
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!user || !pass) {
+    return { success: false, error: "SMTP credentials (SMTP_USER / SMTP_PASS) not configured." };
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+  });
+
+  const from = process.env.ALERT_FROM_EMAIL || `RESQNET Emergency Command <${user}>`;
+  const info = await transporter.sendMail({
+    from,
+    to: recipient,
+    subject,
+    text,
+    html,
+  });
+
+  return { success: true, messageId: info.messageId };
+}
 
 export type RiskAlertLevel = "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
 
@@ -292,14 +328,36 @@ This is an AI-assisted risk assessment and not an official emergency warning.
     }
   }
 
-  // 5. Dispatch via Resend HTTP API
+  // 5. Dispatch via SMTP (Gmail/Custom) or Resend HTTP API
   const resendApiKey = process.env.RESEND_API_KEY;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
   const fromEmail = process.env.ALERT_FROM_EMAIL || "RESQNET Emergency Command <onboarding@resend.dev>";
+  
   let messageId: string | undefined;
   let dispatchSuccess = false;
   let errorMessage: string | undefined;
+  let activeProvider = "RESEND";
 
-  if (resendApiKey) {
+  // Provider Option A: Direct SMTP (Gmail/Any SMTP) - Sends to ANY email with NO domain verification needed
+  if (smtpUser && smtpPass) {
+    try {
+      const smtpRes = await sendViaNodemailer(commanderEmail, subject, plainTextContent, htmlContent);
+      if (smtpRes.success) {
+        messageId = smtpRes.messageId;
+        dispatchSuccess = true;
+        activeProvider = "SMTP";
+      } else {
+        errorMessage = smtpRes.error;
+      }
+    } catch (smtpErr) {
+      errorMessage = smtpErr instanceof Error ? smtpErr.message : String(smtpErr);
+      console.warn("[EmailAlertService] SMTP dispatch failed, attempting Resend fallback:", errorMessage);
+    }
+  }
+
+  // Provider Option B: Resend HTTP API
+  if (!dispatchSuccess && resendApiKey) {
     try {
       const resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -321,20 +379,29 @@ This is an AI-assisted risk assessment and not an official emergency warning.
       if (resendRes.ok) {
         messageId = resendData.id;
         dispatchSuccess = true;
+        activeProvider = "RESEND";
       } else {
         errorMessage = resendData.message || resendData.error || `HTTP ${resendRes.status}`;
         console.error("[EmailAlertService] Resend API error:", errorMessage);
+
+        // Friendly handling for Resend's free tier domain restriction
+        if (errorMessage && errorMessage.includes("You can only send testing emails to your own email address")) {
+          errorMessage = `Resend Domain Restriction: Free testing tier only permits delivering to your registered Resend account email. To deliver directly to '${commanderEmail}', either: 1) Verify your domain at resend.com/domains, or 2) Add Gmail SMTP (SMTP_USER & SMTP_PASS) in .env.local to send to any recipient without domain verification.`;
+        }
       }
     } catch (fetchErr) {
       errorMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
       console.error("[EmailAlertService] Resend fetch failed:", errorMessage);
     }
-  } else {
-    // Graceful simulation fallback when RESEND_API_KEY is not configured
+  }
+
+  // Provider Option C: Graceful simulation fallback when neither live provider is configured
+  if (!dispatchSuccess && !resendApiKey && (!smtpUser || !smtpPass)) {
     messageId = `msg-sim-${Date.now().toString(36)}`;
     dispatchSuccess = true;
+    activeProvider = "RESEND_SIMULATED";
     console.info(
-      `[EmailAlertService] RESEND_API_KEY not configured. Dispatched simulated alert to ${commanderEmail}: "${subject}"`
+      `[EmailAlertService] Live email credentials not configured. Dispatched simulated alert to ${commanderEmail}: "${subject}"`
     );
   }
 
@@ -343,9 +410,7 @@ This is an AI-assisted risk assessment and not an official emergency warning.
   alertDoc.status = finalStatus;
   alertDoc.messageId = messageId;
   alertDoc.errorMessage = errorMessage;
-  if (!resendApiKey) {
-    alertDoc.provider = "RESEND_SIMULATED";
-  }
+  alertDoc.provider = activeProvider;
 
   if (isMongoActive()) {
     try {
