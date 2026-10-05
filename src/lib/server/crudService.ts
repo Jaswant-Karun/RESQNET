@@ -241,14 +241,14 @@ export async function autoSeedMongoIfEmpty(): Promise<void> {
     if (count === 0) {
       // Seed collections in parallel
       await Promise.allSettled([
-        db.collection(COLLECTIONS.INCIDENTS).insertOne(getMockIncidentDocument()),
-        db.collection(COLLECTIONS.RESOURCES).insertMany(getMockResourceDocuments()),
-        db.collection(COLLECTIONS.RESPONSE_PLANS).insertOne(getMockResponsePlanDocument()),
-        db.collection(COLLECTIONS.ALERTS).insertMany(getMockAlertDocuments()),
-        db.collection(COLLECTIONS.RISK_FORECASTS).insertMany(getMockRiskForecastDocuments()),
-        db.collection(COLLECTIONS.ACTIVITY_LOGS).insertMany(getMockActivityLogDocuments()),
-        db.collection(COLLECTIONS.USERS).insertMany(getMockUserDocuments()),
-        db.collection(COLLECTIONS.DRONE_MISSIONS).insertMany(getMockDroneMissionDocuments()),
+        db.collection<IncidentDocument>(COLLECTIONS.INCIDENTS).insertOne(getMockIncidentDocument()),
+        db.collection<ResourceDocument>(COLLECTIONS.RESOURCES).insertMany(getMockResourceDocuments()),
+        db.collection<ResponsePlanDocument>(COLLECTIONS.RESPONSE_PLANS).insertOne(getMockResponsePlanDocument()),
+        db.collection<AlertDocument>(COLLECTIONS.ALERTS).insertMany(getMockAlertDocuments()),
+        db.collection<RiskForecastDocument>(COLLECTIONS.RISK_FORECASTS).insertMany(getMockRiskForecastDocuments()),
+        db.collection<ActivityLogDocument>(COLLECTIONS.ACTIVITY_LOGS).insertMany(getMockActivityLogDocuments()),
+        db.collection<UserDocument>(COLLECTIONS.USERS).insertMany(getMockUserDocuments()),
+        db.collection<DroneMissionDocument>(COLLECTIONS.DRONE_MISSIONS).insertMany(getMockDroneMissionDocuments()),
       ]);
       console.log("[MongoDB] Auto-seeded default RESQNET collections successfully.");
     }
