@@ -9,6 +9,25 @@ export async function GET(req: NextRequest) {
     const resendConfigured = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.length > 5);
     const smtpConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
     const activeProvider = smtpConfigured ? "SMTP (Gmail/Custom)" : resendConfigured ? "Resend" : "Simulation";
+    const alertFrom = process.env.ALERT_FROM_EMAIL || "RESQNET Emergency Command <onboarding@resend.dev>";
+    const alertRecipient = process.env.COMMANDER_ALERT_EMAIL || "jksam37@gmail.com";
+    const cooldownMin = parseInt(process.env.ALERT_COOLDOWN_MINUTES || "10", 10);
+
+    // Fetch recent email alerts from MongoDB if active
+    let recentAlerts: AlertDocument[] = [];
+    if (isMongoActive()) {
+      try {
+        const db = await getDatabase();
+        recentAlerts = await db
+          .collection<AlertDocument>(COLLECTIONS.ALERTS)
+          .find({ channel: "EMAIL" })
+          .sort({ sentAt: -1 })
+          .limit(10)
+          .toArray();
+      } catch (err) {
+        console.warn("[API /api/alerts/email] MongoDB query warning:", err);
+      }
+    }
 
     return NextResponse.json({
       success: true,
