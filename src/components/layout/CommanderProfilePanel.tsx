@@ -47,9 +47,11 @@ export function CommanderProfilePanel({
   }>({
     provider: "Resend",
     configured: false,
-    commanderAlertEmail: "jaswant@resqnet.gov.in",
+    commanderAlertEmail: "jksam37@gmail.com",
     cooldownMinutes: 10,
   });
+
+  const [preferredEmail, setPreferredEmail] = useState<string>("jksam37@gmail.com");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -58,18 +60,29 @@ export function CommanderProfilePanel({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
+          const email = data.commanderAlertEmail || "jksam37@gmail.com";
           setEmailConfig({
             provider: data.provider || "Resend",
             configured: Boolean(data.configured),
-            commanderAlertEmail: data.commanderAlertEmail || "jaswant@resqnet.gov.in",
+            commanderAlertEmail: email,
             cooldownMinutes: data.cooldownMinutes || 10,
           });
+          setPreferredEmail(email);
         }
       })
       .catch(() => {});
   }, [isOpen]);
 
   const handleSendTestAlert = async () => {
+    const destinationEmail = preferredEmail.trim();
+    if (!destinationEmail || !destinationEmail.includes("@")) {
+      setTestAlertResult({
+        success: false,
+        message: "Please enter a valid recipient email address in the type bar.",
+      });
+      return;
+    }
+
     setIsSendingTestAlert(true);
     setTestAlertResult(null);
 
@@ -79,6 +92,7 @@ export function CommanderProfilePanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           isTest: true,
+          commanderEmail: destinationEmail,
           area: "Zone A",
           hazard: "Flood",
           riskScore: 82,
@@ -245,12 +259,28 @@ export function CommanderProfilePanel({
               </div>
             </div>
 
-            {/* Recipient and Protocol Details */}
-            <div className="space-y-1.5 text-[11px] font-mono">
-              <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-slate-800">
-                <span className="text-slate-400">Commander Alert Email:</span>
-                <span className="text-sky-300 font-bold">{emailConfig.commanderAlertEmail}</span>
+            {/* Preferred Email Type Bar */}
+            <div className="space-y-1.5 p-2.5 rounded-lg bg-black/50 border border-slate-800">
+              <div className="flex items-center justify-between text-[10px] uppercase font-mono font-bold">
+                <span className="text-slate-300 flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-red-400" />
+                  Target Recipient Email:
+                </span>
+                <span className="text-slate-500 font-normal">Type preferred address</span>
               </div>
+              <div className="relative flex items-center">
+                <input
+                  type="email"
+                  value={preferredEmail}
+                  onChange={(e) => setPreferredEmail(e.target.value)}
+                  placeholder="Enter email e.g. jksam37@gmail.com"
+                  className="w-full px-3 py-2 rounded-md bg-slate-900/90 border border-slate-700 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 text-white font-mono text-xs placeholder:text-slate-600 outline-none transition-all shadow-inner"
+                />
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono leading-tight">
+                ℹ️ Resend Free Tier delivers to registered account email (<strong className="text-sky-400">jksam37@gmail.com</strong>).
+              </div>
+            </div>
 
               <div className="p-2 rounded bg-black/40 border border-slate-800 space-y-1">
                 <div className="text-[10px] text-slate-400 uppercase font-semibold">Alert Level Routing Rules:</div>
