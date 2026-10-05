@@ -113,14 +113,15 @@ export function LiveDisasterRiskMap({
             size="sm"
             variant="outline"
             onClick={() => toggleLayer("riskZones")}
-            className={`h-7 px-2 text-[10px] font-mono cursor-pointer transition-colors ${
+            className={`h-7 px-2.5 text-[10px] font-mono font-bold cursor-pointer transition-all ${
               activeLayers.riskZones
-                ? "bg-indigo-950/80 border-indigo-500 text-indigo-300"
-                : "bg-slate-900 border-slate-800 text-slate-500"
+                ? "bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-red-950/90 border-orange-500 text-orange-200 shadow-[0_0_10px_rgba(249,115,22,0.25)]"
+                : "bg-slate-900 border-slate-800 text-slate-500 line-through"
             }`}
+            title="Forecast Risk Zones: Low (Green), Moderate (Yellow), High (Orange), Critical (Red)"
           >
-            <Shield className="h-3 w-3 mr-1" />
-            Risk Zones
+            <Shield className="h-3 w-3 mr-1 text-orange-400" />
+            RISK FORECAST AREAS
           </Button>
 
           <Button
@@ -134,7 +135,7 @@ export function LiveDisasterRiskMap({
             }`}
           >
             <CloudRain className="h-3 w-3 mr-1" />
-            Weather
+            Weather Forecast
           </Button>
 
           <Button
@@ -148,7 +149,7 @@ export function LiveDisasterRiskMap({
             }`}
           >
             <AlertTriangle className="h-3 w-3 mr-1" />
-            GDACS
+            Live: GDACS
           </Button>
 
           <Button
@@ -162,7 +163,7 @@ export function LiveDisasterRiskMap({
             }`}
           >
             <Flame className="h-3 w-3 mr-1" />
-            FIRMS
+            Live: FIRMS
           </Button>
 
           <Button
@@ -171,12 +172,12 @@ export function LiveDisasterRiskMap({
             onClick={() => toggleLayer("simulatedFlood")}
             className={`h-7 px-2 text-[10px] font-mono cursor-pointer transition-colors ${
               activeLayers.simulatedFlood
-                ? "bg-cyan-950/80 border-cyan-500 text-cyan-300"
+                ? "bg-cyan-950/80 border-dashed border-cyan-500 text-cyan-300"
                 : "bg-slate-900 border-slate-800 text-slate-500"
             }`}
           >
             <Waves className="h-3 w-3 mr-1" />
-            Simulation
+            Simulated Flood
           </Button>
 
           {onRefresh && (
@@ -219,25 +220,59 @@ export function LiveDisasterRiskMap({
           onSelectArea={onSelectArea}
         />
 
-        {/* In-map Quick Legend Strip */}
-        <div className="absolute bottom-3 left-3 z-[1000] bg-slate-950/90 backdrop-blur-md border border-slate-800 px-3 py-1.5 rounded-lg flex flex-wrap items-center gap-3 text-[10px] font-mono text-slate-300 shadow-xl pointer-events-auto">
-          <span className="text-slate-500 font-bold uppercase">Risk Scale:</span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse inline-block" />
-            <span>CRITICAL (75-100)</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block" />
-            <span>HIGH (50-74)</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block" />
-            <span>MODERATE (25-49)</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-            <span>LOW (0-24)</span>
-          </span>
+        {/* In-map Tactical Classification Legend */}
+        <div className="absolute bottom-3 left-3 z-[1000] bg-slate-950/95 backdrop-blur-md border border-slate-800 p-2.5 rounded-xl flex flex-col gap-2 text-[10px] font-mono text-slate-300 shadow-2xl pointer-events-auto max-w-xl">
+          {/* Main 6 Classification Categories */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pb-2 border-b border-slate-800">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-600 border border-rose-400 shadow-[0_0_6px_#e11d48]" />
+              <strong className="text-rose-300">● LIVE EVENT</strong>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-400 border border-amber-200 shadow-[0_0_6px_#f59e0b]" />
+              <strong className="text-amber-300">● FORECAST RISK</strong>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500/30 border border-dashed border-amber-400" />
+              <strong className="text-amber-400">● SIMULATED INCIDENT</strong>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 border border-cyan-200" />
+              <strong className="text-cyan-300">● RESOURCE</strong>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 border border-emerald-300" />
+              <strong className="text-emerald-400">● SHELTER</strong>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-blue-500 border border-blue-300" />
+              <strong className="text-blue-400">● HOSPITAL</strong>
+            </span>
+          </div>
+
+          {/* Risk Level Color Palette */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-slate-500 font-bold uppercase">Risk Scale:</span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" />
+                <span className="text-red-400">CRITICAL (red)</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" />
+                <span className="text-orange-400">HIGH (orange)</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" />
+                <span className="text-yellow-400">MODERATE (yellow)</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                <span className="text-emerald-400">LOW (green)</span>
+              </span>
+            </div>
+            <span className="text-amber-400 font-semibold text-[9px]">NOT AN OFFICIAL EMERGENCY WARNING</span>
+          </div>
         </div>
       </CardContent>
     </Card>
