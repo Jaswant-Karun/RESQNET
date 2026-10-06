@@ -48,7 +48,59 @@ All workflow definitions are ready to import directly into your n8n canvas:
 | `workflow-2-critical-response.json` | **WORKFLOW 2: Critical Response** | `Incident` → `Check Severity` → `If CRITICAL` → `Request Human Approval` → `If Approved` → `Allocate Resources` → `Trigger Ambulance Workflow` → `Trigger Rescue Team Workflow` → `Trigger Drone Workflow` → `Update RESQNET` |
 | `workflow-3-drone-deployment.json` | **WORKFLOW 3: Drone Deployment** | `Drone Request` → `Check Available Drones` → `Select Available Drone` → `Create Mission` → `Update Mission Status` → `Return Result` |
 | `workflow-4-emergency-alert.json` | **WORKFLOW 4: Emergency Alert** | `Critical Incident` → `Generate Alert` → `Human Approval` → `Publish/Simulate Alert` → `Log Alert` |
-| `workflow-master-orchestration.json` | **Master Workflow Orchestrator** | End-to-end unified workflow coordinating all 4 sub-workflows in a single canvas. |
+| `workflow-5-risk-alert.json` | **WORKFLOW 5: RESQNET Risk Alert** | `Webhook` → `Validate Risk` → `Check Severity` → `IF HIGH / CRITICAL` → `Create Alert Log` → `Send Email` → `Update RESQNET` → `Return Status` |
+| `workflow-master-orchestration.json` | **Master Workflow Orchestrator** | End-to-end unified workflow coordinating multi-agency dispatch in a single canvas. |
+
+### Workflow 5: RESQNET Risk Alert Flow & Safeguard Protocol
+
+```
+Webhook
+   ↓
+Validate Risk
+   ↓
+Check Severity
+   ↓
+IF HIGH / CRITICAL
+   ↓ (TRUE)
+Create Alert Log
+   ↓
+Send Email
+   ↓
+Update RESQNET
+   ↓
+Return Status
+```
+
+**Payload Schema:**
+```json
+{
+  "riskForecast": {
+    "forecastId": "fc-001",
+    "hazardType": "FLOOD",
+    "forecastWindow": "Next 24 hours",
+    "contributingFactors": ["Severe precipitation", "River breach"]
+  },
+  "area": {
+    "id": "zone-a",
+    "name": "Zone A (Saidapet)",
+    "affectedPopulation": 1240
+  },
+  "severity": "CRITICAL",
+  "riskScore": 85,
+  "commander": {
+    "name": "Cmdr Jaswant Karun",
+    "email": "jksam37@gmail.com",
+    "role": "INCIDENT_COMMANDER"
+  },
+  "timestamp": "2026-10-06T13:30:00Z",
+  "simulationMode": false
+}
+```
+
+> **CRITICAL ALERT SAFEGUARD PROTOCOL**:  
+> For **CRITICAL** alerts, the workflow mandates commander review before simulated emergency execution.  
+> The email notifies the commander with complete situational context, but emergency execution strictly requires human approval. No automated irreversible execution occurs without human sign-off.
+
 
 ---
 
