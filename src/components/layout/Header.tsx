@@ -321,7 +321,8 @@ export function Header() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
+    </header>
 
       {/* Interactive Commander Profile Panel Modal */}
       <CommanderProfilePanel
