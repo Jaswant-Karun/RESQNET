@@ -3,10 +3,7 @@ import {
   CriticalResponseStatus,
   DroneWorkflowStatus,
   EmergencyAlertStatus,
-  IncidentIntakeStatus,
-  OrchestratorStatus,
   RiskAlertPayload,
-  RiskAlertWorkflowStatus,
   WorkflowIntegrationStatus,
   WorkflowLogItem,
   WorkflowOrchestrationState,
@@ -40,7 +37,7 @@ export interface WorkflowExecutionResult {
   mode: "N8N_LIVE" | "SIMULATION";
   webhookUrlConfigured: boolean;
   webhookUrl?: string;
-  n8nResponse?: any;
+  n8nResponse?: Record<string, unknown>;
   error?: string;
   statusMessage?: string;
   state: WorkflowOrchestrationState;
