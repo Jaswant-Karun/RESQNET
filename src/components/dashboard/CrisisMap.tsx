@@ -174,16 +174,16 @@ export function CrisisMap() {
       </CardHeader>
 
       {/* 3. Layer Filter Pills Bar with Strict Separation: LIVE, FORECAST, SIMULATED */}
-      <div className="px-4 py-2 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] text-slate-400 uppercase font-semibold mr-1">
+      <div className="px-3 sm:px-4 py-2 bg-slate-950/70 border-b border-slate-800 flex items-center justify-between gap-2 text-xs font-mono overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 flex-nowrap shrink-0 sm:flex-wrap">
+          <span className="text-[10px] text-slate-400 uppercase font-semibold mr-1 shrink-0">
             LAYERS:
           </span>
 
           {/* NEW LAYER: RISK FORECAST AREAS */}
           <button
             onClick={() => toggleLayer("riskForecastAreas")}
-            className={`px-2.5 py-0.5 rounded text-[11px] border font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+            className={`px-2.5 py-0.5 rounded text-[11px] border font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 whitespace-nowrap ${
               layers.riskForecastAreas
                 ? "bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-red-950/90 border-orange-500 text-orange-200 shadow-[0_0_10px_rgba(249,115,22,0.25)]"
                 : "bg-slate-900 border-slate-800 text-slate-500 line-through"
@@ -197,7 +197,7 @@ export function CrisisMap() {
           {/* LIVE / OBSERVED */}
           <button
             onClick={() => toggleLayer("liveEvents")}
-            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap ${
               layers.liveEvents
                 ? "bg-rose-950/80 border-rose-500 text-rose-300"
                 : "bg-slate-900 border-slate-800 text-slate-500 line-through"
@@ -211,7 +211,7 @@ export function CrisisMap() {
           {/* SIMULATED INCIDENTS */}
           <button
             onClick={() => toggleLayer("simulatedIncidents")}
-            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap ${
               layers.simulatedIncidents
                 ? "bg-amber-950/80 border-dashed border-amber-500 text-amber-300"
                 : "bg-slate-900 border-slate-800 text-slate-500 line-through"
@@ -225,7 +225,7 @@ export function CrisisMap() {
           {/* HOSPITALS & SHELTERS */}
           <button
             onClick={() => toggleLayer("infrastructure")}
-            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap ${
               layers.infrastructure
                 ? "bg-blue-950/80 border-blue-600 text-blue-300"
                 : "bg-slate-900 border-slate-800 text-slate-500 line-through"
@@ -238,7 +238,7 @@ export function CrisisMap() {
           {/* RESCUE UNITS */}
           <button
             onClick={() => toggleLayer("rescueUnits")}
-            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap ${
               layers.rescueUnits
                 ? "bg-purple-950/80 border-purple-600 text-purple-300"
                 : "bg-slate-900 border-slate-800 text-slate-500 line-through"
@@ -251,7 +251,7 @@ export function CrisisMap() {
           {/* DRONES */}
           <button
             onClick={() => toggleLayer("drones")}
-            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap ${
               layers.drones
                 ? "bg-cyan-950/80 border-cyan-600 text-cyan-300"
                 : "bg-slate-900 border-slate-800 text-slate-500 line-through"
@@ -264,7 +264,7 @@ export function CrisisMap() {
           {/* ROADS */}
           <button
             onClick={() => toggleLayer("roads")}
-            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer ${
+            className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap ${
               layers.roads
                 ? "bg-amber-950/80 border-amber-600 text-amber-300"
                 : "bg-slate-900 border-slate-800 text-slate-500 line-through"
@@ -275,7 +275,7 @@ export function CrisisMap() {
           </button>
         </div>
 
-        <div className="text-[11px] text-slate-400">
+        <div className="text-[11px] text-slate-400 shrink-0 hidden sm:block">
           SURGE: <strong className="text-white">{incident.metrics.waterLevelMeters}m</strong> (
           <span className="text-red-400 font-bold">
             {simulationStage === "ESCALATED" ? "ESCALATED 6.2m" : "ACTIVE 4.85m"}
@@ -285,7 +285,7 @@ export function CrisisMap() {
       </div>
 
       {/* 4. Interactive Map Container with Overlay Legend */}
-      <CardContent className="p-0 relative min-h-[480px] sm:min-h-[540px] flex flex-col justify-between overflow-hidden">
+      <CardContent className="p-0 relative min-h-[320px] sm:min-h-[480px] lg:min-h-[540px] flex flex-col justify-between overflow-hidden">
         {/* Real Leaflet Map */}
         <div className="absolute inset-0 z-0">
           <CrisisMapLeaflet
@@ -296,7 +296,7 @@ export function CrisisMap() {
 
         {/* TACTICAL OVERLAY LEGEND WITH EXACT REQUIRED TAXONOMY */}
         {showLegend && (
-          <div className="absolute bottom-3 left-3 z-[400] bg-slate-950/95 border border-slate-800 p-3.5 rounded-xl shadow-2xl backdrop-blur-md max-w-sm text-xs font-mono select-none">
+          <div className="absolute bottom-2 left-2 z-[400] bg-slate-950/95 border border-slate-800 p-2.5 sm:p-3.5 rounded-xl shadow-2xl backdrop-blur-md max-w-[calc(100vw-32px)] sm:max-w-sm max-h-[240px] sm:max-h-none overflow-y-auto text-xs font-mono select-none">
             <div className="font-bold text-slate-200 border-b border-slate-800 pb-1.5 mb-2.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
