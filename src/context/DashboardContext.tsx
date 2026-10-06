@@ -1459,6 +1459,104 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     triggerAutomationWorkflow("TRIGGER_FULL_ORCHESTRATION");
   }, []);
 
+  const triggerRiskAlertWorkflow = async (customPayload?: Partial<RiskAlertPayload>) => {
+    setWorkflowIntegrationStatus((prev) => ({ ...prev, email: "DISPATCHING" }));
+    try {
+      const payload: Partial<RiskAlertPayload> = {
+        riskForecast: customPayload?.riskForecast || {
+          forecastId: `fc-${Date.now()}`,
+          hazardType: (incident.disasterType || "FLOOD").toUpperCase(),
+          forecastWindow: "Next 24 hours",
+          contributingFactors: [
+            "Severe precipitation detected",
+            "River basin water level cresting above flood stage",
+            "High vulnerability in low-lying residential sectors",
+          ],
+        },
+        area: customPayload?.area || {
+          id: "zone-a",
+          name: incident.primaryLocation.name || "Zone A (Saidapet)",
+          affectedPopulation: incident.metrics.affectedPopulationEstimated || 1240,
+        },
+        severity: customPayload?.severity || (incident.severity === "CRITICAL" ? "CRITICAL" : "HIGH"),
+        riskScore: typeof customPayload?.riskScore === "number" ? customPayload.riskScore : (incident.severity === "CRITICAL" ? 85 : 68),
+        commander: customPayload?.commander || {
+          name: "Cmdr Jaswant Karun",
+          email: "jksam37@gmail.com",
+          role: "INCIDENT_COMMANDER",
+        },
+        timestamp: new Date().toISOString(),
+        simulationMode: false,
+      };
+
+      const res = await fetch("/api/automation/risk-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      const newTimestamp = data.timestamp || new Date().toISOString();
+
+      setWorkflowIntegrationStatus({
+        riskMonitor: "CONNECTED",
+        n8n: "CONNECTED",
+        email: "READY",
+        lastAlert: newTimestamp,
+      });
+
+      if (data.success) {
+        setWorkflowState((prev) => ({
+          ...prev,
+          riskAlertWorkflow: data.safeguards?.requiresCommanderReview ? "AWAITING_REVIEW" : "DISPATCHED",
+          lastTriggeredAt: newTimestamp,
+          logs: [
+            {
+              id: `log-risk-alert-${Date.now()}`,
+              timestamp: newTimestamp,
+              workflow: "RESQNET Risk Alert",
+              status: data.severity === "CRITICAL" ? "WARNING" : "SUCCESS",
+              stepName: data.severity === "CRITICAL" ? "Commander Review Safeguard" : "Email Dispatched",
+              message: data.message || `Risk Alert dispatched via n8n. Email sent to ${data.commander?.email || "Commander"}.`,
+            },
+            ...prev.logs,
+          ],
+        }));
+
+        addTimelineEvent({
+          id: `evt-risk-alert-${Date.now()}`,
+          incidentId: incident.id,
+          timestamp: newTimestamp,
+          title: `n8n Risk Alert Workflow Executed (${data.severity || "CRITICAL"})`,
+          description: `${data.message || "Alert dispatched to commander."} ${
+            data.severity === "CRITICAL"
+              ? "Human approval mandatory before simulated emergency execution."
+              : ""
+          }`,
+          category: "DECISION",
+          severity: data.severity === "CRITICAL" ? "CRITICAL" : "WARNING",
+          authorOrSystem: "n8n Workflow: RESQNET Risk Alert",
+        });
+
+        setNotification({
+          type: "success",
+          title: "RISK ALERT NOTIFICATION SENT",
+          message: `Commander notified via email. ${
+            data.severity === "CRITICAL"
+              ? "Emergency execution paused: Requires commander review."
+              : "Email delivered."
+          }`,
+          timestamp: newTimestamp,
+        });
+
+        return data;
+      }
+    } catch (err) {
+      console.warn("[DashboardContext] Risk alert workflow dispatch failed:", err);
+      setWorkflowIntegrationStatus((prev) => ({ ...prev, email: "READY" }));
+    }
+  };
+
   const markAlertsRead = () => {
     setUnreadAlertCount(0);
   };
@@ -1511,10 +1609,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setSimulateApiFailure,
         triggerAiAnalysisWithTestCase,
         workflowState,
+        workflowIntegrationStatus,
         isTriggeringAutomation,
         simulateN8nFailure,
         setSimulateN8nFailure,
         triggerAutomationWorkflow,
+        triggerRiskAlertWorkflow,
         approveCriticalResponseWorkflow,
         dispatchDroneWorkflow,
         approveEmergencyAlertWorkflow,
