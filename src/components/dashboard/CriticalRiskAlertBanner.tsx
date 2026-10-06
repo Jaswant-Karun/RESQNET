@@ -150,6 +150,7 @@ export function CriticalRiskAlertBanner() {
     resourceAllocationState,
     addTimelineEvent,
     triggerAutomationWorkflow,
+    triggerRiskAlertWorkflow,
   ]);
 
   if (!isCritical || !criticalArea || isDismissed) {
