@@ -7,6 +7,7 @@ import {
   Bell,
   Database,
   Flame,
+  GitBranch,
   LogOut,
   Mail,
   Radio,
@@ -25,6 +26,7 @@ export function Header() {
     markAlertsRead,
     setActiveTab,
     workflowState,
+    workflowIntegrationStatus,
     databaseState,
     refreshDatabaseData,
   } = useDashboard();
