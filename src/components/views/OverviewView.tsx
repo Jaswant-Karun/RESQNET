@@ -20,17 +20,13 @@ import { Badge } from "@/components/ui/badge";
 import {
   AlertOctagon,
   Bot,
-  Cpu,
   Flame,
   GitBranch,
   History,
-  Layers,
   MapPin,
-  Radio,
   ShieldAlert,
   ShieldCheck,
   Truck,
-  Waves,
 } from "lucide-react";
 
 interface SectionHeaderProps {
@@ -107,21 +103,63 @@ export function OverviewView() {
   const isEscalated = simulationStage === "ESCALATED";
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* 0. TACTICAL SIMULATION CONTROLS (SIMULATE FLOOD, SIMULATE ESCALATION, RESET) */}
-      <SimulationControls />
+    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-16 md:pb-12">
+      {/* ========================================================
+          MOBILE PRIORITY 1 / DESKTOP ROW 1: CRITICAL ALERTS & CONTROLS
+      ======================================================== */}
+      <div className="order-1 lg:order-1 lg:col-span-12 space-y-4">
+        {/* Tactical Simulation Controls */}
+        <SimulationControls />
 
-      {/* CRITICAL RISK DETECTION & COMMANDER REVIEW BANNER */}
-      <CriticalRiskAlertBanner />
+        {/* Critical Risk Detection & Commander Review Banner */}
+        <CriticalRiskAlertBanner />
+      </div>
 
       {/* ========================================================
-          SECTION 1: INCIDENT STATUS
-          Answers: 1. There is an emergency. 2. Where it is. 3. How severe it is.
+          MOBILE PRIORITY 2 / DESKTOP ROW 3: CURRENT RISK
       ======================================================== */}
-      <section className="space-y-3.5">
+      <section className="order-2 lg:order-4 lg:col-span-12 space-y-3.5">
+        <SectionHeader
+          number="MODULE"
+          title="CURRENT RISK & HAZARDS"
+          badgeText="OPEN-METEO + GDACS + NASA FIRMS"
+          badgeColor="red"
+          icon={ShieldAlert}
+          description="Multisource observed hazards, meteorological forecasts, and deterministic risk scoring"
+        />
+
+        <div className="p-4 rounded-xl bg-[#080d1a] border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+          <div className="space-y-1 w-full md:w-auto">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+              <strong className="text-white font-mono text-xs sm:text-sm uppercase">
+                Zone A - Kotturpuram Riverfront Basin (Risk Score: {isEscalated ? "96" : "88"}/100 • CRITICAL)
+              </strong>
+            </div>
+            <p className="text-xs text-slate-400 font-mono">
+              Live multisource intelligence correlated: Open-Meteo precipitation forecast, GDACS regional alerts, and RESQNET deterministic risk engine.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
+            <button
+              onClick={() => setActiveTab("risk-intelligence")}
+              className="w-full md:w-auto px-4 py-2.5 min-h-[44px] rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold transition-all shadow-lg shadow-indigo-950/40 cursor-pointer flex items-center justify-center gap-1.5 touch-manipulation"
+            >
+              <span>Launch Live Disaster Risk Intelligence</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================
+          MOBILE PRIORITY 3 / DESKTOP ROW 2: ACTIVE INCIDENT
+      ======================================================== */}
+      <section className="order-3 lg:order-3 lg:col-span-12 space-y-3.5">
         <SectionHeader
           number="SECTION 01"
-          title="INCIDENT STATUS"
+          title="ACTIVE INCIDENT STATUS"
           badgeText="SIMULATION MODE"
           badgePulse={true}
           badgeColor="red"
@@ -137,126 +175,25 @@ export function OverviewView() {
       </section>
 
       {/* ========================================================
-          NEW MODULE: LIVE DISASTER RISK MAP
+          MOBILE PRIORITY 4 / DESKTOP ROW 4 (LEFT): CRISIS MAP
       ======================================================== */}
-      <section className="space-y-3.5">
+      <section className="order-4 lg:order-6 lg:col-span-7 space-y-3.5 flex flex-col">
         <SectionHeader
-          number="MODULE"
-          title="LIVE DISASTER RISK MAP"
-          badgeText="OPEN-METEO + GDACS + NASA FIRMS"
-          badgeColor="red"
-          icon={ShieldAlert}
-          description="Multisource observed hazards, meteorological forecasts, and deterministic risk scoring"
+          number="SECTION 03"
+          title="CRISIS MAP"
+          badgeText="GIS SECTOR OVERLAY"
+          badgeColor="blue"
+          icon={MapPin}
+          description="Hazard inundation zone, blocked roads, and evacuation corridor"
         />
 
-        <div className="p-4 rounded-xl bg-[#080d1a] border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-              <strong className="text-white font-mono text-sm uppercase">
-                Zone A - Kotturpuram Riverfront Basin (Risk Score: {isEscalated ? "96" : "88"}/100 • CRITICAL)
-              </strong>
-            </div>
-            <p className="text-xs text-slate-400 font-mono">
-              Live multisource intelligence correlated: Open-Meteo precipitation forecast, GDACS regional alerts, and RESQNET deterministic risk engine.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setActiveTab("risk-intelligence")}
-              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold transition-all shadow-lg shadow-indigo-950/40 cursor-pointer flex items-center gap-1.5"
-            >
-              <span>Launch Live Disaster Risk Intelligence</span>
-              <span>→</span>
-            </button>
-          </div>
-        </div>
+        <CrisisMap />
       </section>
 
       {/* ========================================================
-          SECTION 2: APPROVAL
-          Answers: 6. What requires human approval.
-          Highlights: AI Recommendation -> Human Approval -> Automated Workflow
+          MOBILE PRIORITY 5 / DESKTOP ROW 6: RESOURCE STATUS
       ======================================================== */}
-      <section className="space-y-3.5">
-        <SectionHeader
-          number="SECTION 02"
-          title="APPROVAL"
-          badgeText="HUMAN APPROVAL REQUIRED"
-          badgePulse={true}
-          badgeColor="amber"
-          icon={ShieldCheck}
-          description="Mandatory operator authorization before simulated execution"
-        />
-
-        <EmergencyApprovalPanel />
-      </section>
-
-      {/* ========================================================
-          SECTIONS 3 & 4: CRISIS MAP, RESQ AI COPILOT & AI RESPONSE (2-Column Command View)
-          Answers: 2. Where it is happening (Map). 4. What the AI recommends.
-      ======================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT: SECTION 3 - CRISIS MAP & RESQ AI COPILOT (7 cols on lg, 7 cols on xl) */}
-        <div className="lg:col-span-7 xl:col-span-7 space-y-6 flex flex-col">
-          <section className="space-y-3.5 flex flex-col">
-            <SectionHeader
-              number="SECTION 03"
-              title="CRISIS MAP"
-              badgeText="GIS SECTOR OVERLAY"
-              badgeColor="blue"
-              icon={MapPin}
-              description="Hazard inundation zone, blocked roads, and evacuation corridor"
-            />
-
-            <CrisisMap />
-          </section>
-
-          {/* RESQ AI Copilot placed directly beneath the map to fill the vertical gap */}
-          <section className="space-y-3.5 flex flex-col">
-            <ResqAiChatPanel compact />
-          </section>
-        </div>
-
-        {/* RIGHT: SECTION 4 - AI RESPONSE (5 cols on lg, 5 cols on xl) */}
-        <section className="lg:col-span-5 xl:col-span-5 space-y-3.5 flex flex-col">
-          <SectionHeader
-            number="SECTION 04"
-            title="AI RESPONSE"
-            badgeText="AI RECOMMENDATION"
-            badgeColor="indigo"
-            icon={Bot}
-            description="Evacuation plan reasoning & situational assistant"
-          />
-
-          <AiResponseStatusPanel />
-        </section>
-      </div>
-
-      {/* ========================================================
-          SECTION 5: ADAPTIVE RESPONSE
-          Answers: 8. How the system adapts when conditions change.
-      ======================================================== */}
-      <section className="space-y-3.5">
-        <SectionHeader
-          number="SECTION 05"
-          title="ADAPTIVE RESPONSE"
-          badgeText={isEscalated ? "ESCALATION ACTIVE" : "ADAPTIVE ENGINE ARMED"}
-          badgePulse={isEscalated}
-          badgeColor={isEscalated ? "red" : "purple"}
-          icon={Flame}
-          description="Demonstrates dynamic rerouting and resource recalculation when Route R2 floods"
-        />
-
-        <EscalationComparisonPanel />
-      </section>
-
-      {/* ========================================================
-          SECTION 6: RESOURCE STATUS
-          Answers: 5. What resources are available.
-      ======================================================== */}
-      <section className="space-y-3.5">
+      <section className="order-5 lg:order-10 lg:col-span-12 space-y-3.5">
         <SectionHeader
           number="SECTION 06"
           title="RESOURCE STATUS"
@@ -270,10 +207,64 @@ export function OverviewView() {
       </section>
 
       {/* ========================================================
-          SECTION 7: AUTOMATION STATUS
-          Answers: 7. What n8n is automating.
+          MOBILE PRIORITY 6 / DESKTOP ROW 3.5: APPROVAL REQUESTS
       ======================================================== */}
-      <section className="space-y-3.5">
+      <section className="order-6 lg:order-5 lg:col-span-12 space-y-3.5">
+        <SectionHeader
+          number="SECTION 02"
+          title="APPROVAL REQUESTS"
+          badgeText="HUMAN APPROVAL REQUIRED"
+          badgePulse={true}
+          badgeColor="amber"
+          icon={ShieldCheck}
+          description="Mandatory operator authorization before simulated execution"
+        />
+
+        <EmergencyApprovalPanel />
+      </section>
+
+      {/* DESKTOP ROW 4 (RIGHT): AI RESPONSE (evacuation plan reasoning) */}
+      <section className="order-7 lg:order-7 lg:col-span-5 space-y-3.5 flex flex-col">
+        <SectionHeader
+          number="SECTION 04"
+          title="AI RESPONSE"
+          badgeText="AI RECOMMENDATION"
+          badgeColor="indigo"
+          icon={Bot}
+          description="Evacuation plan reasoning & situational assistant"
+        />
+
+        <AiResponseStatusPanel />
+      </section>
+
+      {/* ========================================================
+          MOBILE PRIORITY 7 / DESKTOP ROW 5 (LEFT): RESQ AI COPILOT
+      ======================================================== */}
+      <section className="order-8 lg:order-8 lg:col-span-7 space-y-3.5 flex flex-col">
+        <ResqAiChatPanel compact />
+      </section>
+
+      {/* ========================================================
+          SECONDARY OPERATIONAL PANELS: ADAPTIVE, AUTOMATION, TIMELINE, RESILIENCE
+      ======================================================== */}
+
+      {/* SECTION 5: ADAPTIVE RESPONSE */}
+      <section className="order-9 lg:order-9 lg:col-span-12 space-y-3.5">
+        <SectionHeader
+          number="SECTION 05"
+          title="ADAPTIVE RESPONSE"
+          badgeText={isEscalated ? "ESCALATION ACTIVE" : "ADAPTIVE ENGINE ARMED"}
+          badgePulse={isEscalated}
+          badgeColor={isEscalated ? "red" : "purple"}
+          icon={Flame}
+          description="Demonstrates dynamic rerouting and resource recalculation when Route R2 floods"
+        />
+
+        <EscalationComparisonPanel />
+      </section>
+
+      {/* SECTION 7: AUTOMATION STATUS (n8n) */}
+      <section className="order-10 lg:order-11 lg:col-span-12 space-y-3.5">
         <SectionHeader
           number="SECTION 07"
           title="AUTOMATION STATUS"
@@ -286,11 +277,8 @@ export function OverviewView() {
         <WorkflowOrchestrationPanel />
       </section>
 
-      {/* ========================================================
-          SECTION 8: INCIDENT TIMELINE
-          Answers: Full chronological audit log of all events.
-      ======================================================== */}
-      <section className="space-y-3.5">
+      {/* SECTION 8: INCIDENT TIMELINE */}
+      <section className="order-11 lg:order-12 lg:col-span-12 space-y-3.5">
         <SectionHeader
           number="SECTION 08"
           title="INCIDENT TIMELINE"
@@ -303,18 +291,15 @@ export function OverviewView() {
         <IncidentTimeline />
       </section>
 
-      {/* ========================================================
-          SECTION 9: SYSTEM RESILIENCE & FAILURE RECOVERY
-          Answers: Full failure-handling pass & external service fallback testing
-      ======================================================== */}
-      <section className="space-y-3.5">
+      {/* SECTION 9: SYSTEM RESILIENCE & FAILURE RECOVERY */}
+      <section className="order-12 lg:order-13 lg:col-span-12 space-y-3.5">
         <SectionHeader
           number="SECTION 09"
           title="SYSTEM RESILIENCE & FAILURE RECOVERY"
           badgeText="ZERO-CRASH TOLERANCE"
           badgeColor="emerald"
           icon={ShieldCheck}
-          description="Interactive verification of all 9 external service failure cases and deterministic fallbacks"
+          description="Interactive verification of all external service failure cases and deterministic fallbacks"
         />
 
         <ResilienceTestingPanel />
