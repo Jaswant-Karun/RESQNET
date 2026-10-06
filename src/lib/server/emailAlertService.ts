@@ -464,7 +464,9 @@ This is an AI-assisted risk assessment and not an official emergency warning.
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
     if (n8nWebhookUrl) {
       try {
-        await fetch(n8nWebhookUrl, {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2000);
+        const res = await fetch(n8nWebhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -479,10 +481,15 @@ This is an AI-assisted risk assessment and not an official emergency warning.
             requiresCommanderAction: true,
             timestamp: new Date().toISOString(),
           }),
+          signal: controller.signal,
         });
-        n8nTriggered = true;
-      } catch (n8nErr) {
-        console.warn("[EmailAlertService] n8n trigger notification warning:", n8nErr);
+        clearTimeout(timeout);
+        if (res.ok) {
+          n8nTriggered = true;
+        }
+      } catch {
+        // n8n is offline or unreachable - seamlessly proceed with simulated workflow
+        n8nTriggered = false;
       }
     }
   }
