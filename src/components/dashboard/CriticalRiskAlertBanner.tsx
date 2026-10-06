@@ -320,7 +320,7 @@ export function CriticalRiskAlertBanner() {
               size="sm"
               onClick={handleGenerateResponsePlan}
               disabled={isGeneratingPlan}
-              className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-600 text-white font-mono text-xs font-black uppercase tracking-wider py-2.5 px-4 shadow-lg shadow-red-950/60 cursor-pointer flex items-center justify-center gap-2 border border-red-400/50"
+              className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-600 text-white font-mono text-xs font-black uppercase tracking-wider min-h-[44px] px-4 shadow-lg shadow-red-950/60 cursor-pointer flex items-center justify-center gap-2 border border-red-400/50 touch-manipulation"
             >
               <Zap className={`h-4 w-4 ${isGeneratingPlan ? "animate-spin" : ""}`} />
               <span>{isGeneratingPlan ? "Generating Plan..." : "GENERATE RESPONSE PLAN"}</span>
@@ -331,7 +331,7 @@ export function CriticalRiskAlertBanner() {
               size="sm"
               variant="outline"
               onClick={handleViewRisk}
-              className="bg-slate-900/90 hover:bg-slate-800 border-slate-700 text-slate-200 hover:text-white font-mono text-xs font-bold uppercase tracking-wider py-2 px-3 cursor-pointer flex items-center justify-center gap-1.5"
+              className="bg-slate-900/90 hover:bg-slate-800 border-slate-700 text-slate-200 hover:text-white font-mono text-xs font-bold uppercase tracking-wider min-h-[44px] px-3.5 cursor-pointer flex items-center justify-center gap-1.5 touch-manipulation"
             >
               <Eye className="h-3.5 w-3.5 text-indigo-400" />
               <span>VIEW RISK</span>
@@ -342,7 +342,7 @@ export function CriticalRiskAlertBanner() {
               size="sm"
               variant="ghost"
               onClick={handleDismiss}
-              className="text-slate-400 hover:text-slate-200 font-mono text-[11px] font-semibold uppercase tracking-wider py-1.5 px-3 cursor-pointer flex items-center justify-center gap-1"
+              className="text-slate-400 hover:text-slate-200 font-mono text-[11px] font-semibold uppercase tracking-wider min-h-[44px] px-3 cursor-pointer flex items-center justify-center gap-1 touch-manipulation"
             >
               <X className="h-3.5 w-3.5" />
               <span>DISMISS</span>
