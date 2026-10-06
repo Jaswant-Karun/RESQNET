@@ -1197,7 +1197,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     // Critical Alert
     const newAlert: Alert = {
-      id: `alt-esc-${Date.now()}`,
+      id: `alt-esc-${baseTime}`,
       incidentId: escalatedIncident.id,
       code: "ALT-SURGE-GATE-7",
       title: "Catastrophic 3.1m Flood Surge — Route R2 Inundated",
@@ -1224,66 +1224,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     // Trigger n8n Workflow Orchestration Layer for critical escalation
     triggerAutomationWorkflow("TRIGGER_FULL_ORCHESTRATION");
-  };
+  }, [incident, triggerAiAnalysis, triggerAutomationWorkflow]);
 
-  const resetSimulation = () => {
+  const resetSimulation = useCallback(() => {
     simulateFlood();
-  };
-
-  /**
-   * Dispatches payload to /api/automation/trigger (n8n or local simulation fallback)
-   */
-  const triggerAutomationWorkflow = async (
-    action: string = "TRIGGER_FULL_ORCHESTRATION",
-    options?: { simulateUnavailable?: boolean; testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING"; [key: string]: unknown }
-  ) => {
-    setIsTriggeringAutomation(true);
-    try {
-      const payload = {
-        incident,
-        responsePlan: plan,
-        resources: {
-          ambulances,
-          rescueTeams,
-          drones,
-        },
-        simulationMode: true,
-        action,
-        simulateUnavailable: options?.simulateUnavailable ?? simulateN8nFailure,
-        testCase: options?.testCase,
-        ...options,
-      };
-
-      const res = await fetch("/api/automation/trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.state) {
-          setWorkflowState(data.state);
-        }
-      } else {
-        // Fallback simulation mode
-        setWorkflowState((prev) => ({
-          ...prev,
-          orchestrator: "SIMULATION_MODE",
-          isSimulationMode: true,
-        }));
-      }
-    } catch (err) {
-      console.warn("[RESQNET Automation] Orchestrator unreachable, continuing in simulation mode.", err);
-      setWorkflowState((prev) => ({
-        ...prev,
-        orchestrator: "SIMULATION_MODE",
-        isSimulationMode: true,
-      }));
-    } finally {
-      setIsTriggeringAutomation(false);
-    }
-  };
+  }, [simulateFlood]);
 
   /**
    * Unified Resilience & Failure Testing Engine
