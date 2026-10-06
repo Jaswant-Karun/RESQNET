@@ -2,7 +2,7 @@
 
 ## 1. Architectural Philosophy
 
-```
+```text
 +------------------------------------------------------------------------+
 |                              RESQNET                                   |
 |                Decides WHAT should happen (Application Layer)          |
@@ -43,7 +43,7 @@
 All workflow definitions are ready to import directly into your n8n canvas:
 
 | File | Workflow Name | Description |
-|------|---------------|-------------|
+| --- | --- | --- |
 | `workflow-1-incident-intake.json` | **WORKFLOW 1: Incident Intake** | `Webhook` → `Validate Incident` → `Create/Update Incident` → `Analyze Severity` → `Branch` |
 | `workflow-2-critical-response.json` | **WORKFLOW 2: Critical Response** | `Incident` → `Check Severity` → `If CRITICAL` → `Request Human Approval` → `If Approved` → `Allocate Resources` → `Trigger Ambulance Workflow` → `Trigger Rescue Team Workflow` → `Trigger Drone Workflow` → `Update RESQNET` |
 | `workflow-3-drone-deployment.json` | **WORKFLOW 3: Drone Deployment** | `Drone Request` → `Check Available Drones` → `Select Available Drone` → `Create Mission` → `Update Mission Status` → `Return Result` |
@@ -53,7 +53,7 @@ All workflow definitions are ready to import directly into your n8n canvas:
 
 ### Workflow 5: RESQNET Risk Alert Flow & Safeguard Protocol
 
-```
+```text
 Webhook
    ↓
 Validate Risk
@@ -72,6 +72,7 @@ Return Status
 ```
 
 **Payload Schema:**
+
 ```json
 {
   "riskForecast": {
@@ -101,7 +102,6 @@ Return Status
 > For **CRITICAL** alerts, the workflow mandates commander review before simulated emergency execution.  
 > The email notifies the commander with complete situational context, but emergency execution strictly requires human approval. No automated irreversible execution occurs without human sign-off.
 
-
 ---
 
 ## 3. Configuration (`N8N_WEBHOOK_URL`)
@@ -118,12 +118,15 @@ N8N_WEBHOOK_URL=http://localhost:5678/webhook/resqnet-orchestrator
 # N8N_WEBHOOK_URL=https://n8n.your-domain.com/webhook/resqnet-orchestrator
 ```
 
-### Clean Abstraction & Simulation Mode:
+### Clean Abstraction & Simulation Mode
+
 - If `N8N_WEBHOOK_URL` is **unset, blank, or unreachable**, RESQNET does **not break**.
 - The application automatically engages **high-fidelity local simulation mode**, displaying:
-  ```
+
+  ```text
   Automation: SIMULATION MODE
   ```
+
 - All state transitions, branching rules, mock dispatch notices, and commander approvals continue to function smoothly.
 
 ---
@@ -131,9 +134,11 @@ N8N_WEBHOOK_URL=http://localhost:5678/webhook/resqnet-orchestrator
 ## 4. API Endpoints
 
 ### `POST /api/automation/trigger`
+
 Dispatches structured incident, response plan, and resource data to n8n.
 
 **Request Payload:**
+
 ```json
 {
   "incident": {
@@ -150,9 +155,9 @@ Dispatches structured incident, response plan, and resource data to n8n.
     "resourceAllocation": { "ambulances": 2, "rescueTeams": 2, "drones": 1 }
   },
   "resources": {
-    "ambulances": [...],
-    "rescueTeams": [...],
-    "drones": [...]
+    "ambulances": [],
+    "rescueTeams": [],
+    "drones": []
   },
   "simulationMode": true,
   "action": "TRIGGER_FULL_ORCHESTRATION"
@@ -160,6 +165,7 @@ Dispatches structured incident, response plan, and resource data to n8n.
 ```
 
 **Response Payload:**
+
 ```json
 {
   "success": true,
