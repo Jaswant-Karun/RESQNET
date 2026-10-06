@@ -39,6 +39,7 @@ import { LiveDisasterIntelligencePayload } from "@/lib/disaster-data/types";
 
 export type DashboardTab =
   | "overview"
+  | "map"
   | "risk-intelligence"
   | "incidents"
   | "resources"
