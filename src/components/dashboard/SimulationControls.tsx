@@ -82,9 +82,9 @@ export function SimulationControls() {
           <Button
             onClick={simulateFlood}
             variant="default"
-            className="flex-1 md:flex-initial h-10 px-6 text-xs font-bold font-mono tracking-wider bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-lg shadow-blue-900/30 cursor-pointer"
+            className="flex-1 md:flex-initial min-h-[44px] px-5 sm:px-6 text-xs font-bold font-mono tracking-wider bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-lg shadow-blue-900/30 cursor-pointer touch-manipulation"
           >
-            <Waves className="h-4 w-4 mr-2" />
+            <Waves className="h-4 w-4 mr-2 shrink-0" />
             SIMULATE FLOOD
           </Button>
 
@@ -92,9 +92,9 @@ export function SimulationControls() {
           <Button
             onClick={simulateEscalation}
             variant="destructive"
-            className="flex-1 md:flex-initial h-10 px-5 text-xs font-bold font-mono tracking-wider bg-red-600 hover:bg-red-500 active:bg-red-700 shadow-lg shadow-red-900/30 cursor-pointer"
+            className="flex-1 md:flex-initial min-h-[44px] px-4 sm:px-5 text-xs font-bold font-mono tracking-wider bg-red-600 hover:bg-red-500 active:bg-red-700 shadow-lg shadow-red-900/30 cursor-pointer touch-manipulation"
           >
-            <Flame className="h-4 w-4 mr-2" />
+            <Flame className="h-4 w-4 mr-2 shrink-0" />
             SIMULATE ESCALATION
           </Button>
 
@@ -102,7 +102,7 @@ export function SimulationControls() {
           <Button
             onClick={resetSimulation}
             variant="outline"
-            className="h-10 px-3 text-xs font-mono text-slate-400 hover:text-white border-slate-700 hover:border-slate-600 cursor-pointer"
+            className="min-h-[44px] px-3.5 text-xs font-mono text-slate-400 hover:text-white border-slate-700 hover:border-slate-600 cursor-pointer touch-manipulation"
             title="Reset Simulation Scenario"
           >
             <RotateCcw className="h-4 w-4" />
