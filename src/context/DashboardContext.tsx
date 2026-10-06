@@ -369,6 +369,29 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     ],
   });
   const [isTriggeringAutomation, setIsTriggeringAutomation] = useState<boolean>(false);
+  const [workflowIntegrationStatus, setWorkflowIntegrationStatus] =
+    useState<WorkflowIntegrationStatus>({
+      riskMonitor: "CONNECTED",
+      n8n: "CONNECTED",
+      email: "READY",
+      lastAlert: initialScenario.incident.detectedAt || new Date().toISOString(),
+    });
+
+  useEffect(() => {
+    fetch("/api/automation/risk-alert")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setWorkflowIntegrationStatus({
+            riskMonitor: data.riskMonitor || "CONNECTED",
+            n8n: data.n8n || "CONNECTED",
+            email: data.email || "READY",
+            lastAlert: data.lastAlert || initialScenario.incident.detectedAt,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // MongoDB Atlas Persistent Data Layer State
   const [databaseState, setDatabaseState] = useState<DatabaseState>({
