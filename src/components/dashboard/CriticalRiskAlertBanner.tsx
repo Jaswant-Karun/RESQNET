@@ -53,7 +53,8 @@ export function CriticalRiskAlertBanner() {
   // Execute the deterministic pipeline when high/critical risk is detected:
   // Risk Engine -> Create Risk Forecast -> Check pop -> Check resources -> Generate recommended response -> Create activity event -> Notify commander -> Optionally trigger n8n
   useEffect(() => {
-    if (!isCritical || !criticalArea || hasLoggedRiskEvent) return;
+    if (!isCritical || !criticalArea || hasLoggedRiskEventRef.current) return;
+    hasLoggedRiskEventRef.current = true;
 
     const evaluation = evaluateRiskForResponse(
       criticalArea,
@@ -133,12 +134,9 @@ export function CriticalRiskAlertBanner() {
         simulationMode: false,
       });
     }
-
-    setHasLoggedRiskEvent(true);
   }, [
     isCritical,
     criticalArea,
-    hasLoggedRiskEvent,
     zones,
     incident,
     resourceAllocationState,
@@ -164,7 +162,6 @@ export function CriticalRiskAlertBanner() {
   const riskLevel = criticalArea.riskLevel;
   const forecastWindow = criticalArea.forecastWindow || "Next 24 hours";
   const affectedPopulation = evaluation.affectedPopulation;
-  const available = evaluation.availableResources;
   const recommended = evaluation.recommendedResponse;
 
   // Handler: Commander chooses GENERATE RESPONSE PLAN
