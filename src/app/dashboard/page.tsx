@@ -11,11 +11,14 @@ import { ActivityLogView } from "@/components/views/ActivityLogView";
 import { ResqAiView } from "@/components/views/ResqAiView";
 import { AutomationView } from "@/components/views/AutomationView";
 import { RiskIntelligenceView } from "@/components/views/RiskIntelligenceView";
+import { CrisisMapView } from "@/components/views/CrisisMapView";
 
 export default function DashboardPage() {
   const { activeTab } = useDashboard();
 
   switch (activeTab) {
+    case "map":
+      return <CrisisMapView />;
     case "risk-intelligence":
       return <RiskIntelligenceView />;
     case "incidents":
