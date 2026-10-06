@@ -194,26 +194,33 @@ export function OverviewView() {
       </section>
 
       {/* ========================================================
-          SECTIONS 3 & 4: CRISIS MAP & AI RESPONSE (2-Column Command View)
+          SECTIONS 3 & 4: CRISIS MAP, RESQ AI COPILOT & AI RESPONSE (2-Column Command View)
           Answers: 2. Where it is happening (Map). 4. What the AI recommends.
       ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT: SECTION 3 - CRISIS MAP (8 cols) */}
-        <section className="lg:col-span-8 space-y-3.5 flex flex-col">
-          <SectionHeader
-            number="SECTION 03"
-            title="CRISIS MAP"
-            badgeText="GIS SECTOR OVERLAY"
-            badgeColor="blue"
-            icon={MapPin}
-            description="Hazard inundation zone, blocked roads, and evacuation corridor"
-          />
+        {/* LEFT: SECTION 3 - CRISIS MAP & RESQ AI COPILOT (7 cols on lg, 7 cols on xl) */}
+        <div className="lg:col-span-7 xl:col-span-7 space-y-6 flex flex-col">
+          <section className="space-y-3.5 flex flex-col">
+            <SectionHeader
+              number="SECTION 03"
+              title="CRISIS MAP"
+              badgeText="GIS SECTOR OVERLAY"
+              badgeColor="blue"
+              icon={MapPin}
+              description="Hazard inundation zone, blocked roads, and evacuation corridor"
+            />
 
-          <CrisisMap />
-        </section>
+            <CrisisMap />
+          </section>
 
-        {/* RIGHT: SECTION 4 - AI RESPONSE (4 cols) */}
-        <section className="lg:col-span-4 space-y-3.5 flex flex-col">
+          {/* RESQ AI Copilot placed directly beneath the map to fill the vertical gap */}
+          <section className="space-y-3.5 flex flex-col">
+            <ResqAiChatPanel compact />
+          </section>
+        </div>
+
+        {/* RIGHT: SECTION 4 - AI RESPONSE (5 cols on lg, 5 cols on xl) */}
+        <section className="lg:col-span-5 xl:col-span-5 space-y-3.5 flex flex-col">
           <SectionHeader
             number="SECTION 04"
             title="AI RESPONSE"
@@ -223,10 +230,7 @@ export function OverviewView() {
             description="Evacuation plan reasoning & situational assistant"
           />
 
-          <div className="space-y-4">
-            <AiResponseStatusPanel />
-            <ResqAiChatPanel compact />
-          </div>
+          <AiResponseStatusPanel />
         </section>
       </div>
 
