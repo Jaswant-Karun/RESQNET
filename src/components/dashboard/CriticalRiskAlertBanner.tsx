@@ -36,6 +36,7 @@ export function CriticalRiskAlertBanner() {
     setNotification,
     setActiveTab,
     triggerAutomationWorkflow,
+    triggerRiskAlertWorkflow,
     setIsActionApproved,
     setIsActionRejected,
     setRejectionReason,
