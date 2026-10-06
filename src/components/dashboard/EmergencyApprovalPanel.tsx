@@ -310,7 +310,7 @@ export function EmergencyApprovalPanel() {
                   </Badge>
                 </div>
                 <p className="text-slate-300 text-xs">
-                  Authorized by <strong>Commander Raghav Menon (EOC Chief)</strong>. {ambulanceCount} ambulances
+                  Authorized by <strong>Cmdr Jaswant Karun (Incident Commander)</strong>. {ambulanceCount} ambulances
                   assigned to CAD 108, {rescueTeamCount} SDRF motorized boat squads mobilized, and {droneCount} UAV{droneCount > 1 ? "s" : ""}{" "}
                   cleared to AIRBORNE PATROL.
                 </p>
@@ -353,12 +353,12 @@ export function EmergencyApprovalPanel() {
             </strong>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto justify-end">
             {/* BUTTON 3: VIEW RESPONSE DETAILS */}
             <Button
               onClick={() => setShowDetailsModal(true)}
               variant="outline"
-              className="border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-800 hover:text-white font-mono text-xs px-3.5 py-2 cursor-pointer flex items-center gap-1.5"
+              className="border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-800 hover:text-white font-mono text-xs px-3.5 min-h-[44px] cursor-pointer flex items-center justify-center gap-1.5 w-full sm:w-auto touch-manipulation"
             >
               <Eye className="h-3.5 w-3.5 text-indigo-400" />
               VIEW RESPONSE DETAILS
@@ -369,7 +369,7 @@ export function EmergencyApprovalPanel() {
               onClick={() => rejectAction("Critical response rejected by operator.")}
               disabled={isActionRejected}
               variant="outline"
-              className={`font-mono text-xs px-4 py-2 cursor-pointer flex items-center gap-1.5 transition-all ${
+              className={`font-mono text-xs px-4 min-h-[44px] cursor-pointer flex items-center justify-center gap-1.5 transition-all w-full sm:w-auto touch-manipulation ${
                 isActionRejected
                   ? "border-red-900/50 bg-red-950/30 text-red-500 cursor-not-allowed"
                   : "border-red-600/70 bg-red-950/50 text-red-300 hover:bg-red-900 hover:text-white hover:border-red-500"
@@ -383,7 +383,7 @@ export function EmergencyApprovalPanel() {
             <Button
               onClick={approveAction}
               disabled={isActionApproved || isTriggeringAutomation}
-              className={`font-mono text-xs font-bold px-5 py-2 cursor-pointer flex items-center gap-2 shadow-lg transition-all ${
+              className={`font-mono text-xs font-bold px-5 min-h-[44px] cursor-pointer flex items-center justify-center gap-2 shadow-lg transition-all w-full sm:w-auto touch-manipulation ${
                 isActionApproved
                   ? "bg-emerald-950 border border-emerald-600 text-emerald-400 cursor-not-allowed"
                   : "bg-emerald-600 hover:bg-emerald-500 text-slate-950 shadow-emerald-600/30 hover:shadow-emerald-500/40"
