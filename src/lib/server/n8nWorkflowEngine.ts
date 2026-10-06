@@ -132,7 +132,7 @@ export async function executeAutomationWorkflow(
  * Formats state when receiving response from live n8n webhook
  */
 function formatStateFromN8n(
-  n8nData: any,
+  n8nData: Record<string, unknown>,
   payload: AutomationPayload,
   action: string | undefined,
   timestamp: string
@@ -151,6 +151,10 @@ function formatStateFromN8n(
     action === "DEPLOY_DRONE" ||
     n8nData.droneWorkflow === "IN_FLIGHT";
 
+  const n8nLogs = Array.isArray(n8nData.logs)
+    ? (n8nData.logs as WorkflowLogItem[])
+    : [];
+
   return {
     orchestrator: "RUNNING",
     incidentIntake: "COMPLETED",
@@ -162,7 +166,7 @@ function formatStateFromN8n(
     isSimulationMode: false,
     n8nWebhookConfigured: true,
     lastTriggeredAt: timestamp,
-    activeExecutionId: n8nData.executionId || `n8n-live-${Date.now()}`,
+    activeExecutionId: (n8nData.executionId as string) || `n8n-live-${Date.now()}`,
     logs: [
       {
         id: `log-live-1-${Date.now()}`,
@@ -172,7 +176,7 @@ function formatStateFromN8n(
         message: "Payload dispatched to live n8n orchestration webhook.",
         simulatedTarget: process.env.N8N_WEBHOOK_URL,
       },
-      ...(Array.isArray(n8nData.logs) ? n8nData.logs : []),
+      ...n8nLogs,
     ],
   };
 }
