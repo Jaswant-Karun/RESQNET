@@ -238,9 +238,68 @@ export function ResourceAllocationPanel({
           </div>
         )}
 
-        {/* CORE ALLOCATION TABLE: Exact columns requested */}
+        {/* CORE ALLOCATION VIEW: Stacked Cards on Mobile (< sm), Table on Tablet & Desktop (>= sm) */}
         <div className="rounded-lg border border-slate-800 bg-slate-950/60 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile Stacked Cards (< sm) */}
+          <div className="sm:hidden divide-y divide-slate-800/80">
+            {items.map((item) => {
+              const utilization =
+                item.available > 0
+                  ? Math.round((item.assigned / item.available) * 100)
+                  : 0;
+
+              return (
+                <div key={item.resourceType} className="p-3.5 space-y-2.5 bg-slate-950/40">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-md bg-slate-900 border border-slate-800">
+                        {getResourceIcon(item.resourceType)}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-100 text-xs font-mono">
+                          {item.label}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          Requested: {item.requested}{" "}
+                          {item.isCapped ? (
+                            <span className="text-amber-400 font-semibold">(Capped)</span>
+                          ) : (
+                            <span>({utilization}%)</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {getStatusBadge(item.status)}
+                  </div>
+
+                  {/* 3 Metric Pills */}
+                  <div className="grid grid-cols-3 gap-2 font-mono text-center">
+                    <div className="p-2 rounded bg-slate-900/90 border border-slate-800">
+                      <div className="text-[9px] text-slate-400 uppercase">Available</div>
+                      <div className="text-xs font-bold text-slate-200 mt-0.5">{item.available}</div>
+                    </div>
+                    <div className="p-2 rounded bg-blue-950/80 border border-blue-700/60">
+                      <div className="text-[9px] text-blue-300 uppercase">Assigned</div>
+                      <div className="text-xs font-bold text-blue-200 mt-0.5">{item.assigned}</div>
+                    </div>
+                    <div className={`p-2 rounded border ${
+                      item.remaining === 0
+                        ? "bg-red-950/60 border-red-800/80"
+                        : "bg-slate-900/90 border-slate-800"
+                    }`}>
+                      <div className="text-[9px] text-slate-400 uppercase">Remaining</div>
+                      <div className={`text-xs font-bold mt-0.5 ${
+                        item.remaining === 0 ? "text-red-300" : "text-slate-200"
+                      }`}>{item.remaining}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop & Tablet Table (>= sm) */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 bg-slate-900/80 text-[10px] sm:text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
