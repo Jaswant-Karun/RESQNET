@@ -182,14 +182,14 @@ export function Header() {
                 )}
               </div>
 
-              {/* AUTOMATION & SIMULATION MODE INDICATOR */}
+              {/* n8n WORKFLOW ORCHESTRATION INDICATOR */}
               <div
                 onClick={() => setActiveTab("automation")}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-950/80 border border-amber-500/80 font-mono text-[11px] text-amber-300 font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)] cursor-pointer hover:bg-amber-900/90 transition-all"
-                title="Workflow Orchestration: Running in Simulation Mode"
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-950/80 border border-indigo-500/80 font-mono text-[11px] text-indigo-300 font-bold shadow-[0_0_15px_rgba(99,102,241,0.2)] cursor-pointer hover:bg-indigo-900/90 transition-all"
+                title="n8n Automated Workflow Layer: Connected. Click to inspect."
               >
-                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                <span>SIMULATION MODE</span>
+                <GitBranch className="h-3 w-3 text-indigo-400" />
+                <span>n8n: {workflowIntegrationStatus?.n8n || "CONNECTED"}</span>
                 {simulationStage === "ESCALATED" && (
                   <span className="text-rose-400 ml-0.5 text-[10px] font-black uppercase">
                     [ESCALATED]
