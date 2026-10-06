@@ -20,11 +20,13 @@ import {
   LifeBuoy,
   Loader2,
   Lock,
+  Mail,
   Megaphone,
   Navigation,
   Play,
   Radio,
   RefreshCw,
+  Send,
   Server,
   ShieldAlert,
   ShieldCheck,
@@ -34,8 +36,10 @@ import {
 export function WorkflowOrchestrationPanel() {
   const {
     workflowState,
+    workflowIntegrationStatus,
     isTriggeringAutomation,
     triggerAutomationWorkflow,
+    triggerRiskAlertWorkflow,
     approveCriticalResponseWorkflow,
     dispatchDroneWorkflow,
     approveEmergencyAlertWorkflow,
@@ -44,6 +48,7 @@ export function WorkflowOrchestrationPanel() {
 
   const [showLogs, setShowLogs] = useState<boolean>(true);
   const [mounted, setMounted] = useState<boolean>(false);
+  const [isDispatchingRiskAlert, setIsDispatchingRiskAlert] = useState<boolean>(false);
 
   useEffect(() => {
     setMounted(true);
