@@ -25,16 +25,16 @@ const CrisisMapLeaflet = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[480px] sm:h-[540px] flex flex-col items-center justify-center bg-[#060a14] tactical-grid text-slate-400 font-mono relative overflow-hidden">
+      <div className="w-full h-[320px] sm:h-[480px] lg:h-[540px] flex flex-col items-center justify-center bg-[#060a14] tactical-grid text-slate-400 font-mono relative overflow-hidden">
         <div className="absolute inset-0 bg-radial from-blue-500/10 via-transparent to-transparent pointer-events-none" />
         <div className="relative mb-3.5 flex items-center justify-center">
           <div className="h-16 w-16 rounded-full border border-blue-500/30 border-t-blue-400 animate-spin" />
           <Crosshair className="h-6 w-6 text-blue-400 absolute" />
         </div>
-        <div className="text-xs font-bold text-slate-200 uppercase tracking-widest font-mono">
+        <div className="text-xs font-bold text-slate-200 uppercase tracking-widest font-mono text-center px-4">
           Initializing Leaflet GIS & OpenStreetMap Engine...
         </div>
-        <div className="text-[11px] text-slate-500 mt-1 font-mono">
+        <div className="text-[11px] text-slate-500 mt-1 font-mono text-center px-4">
           Synchronizing Hydro-Telemetry & Active Evacuation Corridors
         </div>
       </div>
