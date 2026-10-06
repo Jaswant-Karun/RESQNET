@@ -5,9 +5,32 @@ import {
   EmergencyAlertStatus,
   IncidentIntakeStatus,
   OrchestratorStatus,
+  RiskAlertPayload,
+  RiskAlertWorkflowStatus,
+  WorkflowIntegrationStatus,
   WorkflowLogItem,
   WorkflowOrchestrationState,
 } from "@/types";
+import { sendEmergencyEmailAlert } from "./emailAlertService";
+
+let lastRiskAlertTimestamp: string = new Date().toISOString();
+
+export function getLastAlertTimestamp(): string {
+  return lastRiskAlertTimestamp;
+}
+
+export function setLastAlertTimestamp(ts: string): void {
+  lastRiskAlertTimestamp = ts;
+}
+
+export function getWorkflowIntegrationStatus(): WorkflowIntegrationStatus {
+  return {
+    riskMonitor: "CONNECTED",
+    n8n: "CONNECTED",
+    email: "READY",
+    lastAlert: lastRiskAlertTimestamp,
+  };
+}
 
 /**
  * Result structure returned by n8n workflow engine
