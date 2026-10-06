@@ -20,7 +20,8 @@ export interface AutomationPayload {
     | "APPROVE_CRITICAL_RESPONSE"
     | "APPROVE_EMERGENCY_ALERT"
     | "DEPLOY_DRONE"
-    | "VALIDATE_INTAKE";
+    | "VALIDATE_INTAKE"
+    | "TRIGGER_RISK_ALERT";
   metadata?: {
     triggeredBy?: string;
     timestamp?: string;
@@ -44,11 +45,59 @@ export type EmergencyAlertStatus =
   | "PUBLISHED"
   | "SIMULATED"
   | "REJECTED";
+export type RiskAlertWorkflowStatus =
+  | "READY"
+  | "DISPATCHED"
+  | "AWAITING_REVIEW"
+  | "SKIPPED"
+  | "COMPLETED";
+
+export interface RiskAlertPayload {
+  riskForecast: {
+    forecastId?: string;
+    hazardType?: string;
+    forecastWindow?: string;
+    contributingFactors?: string[];
+    [key: string]: unknown;
+  };
+  area: {
+    id?: string;
+    name?: string;
+    shortName?: string;
+    coordinates?: { latitude: number; longitude: number } | [number, number];
+    affectedPopulation?: number;
+    [key: string]: unknown;
+  };
+  severity: "CRITICAL" | "HIGH" | "MODERATE" | "LOW" | string;
+  riskScore: number;
+  commander: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    role?: string;
+    [key: string]: unknown;
+  };
+  timestamp: string;
+  simulationMode?: boolean;
+}
+
+export interface WorkflowIntegrationStatus {
+  riskMonitor: "CONNECTED" | "SYNCING" | "OFFLINE";
+  n8n: "CONNECTED" | "SIMULATION" | "CONNECTING" | "OFFLINE";
+  email: "READY" | "DISPATCHING" | "SENT" | "DISABLED";
+  lastAlert: string;
+}
 
 export interface WorkflowLogItem {
   id: string;
   timestamp: string;
-  workflow: "Incident Intake" | "Critical Response" | "Drone Deployment" | "Emergency Alert" | "Orchestrator";
+  workflow:
+    | "Incident Intake"
+    | "Critical Response"
+    | "Drone Deployment"
+    | "Emergency Alert"
+    | "RESQNET Risk Alert"
+    | "Orchestrator";
   status: "SUCCESS" | "PENDING" | "MOCK" | "INFO" | "WARNING";
   message: string;
   stepName?: string;
@@ -61,6 +110,8 @@ export interface WorkflowOrchestrationState {
   criticalResponse: CriticalResponseStatus;
   droneWorkflow: DroneWorkflowStatus;
   emergencyAlert: EmergencyAlertStatus;
+  riskAlertWorkflow?: RiskAlertWorkflowStatus;
+  integrationStatus?: WorkflowIntegrationStatus;
   isSimulationMode: boolean;
   n8nWebhookConfigured: boolean;
   lastTriggeredAt?: string;
