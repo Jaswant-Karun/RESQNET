@@ -1,13 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
   generateDeterministicFloodScenario,
 } from "@/lib/flood-simulation-engine";
 import { generateResponsePlan } from "@/lib/responseEngine";
 import {
   allocateResources,
-  calculateRecommendedAllocation,
   createAllocationTimelineEvent,
   syncFleetStatuses,
   INITIAL_AVAILABLE_RESOURCES,
@@ -31,7 +30,6 @@ import {
   TimelineEvent,
   Zone,
   WorkflowOrchestrationState,
-  WorkflowLogItem,
   WorkflowIntegrationStatus,
   RiskAlertPayload,
 } from "@/types";
