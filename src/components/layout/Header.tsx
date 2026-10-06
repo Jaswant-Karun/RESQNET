@@ -1,31 +1,29 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDashboard } from "@/context/DashboardContext";
 import { Badge } from "@/components/ui/badge";
 import {
   Bell,
   Database,
-  Flame,
   GitBranch,
   LogOut,
   Mail,
   Radio,
   Shield,
-  Sparkles,
   UserCheck,
-  Wifi,
 } from "lucide-react";
 import { CommanderProfilePanel } from "./CommanderProfilePanel";
 
 export function Header() {
+  const router = useRouter();
   const {
     incident,
     simulationStage,
     unreadAlertCount,
     markAlertsRead,
     setActiveTab,
-    workflowState,
     workflowIntegrationStatus,
     databaseState,
     refreshDatabaseData,
@@ -56,7 +54,7 @@ export function Header() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
-      window.location.href = "/login";
+      router.push("/login");
     }
   };
 
