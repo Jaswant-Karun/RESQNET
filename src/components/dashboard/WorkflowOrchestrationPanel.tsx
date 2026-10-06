@@ -1,37 +1,30 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   AlertOctagon,
-  AlertTriangle,
-  Ambulance,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   Clock,
-  Cpu,
-  FileCheck2,
   GitBranch,
   Layers,
-  LifeBuoy,
   Loader2,
-  Lock,
   Mail,
   Megaphone,
   Navigation,
-  Play,
   Radio,
   RefreshCw,
   Send,
-  Server,
   ShieldAlert,
-  ShieldCheck,
   Terminal,
 } from "lucide-react";
+
+const emptySubscribe = () => () => {};
 
 export function WorkflowOrchestrationPanel() {
   const {
@@ -47,12 +40,12 @@ export function WorkflowOrchestrationPanel() {
   } = useDashboard();
 
   const [showLogs, setShowLogs] = useState<boolean>(true);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
   const [isDispatchingRiskAlert, setIsDispatchingRiskAlert] = useState<boolean>(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleTriggerRiskAlert = async () => {
     setIsDispatchingRiskAlert(true);
