@@ -390,7 +390,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [initialScenario.incident.detectedAt]);
 
   // MongoDB Atlas Persistent Data Layer State
   const [databaseState, setDatabaseState] = useState<DatabaseState>({
@@ -431,14 +431,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const liveInc = incRes.value.data[0];
           setIncident((prev) => ({
             ...prev,
-            id: liveInc.incidentId || prev.id,
-            severity: (liveInc.severity as any) || prev.severity,
-            status: (liveInc.status as any) || prev.status,
+            id: (liveInc.incidentId as string) || prev.id,
+            severity: (liveInc.severity as Incident["severity"]) || prev.severity,
+            status: (liveInc.status as Incident["status"]) || prev.status,
             metrics: {
               ...prev.metrics,
-              waterLevelMeters: liveInc.waterLevel ?? prev.metrics.waterLevelMeters,
+              waterLevelMeters: (liveInc.waterLevel as number) ?? prev.metrics.waterLevelMeters,
               affectedPopulationEstimated:
-                liveInc.affectedPopulation ?? prev.metrics.affectedPopulationEstimated,
+                (liveInc.affectedPopulation as number) ?? prev.metrics.affectedPopulationEstimated,
             },
           }));
         }
@@ -447,13 +447,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const livePlan = planRes.value.data[0];
           setPlan((prev) => ({
             ...prev,
-            riskLevel: (livePlan.riskLevel as any) || prev.riskLevel,
-            priorityZones: livePlan.priorityZones || prev.priorityZones,
-            immediateActions: livePlan.immediateActions || prev.immediateActions,
-            resourceAllocation: livePlan.resourceAllocation || prev.resourceAllocation,
-            evacuationRoute: livePlan.evacuationRoute || prev.evacuationRoute,
-            targetShelter: livePlan.shelter || prev.targetShelter,
-            explanation: livePlan.explanation || prev.explanation,
+            riskLevel: (livePlan.riskLevel as ResponsePlan["riskLevel"]) || prev.riskLevel,
+            priorityZones: (livePlan.priorityZones as string[]) || prev.priorityZones,
+            immediateActions: (livePlan.immediateActions as string[]) || prev.immediateActions,
+            resourceAllocation: (livePlan.resourceAllocation as ResourceAllocation) || prev.resourceAllocation,
+            evacuationRoute: (livePlan.evacuationRoute as string) || prev.evacuationRoute,
+            targetShelter: (livePlan.shelter as string) || prev.targetShelter,
+            explanation: (livePlan.explanation as string) || prev.explanation,
           }));
         }
 
@@ -461,14 +461,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const liveAlerts = altRes.value.data;
           if (liveAlerts.length > 0) {
             setAlerts(
-              liveAlerts.map((a: any) => ({
-                id: a.alertId || `alt-${Math.random()}`,
-                incidentId: a.incidentId,
-                code: (a.alertId || "ALERT").toUpperCase(),
-                title: `${a.type || "EMERGENCY"} ALERT`,
-                message: `Broadcast to ${a.recipient || "Public"} via ${a.channel || "Broadcast"}`,
-                severity: a.severity || "CRITICAL",
-                timestamp: a.sentAt || new Date().toISOString(),
+              liveAlerts.map((a: Record<string, unknown>) => ({
+                id: (a.alertId as string) || `alt-${Math.random()}`,
+                incidentId: (a.incidentId as string) || "inc-1",
+                code: ((a.alertId as string) || "ALERT").toUpperCase(),
+                title: `${(a.type as string) || "EMERGENCY"} ALERT`,
+                message: `Broadcast to ${(a.recipient as string) || "Public"} via ${(a.channel as string) || "Broadcast"}`,
+                severity: (a.severity as Alert["severity"]) || "CRITICAL",
+                timestamp: (a.sentAt as string) || new Date().toISOString(),
                 source: "DAM_AUTHORITY",
                 acknowledged: a.status === "ACKNOWLEDGED",
               }))
@@ -487,7 +487,98 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    refreshDatabaseData();
+    let ignore = false;
+    const initDb = async () => {
+      try {
+        const res = await fetch("/api/db-status");
+        if (!res.ok) throw new Error("Status check response was not ok");
+        const statusData = await res.json();
+        if (ignore) return;
+
+        const isMongoReady = statusData.mode === "mongodb" && statusData.connected;
+
+        setDatabaseState({
+          mode: statusData.mode || "local",
+          configured: Boolean(statusData.configured),
+          connected: Boolean(statusData.connected),
+          source: isMongoReady ? "mongodb" : "local_simulation",
+          latencyMs: statusData.latencyMs,
+          error: statusData.error,
+          loading: false,
+        });
+
+        if (isMongoReady && !ignore) {
+          const [incRes, planRes, altRes] = await Promise.allSettled([
+            fetch("/api/incidents").then((r) => r.json()),
+            fetch("/api/response-plans").then((r) => r.json()),
+            fetch("/api/alerts").then((r) => r.json()),
+          ]);
+          if (ignore) return;
+
+          if (incRes.status === "fulfilled" && incRes.value?.success && incRes.value.data?.[0]) {
+            const liveInc = incRes.value.data[0];
+            setIncident((prev) => ({
+              ...prev,
+              id: (liveInc.incidentId as string) || prev.id,
+              severity: (liveInc.severity as Incident["severity"]) || prev.severity,
+              status: (liveInc.status as Incident["status"]) || prev.status,
+              metrics: {
+                ...prev.metrics,
+                waterLevelMeters: (liveInc.waterLevel as number) ?? prev.metrics.waterLevelMeters,
+                affectedPopulationEstimated:
+                  (liveInc.affectedPopulation as number) ?? prev.metrics.affectedPopulationEstimated,
+              },
+            }));
+          }
+
+          if (planRes.status === "fulfilled" && planRes.value?.success && planRes.value.data?.[0]) {
+            const livePlan = planRes.value.data[0];
+            setPlan((prev) => ({
+              ...prev,
+              riskLevel: (livePlan.riskLevel as ResponsePlan["riskLevel"]) || prev.riskLevel,
+              priorityZones: (livePlan.priorityZones as string[]) || prev.priorityZones,
+              immediateActions: (livePlan.immediateActions as string[]) || prev.immediateActions,
+              resourceAllocation: (livePlan.resourceAllocation as ResourceAllocation) || prev.resourceAllocation,
+              evacuationRoute: (livePlan.evacuationRoute as string) || prev.evacuationRoute,
+              targetShelter: (livePlan.shelter as string) || prev.targetShelter,
+              explanation: (livePlan.explanation as string) || prev.explanation,
+            }));
+          }
+
+          if (altRes.status === "fulfilled" && altRes.value?.success && Array.isArray(altRes.value.data)) {
+            const liveAlerts = altRes.value.data;
+            if (liveAlerts.length > 0) {
+              setAlerts(
+                liveAlerts.map((a: Record<string, unknown>) => ({
+                  id: (a.alertId as string) || `alt-${Math.random()}`,
+                  incidentId: (a.incidentId as string) || "inc-1",
+                  code: ((a.alertId as string) || "ALERT").toUpperCase(),
+                  title: `${(a.type as string) || "EMERGENCY"} ALERT`,
+                  message: `Broadcast to ${(a.recipient as string) || "Public"} via ${(a.channel as string) || "Broadcast"}`,
+                  severity: (a.severity as Alert["severity"]) || "CRITICAL",
+                  timestamp: (a.sentAt as string) || new Date().toISOString(),
+                  source: "DAM_AUTHORITY",
+                  acknowledged: a.status === "ACKNOWLEDGED",
+                }))
+              );
+            }
+          }
+        }
+      } catch {
+        if (!ignore) {
+          setDatabaseState((prev) => ({
+            ...prev,
+            source: "local_simulation",
+            connected: false,
+            loading: false,
+          }));
+        }
+      }
+    };
+    initDb();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   // Subscribe to Common Event Service to capture all emitted events
@@ -507,25 +598,45 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [isRiskIntelligenceLoading, setIsRiskIntelligenceLoading] =
     useState<boolean>(false);
 
-  const refreshRiskIntelligence = async (force = false) => {
-    try {
-      setIsRiskIntelligenceLoading(true);
-      const res = await fetch(
-        `/api/risk-intelligence?stage=${simulationStage}&refresh=${force}`
-      );
-      const json = await res.json();
-      if (json.success && json.data) {
-        setRiskIntelligence(json.data);
+  const refreshRiskIntelligence = useCallback(
+    async (force = false) => {
+      try {
+        setIsRiskIntelligenceLoading(true);
+        const res = await fetch(
+          `/api/risk-intelligence?stage=${simulationStage}&refresh=${force}`
+        );
+        const json = await res.json();
+        if (json.success && json.data) {
+          setRiskIntelligence(json.data);
+        }
+      } catch (err) {
+        console.warn("[DashboardContext] Failed to load live risk intelligence:", err);
+      } finally {
+        setIsRiskIntelligenceLoading(false);
       }
-    } catch (err) {
-      console.warn("[DashboardContext] Failed to load live risk intelligence:", err);
-    } finally {
-      setIsRiskIntelligenceLoading(false);
-    }
-  };
+    },
+    [simulationStage]
+  );
 
   useEffect(() => {
-    refreshRiskIntelligence();
+    let ignore = false;
+    const fetchRisk = async () => {
+      try {
+        const res = await fetch(
+          `/api/risk-intelligence?stage=${simulationStage}&refresh=false`
+        );
+        const json = await res.json();
+        if (!ignore && json.success && json.data) {
+          setRiskIntelligence(json.data);
+        }
+      } catch (err) {
+        console.warn("[DashboardContext] Failed to load live risk intelligence:", err);
+      }
+    };
+    fetchRisk();
+    return () => {
+      ignore = true;
+    };
   }, [simulationStage]);
 
   /**
