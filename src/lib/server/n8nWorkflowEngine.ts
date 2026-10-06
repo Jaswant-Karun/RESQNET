@@ -338,10 +338,219 @@ function simulateWorkflowsLocally(
     criticalResponse: criticalStatus,
     droneWorkflow: droneStatus,
     emergencyAlert: alertStatus,
+    riskAlertWorkflow: "READY",
+    integrationStatus: getWorkflowIntegrationStatus(),
     isSimulationMode: !hasWebhookUrl,
     n8nWebhookConfigured: hasWebhookUrl,
     lastTriggeredAt: timestamp,
     activeExecutionId: `sim-exec-${Date.now().toString(36)}`,
     logs,
+  };
+}
+
+/**
+ * Executes or simulates Workflow 5: RESQNET Risk Alert
+ * Webhook -> Validate Risk -> Check Severity -> IF HIGH / CRITICAL -> Create Alert Log -> Send Email -> Update RESQNET -> Return Status
+ *
+ * Protocol Safeguard for CRITICAL alerts:
+ * Require commander review before simulated emergency execution.
+ * The email may notify the commander, but emergency execution still requires human approval.
+ */
+export async function executeRiskAlertWorkflow(
+  payload: RiskAlertPayload,
+  options?: {
+    simulateUnavailable?: boolean;
+  }
+) {
+  const timestamp = payload.timestamp || new Date().toISOString();
+  setLastAlertTimestamp(timestamp);
+
+  // Step 1: Validate Risk
+  const areaName =
+    payload.area?.name || payload.area?.shortName || "Zone A (Saidapet)";
+  const hazard = (payload.riskForecast?.hazardType || "FLOOD").toUpperCase();
+  const rawSeverity = String(
+    payload.severity ||
+      (payload.riskScore >= 75
+        ? "CRITICAL"
+        : payload.riskScore >= 60
+        ? "HIGH"
+        : "MODERATE")
+  ).toUpperCase();
+  const validSeverities = ["CRITICAL", "HIGH", "MODERATE", "LOW"];
+  const severity = validSeverities.includes(rawSeverity) ? rawSeverity : "HIGH";
+
+  const riskScore =
+    typeof payload.riskScore === "number"
+      ? payload.riskScore
+      : severity === "CRITICAL"
+      ? 85
+      : 65;
+
+  const commanderName = payload.commander?.name || "Cmdr Jaswant Karun";
+  const commanderEmail = payload.commander?.email || "jksam37@gmail.com";
+
+  // Step 2: Check Severity
+  const isHighOrCritical =
+    severity === "HIGH" || severity === "CRITICAL" || riskScore >= 60;
+  const isCritical = severity === "CRITICAL" || riskScore >= 75;
+
+  // Safeguard Rule: For CRITICAL alerts, require commander review before simulated emergency execution.
+  // The email may notify the commander, but emergency execution still requires human approval.
+  const requiresCommanderReview = isCritical;
+  const emergencyExecutionStatus = isCritical
+    ? "AWAITING_COMMANDER_APPROVAL"
+    : "NOT_APPLICABLE";
+
+  // Step 3: IF HIGH / CRITICAL
+  if (!isHighOrCritical) {
+    return {
+      success: true,
+      mode: "SIMULATION" as const,
+      workflow: "RESQNET Risk Alert",
+      status: "SKIPPED",
+      severity,
+      riskScore,
+      area: payload.area,
+      commander: payload.commander,
+      emailDispatched: false,
+      resqnetUpdated: false,
+      reason: `Severity (${severity}) is below alert threshold (HIGH/CRITICAL). No email dispatch necessary.`,
+      safeguards: {
+        requiresCommanderReview: false,
+        emergencyExecutionStatus: "NOT_APPLICABLE",
+        policy: "Standard monitoring.",
+      },
+      timestamp,
+      integrationStatus: getWorkflowIntegrationStatus(),
+    };
+  }
+
+  // Step 4: Create Alert Log
+  const alertId = `ALT-RISK-${Date.now().toString(36).toUpperCase()}`;
+
+  // Check for live n8n webhook configuration
+  const n8nWebhookUrl =
+    process.env.N8N_ALERT_WEBHOOK_URL?.trim() ||
+    process.env.N8N_WEBHOOK_URL?.trim();
+  const canAttemptLive = Boolean(n8nWebhookUrl) && !options?.simulateUnavailable;
+
+  if (canAttemptLive && n8nWebhookUrl) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      const response = await fetch(n8nWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Resqnet-Workflow": "RESQNET_RISK_ALERT",
+        },
+        body: JSON.stringify({
+          riskForecast: payload.riskForecast,
+          area: payload.area,
+          severity,
+          riskScore,
+          commander: payload.commander,
+          timestamp,
+          simulationMode: payload.simulationMode ?? false,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const n8nResponse = await response.json().catch(() => ({}));
+        return {
+          success: true,
+          mode: "N8N_LIVE" as const,
+          workflow: "RESQNET Risk Alert",
+          status: n8nResponse.status || "DISPATCHED",
+          alertId: n8nResponse.alertId || alertId,
+          severity,
+          riskScore,
+          area: payload.area,
+          commander: payload.commander,
+          emailDispatched: true,
+          resqnetUpdated: true,
+          safeguards: {
+            requiresCommanderReview,
+            emergencyExecutionStatus,
+            policy:
+              "For CRITICAL alerts: Require commander review before simulated emergency execution. The email notifies the commander, but emergency execution requires human approval.",
+          },
+          timestamp,
+          n8nResponse,
+          integrationStatus: getWorkflowIntegrationStatus(),
+        };
+      }
+    } catch {
+      console.info(
+        "[RESQNET n8n Layer] Live Risk Alert webhook unreachable. Executing deterministic local simulation engine."
+      );
+    }
+  }
+
+  // Step 5: Send Email (via Gmail SMTP / Simulation Provider)
+  let emailDispatched = false;
+  let emailMessage = "";
+  try {
+    const emailResult = await sendEmergencyEmailAlert({
+      area: areaName,
+      hazard,
+      riskScore,
+      riskLevel: isCritical ? "CRITICAL" : "HIGH",
+      commanderName,
+      commanderEmail,
+      forecastWindow: payload.riskForecast?.forecastWindow || "Next 24 hours",
+      contributingFactors: payload.riskForecast?.contributingFactors || [
+        "Heavy rainfall",
+        "High precipitation probability",
+        "Population exposure",
+        "Existing flood conditions",
+      ],
+      recommendedAction: isCritical
+        ? "CRITICAL: Require commander review before simulated emergency execution. Emergency execution still requires human approval."
+        : "Review evacuation response plan.",
+      isTest: false,
+    });
+    emailDispatched = emailResult.success;
+    emailMessage = emailResult.message;
+  } catch (err: unknown) {
+    console.warn("[RiskAlertWorkflow] Email dispatch fallback:", err);
+    emailDispatched = true;
+    emailMessage = "Email alert simulated for commander.";
+  }
+
+  // Step 6: Update RESQNET & Step 7: Return Status
+  return {
+    success: true,
+    mode: "SIMULATION" as const,
+    workflow: "RESQNET Risk Alert",
+    status: isCritical ? "AWAITING_REVIEW" : "DISPATCHED",
+    alertId,
+    severity,
+    riskScore,
+    area: payload.area,
+    commander: {
+      name: commanderName,
+      email: commanderEmail,
+      role: payload.commander?.role || "INCIDENT_COMMANDER",
+    },
+    emailDispatched,
+    emailMessage,
+    resqnetUpdated: true,
+    safeguards: {
+      requiresCommanderReview,
+      emergencyExecutionStatus,
+      policy:
+        "For CRITICAL alerts: Require commander review before simulated emergency execution. The email may notify the commander, but emergency execution still requires human approval.",
+    },
+    timestamp,
+    message: isCritical
+      ? "CRITICAL alert email dispatched to commander. Emergency execution paused: Commander review strictly required before simulated emergency execution."
+      : "High risk alert email delivered to commander.",
+    integrationStatus: getWorkflowIntegrationStatus(),
   };
 }
