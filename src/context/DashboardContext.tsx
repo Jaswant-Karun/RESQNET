@@ -116,10 +116,12 @@ interface DashboardContextType {
 
   // n8n Workflow Orchestration Layer
   workflowState: WorkflowOrchestrationState;
+  workflowIntegrationStatus: WorkflowIntegrationStatus;
   isTriggeringAutomation: boolean;
   simulateN8nFailure: boolean;
   setSimulateN8nFailure: (val: boolean) => void;
   triggerAutomationWorkflow: (action?: string, options?: { simulateUnavailable?: boolean; testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING"; [key: string]: unknown }) => Promise<void>;
+  triggerRiskAlertWorkflow: (customPayload?: Partial<RiskAlertPayload>) => Promise<any>;
   approveCriticalResponseWorkflow: () => Promise<void>;
   dispatchDroneWorkflow: (droneId?: string) => Promise<void>;
   approveEmergencyAlertWorkflow: () => Promise<void>;
