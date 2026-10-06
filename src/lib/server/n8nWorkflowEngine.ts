@@ -160,6 +160,8 @@ function formatStateFromN8n(
     criticalResponse: isApproved ? "APPROVED" : "WAITING FOR APPROVAL",
     droneWorkflow: isDroneDispatched ? "IN_FLIGHT" : "READY",
     emergencyAlert: isAlertApproved ? "SIMULATED" : "PENDING APPROVAL",
+    riskAlertWorkflow: "DISPATCHED",
+    integrationStatus: getWorkflowIntegrationStatus(),
     isSimulationMode: false,
     n8nWebhookConfigured: true,
     lastTriggeredAt: timestamp,
