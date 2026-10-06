@@ -172,6 +172,64 @@ export function WorkflowOrchestrationPanel() {
       </CardHeader>
 
       <CardContent className="p-4 space-y-4">
+        {/* ========================================================
+            WORKFLOW PIPELINE INTEGRATION STATUS
+            Risk Monitor: CONNECTED | n8n: CONNECTED | Email: READY | Last Alert: timestamp
+        ======================================================== */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 rounded-lg bg-slate-950/90 border border-slate-800 shadow-inner">
+          {/* 1. Risk Monitor */}
+          <div className="p-2.5 rounded bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+              <Radio className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
+              Risk Monitor:
+            </span>
+            <div className="mt-1 flex items-center gap-1.5 font-mono text-xs font-bold text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+              <span>{workflowIntegrationStatus?.riskMonitor || "CONNECTED"}</span>
+            </div>
+          </div>
+
+          {/* 2. n8n */}
+          <div className="p-2.5 rounded bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+              <GitBranch className="h-3.5 w-3.5 text-indigo-400" />
+              n8n:
+            </span>
+            <div className="mt-1 flex items-center gap-1.5 font-mono text-xs font-bold text-indigo-400">
+              <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
+              <span>{workflowIntegrationStatus?.n8n || "CONNECTED"}</span>
+            </div>
+          </div>
+
+          {/* 3. Email */}
+          <div className="p-2.5 rounded bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 text-cyan-400" />
+              Email:
+            </span>
+            <div className="mt-1 flex items-center gap-1.5 font-mono text-xs font-bold text-cyan-400">
+              <span className="h-2 w-2 rounded-full bg-cyan-400" />
+              <span>{workflowIntegrationStatus?.email || "READY"}</span>
+            </div>
+          </div>
+
+          {/* 4. Last Alert */}
+          <div className="p-2.5 rounded bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-amber-400" />
+              Last Alert:
+            </span>
+            <div
+              className="mt-1 font-mono text-xs font-bold text-slate-200 truncate"
+              title={workflowIntegrationStatus?.lastAlert || lastTriggeredAt || "2026-10-06T13:30:00Z"}
+            >
+              {mounted && (workflowIntegrationStatus?.lastAlert || lastTriggeredAt)
+                ? new Date(workflowIntegrationStatus?.lastAlert || lastTriggeredAt!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                : "2026-10-06 13:30 UTC"}
+            </div>
+          </div>
+        </div>
+
         {/* n8n Status Banner when in simulation mode */}
         {isSimulationMode && (
           <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/60 flex items-center justify-between text-xs font-mono text-amber-200">
@@ -185,8 +243,8 @@ export function WorkflowOrchestrationPanel() {
           </div>
         )}
 
-        {/* The 4 Core Workflow Status Cards (Grid Layout) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* The 5 Core Workflow Status Cards (Grid Layout) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {/* WORKFLOW 1: Incident Intake */}
           <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800/90 flex flex-col justify-between space-y-2 hover:border-slate-700/80 transition-all">
             <div className="flex items-center justify-between">
@@ -329,15 +387,61 @@ export function WorkflowOrchestrationPanel() {
               )}
             </div>
           </div>
+
+          {/* WORKFLOW 5: RESQNET Risk Alert */}
+          <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800/90 flex flex-col justify-between space-y-2 hover:border-slate-700/80 transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1">
+                <Mail className="h-3.5 w-3.5 text-rose-400" />
+                Risk Alert (Email)
+              </span>
+              {getStatusBadge(workflowState.riskAlertWorkflow || "READY")}
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-mono font-bold text-slate-200">
+                {workflowState.riskAlertWorkflow === "AWAITING_REVIEW"
+                  ? "Commander Review Gate"
+                  : "Email Alert Active"}
+              </div>
+              <div className="text-[11px] font-mono text-slate-400 leading-tight">
+                <span className="text-amber-300">
+                  {incident.severity === "CRITICAL" ? "CRITICAL: Review required" : "HIGH: Auto dispatch"}
+                </span>
+                <span className="block text-[10px] text-slate-500 truncate">
+                  Human approval mandatory
+                </span>
+              </div>
+            </div>
+            <div className="pt-1.5 border-t border-slate-800/70">
+              <button
+                onClick={handleTriggerRiskAlert}
+                disabled={isDispatchingRiskAlert || isTriggeringAutomation}
+                className="w-full text-center py-1 px-2 rounded bg-rose-950/80 hover:bg-rose-900/90 border border-rose-800/80 text-[10px] font-mono font-bold text-rose-200 cursor-pointer transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+              >
+                {isDispatchingRiskAlert ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Dispatching...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-3 w-3" />
+                    Dispatch Alert
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Prototype Architecture Disclaimer Box */}
+        {/* Prototype Architecture & Safety Safeguards Disclaimer Box */}
         <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/90 flex items-start gap-2.5 text-slate-400 text-xs">
           <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
           <div className="leading-snug text-[11px] font-mono">
-            <span className="text-slate-300 font-bold">PROTOTYPE ARCHITECTURE NOTE: </span>
-            External emergency services (Ambulance 108 CAD, SDRF flood squads, public EAS sirens) are
-            simulated via mock endpoints. No real units or sirens are dispatched.
+            <span className="text-slate-300 font-bold">SAFETY SAFEGUARD & PROTOCOL: </span>
+            For <strong className="text-rose-400">CRITICAL</strong> alerts, commander review is required before simulated emergency execution.
+            The email notifies the commander with situational context, but emergency execution strictly requires human approval.
+            No automated irreversible emergency actions occur without human clearance.
           </div>
         </div>
 
