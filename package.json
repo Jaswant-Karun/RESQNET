@@ -11,7 +11,8 @@
     "test:auth": "node scripts/test_auth.mjs",
     "test:ai": "node scripts/test_resq_ai.mjs",
     "test:risk": "node scripts/test_risk_intelligence.mjs",
-    "test:email": "node scripts/test_email_alerts.mjs"
+    "test:email": "node scripts/test_email_alerts.mjs",
+    "test:n8n:risk": "node scripts/test_n8n_risk_alert.mjs"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.22",
