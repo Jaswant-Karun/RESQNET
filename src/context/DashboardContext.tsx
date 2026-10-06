@@ -1362,7 +1362,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const approveAction = () => {
+  const approveAction = useCallback(() => {
     const now = new Date().toISOString();
     setIsActionApproved(true);
     setIsActionRejected(false);
@@ -1393,7 +1393,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         incidentId: incident.id,
         timestamp: new Date(apprBaseTime).toISOString(),
         title: "Response approved by Cmdr Jaswant Karun",
-        description: `Cmdr Jaswant Karun granted clearance for: Evacuate Zone A via ${routeText}. Clearance confirmed.`,
+        description: `Cmdr Jaswant Karun granted clearance for: Evacuate Zone A (${popText} civilians) via ${routeText}. Clearance confirmed.`,
         category: "APPROVAL",
         severity: "INFO",
         authorOrSystem: "Cmdr Jaswant Karun (COMMANDER)",
@@ -1485,9 +1485,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       message: `Evacuation corridor ${routeText} cleared. ${ambCount} Ambulances, ${resCount} Rescue Teams, and ${uavCount} Drones active. Automated n8n execution triggered.`,
       timestamp: now,
     });
-  };
+  }, [
+    incident,
+    plan,
+    resourceAllocationState,
+    simulationStage,
+    triggerAutomationWorkflow,
+  ]);
 
-  const rejectAction = (reason: string = "Critical response rejected by operator.") => {
+  const rejectAction = useCallback((reason: string = "Critical response rejected by operator.") => {
     const now = new Date().toISOString();
     setIsActionApproved(false);
     setIsActionRejected(true);
@@ -1525,7 +1531,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       message: "Critical response rejected by operator. Simulated dispatch halted.",
       timestamp: now,
     });
-  };
+  }, [incident]);
 
   const approveCriticalResponseWorkflow = async () => {
     approveAction();
@@ -1567,9 +1573,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const triggerAutomationWorkflowRef = useRef(triggerAutomationWorkflow);
+  triggerAutomationWorkflowRef.current = triggerAutomationWorkflow;
+
   // Sync with automation layer on mount
   useEffect(() => {
-    triggerAutomationWorkflow("TRIGGER_FULL_ORCHESTRATION");
+    triggerAutomationWorkflowRef.current("TRIGGER_FULL_ORCHESTRATION");
   }, []);
 
   const triggerRiskAlertWorkflow = async (customPayload?: Partial<RiskAlertPayload>) => {
