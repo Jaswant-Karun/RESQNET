@@ -766,8 +766,66 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     await triggerAiAnalysis(incident, true, testCase);
   };
 
+  /**
+   * Dispatches payload to /api/automation/trigger (n8n or local simulation fallback)
+   */
+  const triggerAutomationWorkflow = useCallback(
+    async (
+      action: string = "TRIGGER_FULL_ORCHESTRATION",
+      options?: { simulateUnavailable?: boolean; testCase?: "N8N_UNAVAILABLE" | "N8N_URL_MISSING"; [key: string]: unknown }
+    ) => {
+      setIsTriggeringAutomation(true);
+      try {
+        const payload = {
+          incident,
+          responsePlan: plan,
+          resources: {
+            ambulances,
+            rescueTeams,
+            drones,
+          },
+          simulationMode: true,
+          action,
+          simulateUnavailable: options?.simulateUnavailable ?? simulateN8nFailure,
+          testCase: options?.testCase,
+          ...options,
+        };
+
+        const res = await fetch("/api/automation/trigger", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.state) {
+            setWorkflowState(data.state);
+          }
+        } else {
+          // Fallback simulation mode
+          setWorkflowState((prev) => ({
+            ...prev,
+            orchestrator: "SIMULATION_MODE",
+            isSimulationMode: true,
+          }));
+        }
+      } catch (err) {
+        console.warn("[RESQNET Automation] Orchestrator unreachable, continuing in simulation mode.", err);
+        setWorkflowState((prev) => ({
+          ...prev,
+          orchestrator: "SIMULATION_MODE",
+          isSimulationMode: true,
+        }));
+      } finally {
+        setIsTriggeringAutomation(false);
+      }
+    },
+    [incident, plan, ambulances, rescueTeams, drones, simulateN8nFailure]
+  );
+
   // Deterministic simulateFlood() function
-  const simulateFlood = () => {
+  const simulateFlood = useCallback(() => {
     const scenario = generateDeterministicFloodScenario();
 
     setSimulationStage("FLOOD_ACTIVE");
@@ -898,10 +956,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     // Trigger n8n Workflow Orchestration Layer for initial scenario
     triggerAutomationWorkflow("TRIGGER_FULL_ORCHESTRATION");
-  };
+  }, [triggerAiAnalysis, triggerAutomationWorkflow]);
 
   // Deterministic simulateEscalation() function
-  const simulateEscalation = () => {
+  const simulateEscalation = useCallback(() => {
     const now = new Date();
     const baseTime = now.getTime();
 
