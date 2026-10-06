@@ -15,6 +15,7 @@ import {
   ExternalLink,
   GitBranch,
   Layers,
+  Mail,
   Megaphone,
   Navigation,
   Play,
@@ -63,10 +64,47 @@ export function AutomationView() {
     simulationMode: true,
   };
 
+  const riskAlertPayload = {
+    riskForecast: {
+      forecastId: "fc-adyar-902",
+      hazardType: "FLOOD",
+      forecastWindow: "Next 24 hours",
+      contributingFactors: [
+        "Heavy rainfall",
+        "High precipitation probability",
+        "Population exposure",
+        "Existing flood conditions",
+      ],
+    },
+    area: {
+      id: "zone-a",
+      name: "Zone A (Saidapet)",
+      affectedPopulation: 1240,
+    },
+    severity: "CRITICAL",
+    riskScore: 85,
+    commander: {
+      name: "Cmdr Jaswant Karun",
+      email: "jksam37@gmail.com",
+      phone: "+91 98400 12345",
+      role: "INCIDENT_COMMANDER",
+    },
+    timestamp: "2026-10-06T13:30:00Z",
+    simulationMode: false,
+  };
+
+  const [copiedRiskPayload, setCopiedRiskPayload] = useState<boolean>(false);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(samplePayload, null, 2));
     setCopiedPayload(true);
     setTimeout(() => setCopiedPayload(false), 2000);
+  };
+
+  const handleCopyRisk = () => {
+    navigator.clipboard.writeText(JSON.stringify(riskAlertPayload, null, 2));
+    setCopiedRiskPayload(true);
+    setTimeout(() => setCopiedRiskPayload(false), 2000);
   };
 
   return (
@@ -267,31 +305,89 @@ export function AutomationView() {
             Compiles Common Alerting Protocol (CAP) payload, verifies supervisor authorization, and disseminates to simulated cell tower siren stubs.
           </p>
         </div>
+
+        {/* Workflow 5: RESQNET Risk Alert */}
+        <div className="p-4 rounded-lg bg-slate-950/80 border border-slate-800 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-xs font-bold text-white flex items-center gap-2">
+              <Mail className="h-4 w-4 text-rose-400" />
+              WORKFLOW 5: RESQNET Risk Alert (Email)
+            </span>
+            <span className="text-[10px] font-mono text-slate-500">n8n/workflow-5-risk-alert.json</span>
+          </div>
+          <div className="p-2.5 rounded bg-slate-900/80 border border-slate-800/80 font-mono text-[11px] text-slate-300 flex items-center gap-2 flex-wrap">
+            <span className="text-indigo-400">Webhook</span>
+            <ArrowRight className="h-3 w-3 text-slate-600" />
+            <span className="text-slate-200">Validate Risk</span>
+            <ArrowRight className="h-3 w-3 text-slate-600" />
+            <span className="text-amber-400">Check Severity</span>
+            <ArrowRight className="h-3 w-3 text-slate-600" />
+            <span className="text-rose-400">IF HIGH / CRITICAL</span>
+            <ArrowRight className="h-3 w-3 text-slate-600" />
+            <span className="text-blue-400">Create Alert Log</span>
+            <ArrowRight className="h-3 w-3 text-slate-600" />
+            <span className="text-cyan-400">Send Email</span>
+            <ArrowRight className="h-3 w-3 text-slate-600" />
+            <span className="text-emerald-400">Update RESQNET</span>
+            <ArrowRight className="h-3 w-3 text-slate-600" />
+            <span className="text-slate-200">Return Status</span>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Dispatches automated emergency email alert to Incident Commander. Enforces strict safety protocol for <strong className="text-rose-400">CRITICAL</strong> alerts: commander review is required before simulated emergency execution. The email notifies the commander, but emergency execution still requires human approval.
+          </p>
+        </div>
       </div>
 
-      {/* Payload Inspector */}
-      <Card className="bg-[#080d1a] border-slate-800">
-        <CardHeader className="py-3 px-4 bg-slate-950/90 border-b border-slate-800 flex flex-row items-center justify-between">
-          <CardTitle className="text-xs font-mono uppercase tracking-wider text-slate-200 flex items-center gap-2">
-            <Code className="h-4 w-4 text-indigo-400" />
-            Live n8n Webhook Payload Schema (/api/automation/trigger)
-          </CardTitle>
-          <Button
-            onClick={handleCopy}
-            size="sm"
-            variant="outline"
-            className="border-slate-700 text-xs font-mono py-1 px-2.5 h-7 cursor-pointer"
-          >
-            <Copy className="h-3 w-3 mr-1" />
-            {copiedPayload ? "Copied!" : "Copy Payload"}
-          </Button>
-        </CardHeader>
-        <CardContent className="p-4">
-          <pre className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono text-indigo-300 overflow-x-auto max-h-60 scrollbar-thin">
-            {JSON.stringify(samplePayload, null, 2)}
-          </pre>
-        </CardContent>
-      </Card>
+      {/* Payload Inspectors Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Schema 1: Full Orchestration */}
+        <Card className="bg-[#080d1a] border-slate-800">
+          <CardHeader className="py-3 px-4 bg-slate-950/90 border-b border-slate-800 flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-mono uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <Code className="h-4 w-4 text-indigo-400" />
+              n8n Orchestrator Schema (/api/automation/trigger)
+            </CardTitle>
+            <Button
+              onClick={handleCopy}
+              size="sm"
+              variant="outline"
+              className="border-slate-700 text-xs font-mono py-1 px-2.5 h-7 cursor-pointer"
+            >
+              <Copy className="h-3 w-3 mr-1" />
+              {copiedPayload ? "Copied!" : "Copy Payload"}
+            </Button>
+          </CardHeader>
+          <CardContent className="p-4">
+            <pre className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono text-indigo-300 overflow-x-auto max-h-60 scrollbar-thin">
+              {JSON.stringify(samplePayload, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+
+        {/* Schema 2: RESQNET Risk Alert */}
+        <Card className="bg-[#080d1a] border-slate-800">
+          <CardHeader className="py-3 px-4 bg-slate-950/90 border-b border-slate-800 flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-mono uppercase tracking-wider text-rose-300 flex items-center gap-2">
+              <Mail className="h-4 w-4 text-rose-400" />
+              RESQNET Risk Alert Schema (/api/automation/risk-alert)
+            </CardTitle>
+            <Button
+              onClick={handleCopyRisk}
+              size="sm"
+              variant="outline"
+              className="border-slate-700 text-xs font-mono py-1 px-2.5 h-7 cursor-pointer"
+            >
+              <Copy className="h-3 w-3 mr-1" />
+              {copiedRiskPayload ? "Copied!" : "Copy Payload"}
+            </Button>
+          </CardHeader>
+          <CardContent className="p-4">
+            <pre className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-mono text-rose-300 overflow-x-auto max-h-60 scrollbar-thin">
+              {JSON.stringify(riskAlertPayload, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
