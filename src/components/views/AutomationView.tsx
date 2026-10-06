@@ -12,17 +12,12 @@ import {
   CheckCircle2,
   Code,
   Copy,
-  ExternalLink,
   GitBranch,
   Layers,
   Mail,
   Megaphone,
   Navigation,
-  Play,
-  Radio,
   Server,
-  ShieldAlert,
-  Terminal,
 } from "lucide-react";
 
 export function AutomationView() {
@@ -33,8 +28,6 @@ export function AutomationView() {
     rescueTeams,
     drones,
     workflowState,
-    isTriggeringAutomation,
-    triggerAutomationWorkflow,
   } = useDashboard();
 
   const [copiedPayload, setCopiedPayload] = useState<boolean>(false);
