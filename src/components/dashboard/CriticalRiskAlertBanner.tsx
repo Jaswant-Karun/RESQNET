@@ -1,20 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDashboard } from "@/context/DashboardContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   AlertTriangle,
-  ArrowRight,
   Eye,
-  FileText,
   Lock,
-  Radio,
-  ShieldAlert,
-  Sparkles,
-  Users,
   X,
   Zap,
 } from "lucide-react";
@@ -43,7 +37,7 @@ export function CriticalRiskAlertBanner() {
   } = useDashboard();
 
   const [isDismissed, setIsDismissed] = useState(false);
-  const [hasLoggedRiskEvent, setHasLoggedRiskEvent] = useState(false);
+  const hasLoggedRiskEventRef = useRef(false);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   // Find the highest critical risk assessment
