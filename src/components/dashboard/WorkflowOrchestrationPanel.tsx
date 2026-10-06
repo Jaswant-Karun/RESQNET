@@ -54,6 +54,15 @@ export function WorkflowOrchestrationPanel() {
     setMounted(true);
   }, []);
 
+  const handleTriggerRiskAlert = async () => {
+    setIsDispatchingRiskAlert(true);
+    try {
+      await triggerRiskAlertWorkflow();
+    } finally {
+      setIsDispatchingRiskAlert(false);
+    }
+  };
+
   // Status mapping
   const {
     orchestrator,
@@ -71,15 +80,17 @@ export function WorkflowOrchestrationPanel() {
       case "COMPLETED":
       case "APPROVED":
       case "IN_FLIGHT":
+      case "DISPATCHED":
         return <Badge variant="success">{status.replace(/_/g, " ")}</Badge>;
       case "RUNNING":
       case "READY":
         return <Badge variant="info">{status.replace(/_/g, " ")}</Badge>;
       case "WAITING FOR APPROVAL":
       case "PENDING APPROVAL":
+      case "AWAITING_REVIEW":
         return (
           <Badge variant="warning" pulse>
-            {status}
+            {status.replace(/_/g, " ")}
           </Badge>
         );
       case "SIMULATION_MODE":
