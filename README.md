@@ -151,7 +151,8 @@ on one private Docker network. MongoDB is for local development only; use
 MongoDB Atlas for production deployments.
 
 Copy `.env.example` to `.env` and set the external API values you want to use.
-For local Compose, the default database URI is:
+Compose uses the internal service endpoints below regardless of host-only
+values in `.env`:
 
 ```env
 MONGODB_URI=mongodb://mongodb:27017/resqnet
