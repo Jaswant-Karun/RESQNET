@@ -190,3 +190,24 @@ docker compose logs -f resqnet
 Named volumes preserve local MongoDB and n8n data across container restarts.
 The Docker image uses Next.js standalone output and does not include
 environment secrets in the image.
+
+### Production environment
+
+For production, configure these values in the platform secret manager:
+
+```env
+MONGODB_URI=
+GEMINI_API_KEY=
+N8N_WEBHOOK_URL=
+N8N_WEBHOOK_SECRET=
+RESEND_API_KEY=
+ALERT_FROM_EMAIL=
+COMMANDER_ALERT_EMAIL=
+APP_URL=
+SESSION_SECRET=
+```
+
+Use a MongoDB Atlas `mongodb+srv://` URI, deployed HTTPS URLs, and strong
+random secrets. Do not use the local Compose service names or localhost URLs
+in production. Gemini, Resend, n8n, and disaster-data provider credentials are
+read only by server-side code.

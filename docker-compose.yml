@@ -15,6 +15,7 @@ services:
       MONGODB_URI: mongodb://mongodb:27017/resqnet
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       N8N_WEBHOOK_URL: http://n8n:5678/webhook/resqnet-orchestrator
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-}
       N8N_ALERT_WEBHOOK_URL: http://n8n:5678/webhook/resqnet-risk-alert
       N8N_ALERT_SHARED_SECRET: ${N8N_ALERT_SHARED_SECRET:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
@@ -22,7 +23,7 @@ services:
       COMMANDER_ALERT_EMAIL: ${COMMANDER_ALERT_EMAIL:-}
       ALERT_COOLDOWN_MINUTES: ${ALERT_COOLDOWN_MINUTES:-10}
       DEMO_COMMANDER_PASSWORD: ${DEMO_COMMANDER_PASSWORD:-}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      APP_URL: ${APP_URL:-http://localhost:3000}
     depends_on:
       mongodb:
         condition: service_healthy
