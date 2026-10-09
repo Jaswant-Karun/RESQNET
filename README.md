@@ -118,3 +118,28 @@ Open [http://localhost:3000](http://localhost:3000) to view the EOC Command Dash
 npm run build
 npm run start
 ```
+
+### Android Application (Capacitor)
+
+RESQNET's Android application is a Capacitor shell around the existing Next.js
+interface. It uses the deployed RESQNET server URL, so the existing web UI,
+authentication, APIs, MongoDB, Gemini, Resend, and n8n integrations remain
+unchanged. The Android project does not contain backend credentials.
+
+Set `CAPACITOR_SERVER_URL` in `.env.local` to the deployed HTTPS RESQNET URL,
+then run:
+
+```bash
+npm run build
+npx cap sync android
+npx cap open android
+```
+
+`CAPACITOR_SERVER_URL` is only the public application URL. Never place
+`MONGODB_URI`, `GEMINI_API_KEY`, `RESEND_API_KEY`, `N8N_ALERT_SHARED_SECRET`,
+or any other server secret in Capacitor configuration or Android resources.
+
+The Android package is `com.resqnet.app`, the display name is `RESQNET`, and
+the generated project includes Android internet access, a dark RESQNET splash
+screen, and placeholder launcher artwork suitable for replacement with
+production branding.

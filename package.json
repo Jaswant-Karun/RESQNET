@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
     "lint": "eslint",
     "seed": "node scripts/seed.mjs",
     "test:auth": "node scripts/test_auth.mjs",
