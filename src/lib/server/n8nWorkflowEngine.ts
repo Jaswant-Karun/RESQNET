@@ -493,7 +493,7 @@ export async function executeRiskAlertWorkflow(
     }
   }
 
-  // Step 5: Send Email (via Gmail SMTP / Simulation Provider)
+  // Step 5: Send Email (via the server-side Resend provider)
   let emailDispatched = false;
   let emailMessage = "";
   try {
