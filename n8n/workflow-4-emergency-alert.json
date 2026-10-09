@@ -57,7 +57,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:3000/api/automation/mock-dispatch",
+        "url": "http://resqnet:3000/api/automation/mock-dispatch",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"service\": \"SIMULATED_CELL_BROADCAST_EAS\",\n  \"alertId\": $json.alertPayload.alertId,\n  \"headline\": $json.alertPayload.headline,\n  \"instruction\": $json.alertPayload.instruction,\n  \"simulationMode\": true,\n  \"disclaimer\": \"Simulated Emergency Broadcast: Prototype mode. External public sirens/EAS are NOT triggered.\"\n}",

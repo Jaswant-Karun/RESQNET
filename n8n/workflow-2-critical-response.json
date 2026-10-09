@@ -74,7 +74,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:3000/api/automation/mock-dispatch",
+        "url": "http://resqnet:3000/api/automation/mock-dispatch",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"service\": \"AMBULANCE_108_CAD\",\n  \"dispatchedUnits\": $json.allocated.assignedAmbulances,\n  \"destinationSector\": $json.allocated.priorityZone,\n  \"simulationMode\": true,\n  \"disclaimer\": \"Mock Ambulance Dispatch: Prototype hackathon simulation. No real vehicles mobilized.\"\n}",
@@ -89,7 +89,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:3000/api/automation/mock-dispatch",
+        "url": "http://resqnet:3000/api/automation/mock-dispatch",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"service\": \"SDRF_WATER_RESCUE\",\n  \"dispatchedTeams\": $json.allocated.assignedRescueTeams,\n  \"destinationSector\": $json.allocated.priorityZone,\n  \"simulationMode\": true,\n  \"disclaimer\": \"Mock Rescue Team Dispatch: Prototype hackathon simulation.\"\n}",

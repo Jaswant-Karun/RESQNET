@@ -74,7 +74,7 @@
       "position": [1280, 200],
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:3000/api/alerts/email",
+        "url": "http://resqnet:3000/api/alerts/email",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -100,7 +100,7 @@
       "position": [1500, 200],
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:3000/api/alerts",
+        "url": "http://resqnet:3000/api/alerts",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { alertId: $('Create Alert Log').item.json.alertId, incidentId: 'n8n-risk-alert', type: 'RESQNET_RISK_ALERT', severity: $('Create Alert Log').item.json.severity, recipient: $('Create Alert Log').item.json.commander.email, channel: 'N8N', status: $('Send Email').item.json.status || 'FAILED', sentAt: new Date().toISOString(), area: $('Create Alert Log').item.json.area.name, riskScore: $('Create Alert Log').item.json.riskScore, riskLevel: $('Create Alert Log').item.json.severity, provider: 'RESQNET_N8N', requiresCommanderReview: $('Create Alert Log').item.json.evaluation.requiresCommanderReview } }}",
