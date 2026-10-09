@@ -520,8 +520,8 @@ export async function executeRiskAlertWorkflow(
     emailMessage = emailResult.message;
   } catch (err: unknown) {
     console.warn("[RiskAlertWorkflow] Email dispatch fallback:", err);
-    emailDispatched = true;
-    emailMessage = "Email alert simulated for commander.";
+    emailDispatched = false;
+    emailMessage = err instanceof Error ? err.message : String(err);
   }
 
   // Step 6: Update RESQNET & Step 7: Return Status

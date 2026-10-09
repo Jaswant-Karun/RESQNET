@@ -141,12 +141,22 @@ export async function POST(req: NextRequest) {
     }
 
     const activeRecipient = await getActiveCommanderEmail();
+    const requestedRiskLevel = String(
+      body.riskLevel || (body.riskScore >= 75 ? "CRITICAL" : "HIGH")
+    ).toUpperCase();
+    const validRiskLevels = ["LOW", "MODERATE", "HIGH", "CRITICAL"] as const;
+    if (!validRiskLevels.includes(requestedRiskLevel as (typeof validRiskLevels)[number])) {
+      return NextResponse.json(
+        { success: false, error: "riskLevel must be LOW, MODERATE, HIGH, or CRITICAL." },
+        { status: 400 }
+      );
+    }
 
     const options: EmailAlertOptions = {
       area: body.area || "Zone A",
       hazard: body.hazard || "Flood",
       riskScore: typeof body.riskScore === "number" ? body.riskScore : 82,
-      riskLevel: body.riskLevel || (body.riskScore >= 75 ? "CRITICAL" : "HIGH"),
+      riskLevel: requestedRiskLevel as EmailAlertOptions["riskLevel"],
       forecastWindow: body.forecastWindow || "Next 24 hours",
       contributingFactors: Array.isArray(body.contributingFactors)
         ? body.contributingFactors
