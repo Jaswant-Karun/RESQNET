@@ -25,7 +25,7 @@ const CrisisMapLeaflet = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[320px] sm:h-[480px] lg:h-[540px] flex flex-col items-center justify-center bg-[#060a14] tactical-grid text-slate-400 font-mono relative overflow-hidden">
+      <div className="w-full h-[360px] sm:h-[480px] lg:h-[540px] flex flex-col items-center justify-center bg-[#060a14] tactical-grid text-slate-400 font-mono relative overflow-hidden">
         <div className="absolute inset-0 bg-radial from-blue-500/10 via-transparent to-transparent pointer-events-none" />
         <div className="relative mb-3.5 flex items-center justify-center">
           <div className="h-16 w-16 rounded-full border border-blue-500/30 border-t-blue-400 animate-spin" />
@@ -94,7 +94,7 @@ export function CrisisMap() {
       </div>
 
       {/* 2. Map Control Header */}
-      <CardHeader className="py-2.5 px-4 bg-slate-950/90 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <CardHeader className="py-2.5 px-3 sm:px-4 bg-slate-950/90 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-2.5 w-2.5 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -117,7 +117,7 @@ export function CrisisMap() {
           <div className="flex items-center bg-slate-900 border border-slate-800 rounded p-0.5">
             <button
               onClick={() => setActiveViewMode("TERRAIN")}
-              className={`px-2 py-0.5 rounded text-[11px] transition-colors cursor-pointer ${
+              className={`px-2.5 py-1.5 min-h-[40px] rounded text-[10px] transition-colors cursor-pointer ${
                 activeViewMode === "TERRAIN"
                   ? "bg-blue-600 text-white font-bold"
                   : "text-slate-400 hover:text-white"
@@ -127,7 +127,7 @@ export function CrisisMap() {
             </button>
             <button
               onClick={() => setActiveViewMode("THERMAL_IR")}
-              className={`px-2 py-0.5 rounded text-[11px] transition-colors cursor-pointer ${
+              className={`px-2.5 py-1.5 min-h-[40px] rounded text-[10px] transition-colors cursor-pointer ${
                 activeViewMode === "THERMAL_IR"
                   ? "bg-red-600 text-white font-bold"
                   : "text-slate-400 hover:text-white"
@@ -137,7 +137,7 @@ export function CrisisMap() {
             </button>
             <button
               onClick={() => setActiveViewMode("ELEVATION")}
-              className={`px-2 py-0.5 rounded text-[11px] transition-colors cursor-pointer ${
+              className={`px-2.5 py-1.5 min-h-[40px] rounded text-[10px] transition-colors cursor-pointer ${
                 activeViewMode === "ELEVATION"
                   ? "bg-emerald-600 text-white font-bold"
                   : "text-slate-400 hover:text-white"
@@ -150,7 +150,7 @@ export function CrisisMap() {
           {/* Map Tile Resilience Simulation Toggle */}
           <button
             onClick={() => setSimulateTileError(!simulateTileError)}
-            className={`px-2 py-1 rounded border text-[10px] font-mono transition-colors cursor-pointer flex items-center gap-1 font-bold ${
+            className={`px-2.5 py-2 min-h-[40px] rounded border text-[10px] font-mono transition-colors cursor-pointer flex items-center gap-1 font-bold ${
               simulateTileError
                 ? "bg-amber-950/90 border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                 : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
@@ -162,7 +162,7 @@ export function CrisisMap() {
 
           <button
             onClick={() => setShowLegend((v) => !v)}
-            className={`px-2 py-1 rounded border text-[11px] transition-colors cursor-pointer font-bold ${
+            className={`px-2.5 py-2 min-h-[40px] rounded border text-[10px] transition-colors cursor-pointer font-bold ${
               showLegend
                 ? "bg-slate-800 text-white border-slate-600"
                 : "bg-slate-900 text-slate-400 border-slate-800"
@@ -285,7 +285,7 @@ export function CrisisMap() {
       </div>
 
       {/* 4. Interactive Map Container with Overlay Legend */}
-      <CardContent className="p-0 relative min-h-[320px] sm:min-h-[480px] lg:min-h-[540px] flex flex-col justify-between overflow-hidden">
+      <CardContent className="p-0 relative min-h-[360px] sm:min-h-[480px] lg:min-h-[540px] flex flex-col justify-between overflow-hidden">
         {/* Real Leaflet Map */}
         <div className="absolute inset-0 z-0">
           <CrisisMapLeaflet
@@ -296,7 +296,7 @@ export function CrisisMap() {
 
         {/* TACTICAL OVERLAY LEGEND WITH EXACT REQUIRED TAXONOMY */}
         {showLegend && (
-          <div className="absolute bottom-2 left-2 z-[400] bg-slate-950/95 border border-slate-800 p-2.5 sm:p-3.5 rounded-xl shadow-2xl backdrop-blur-md max-w-[calc(100vw-32px)] sm:max-w-sm max-h-[240px] sm:max-h-none overflow-y-auto text-xs font-mono select-none">
+          <div className="absolute bottom-2 left-2 z-[400] bg-slate-950/95 border border-slate-800 p-2.5 sm:p-3.5 rounded-xl shadow-2xl backdrop-blur-md max-w-[calc(100%-1rem)] sm:max-w-sm max-h-[180px] sm:max-h-none overflow-y-auto text-xs font-mono select-none">
             <div className="font-bold text-slate-200 border-b border-slate-800 pb-1.5 mb-2.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />

@@ -16,8 +16,8 @@ export default function DashboardLayout({
         <Header />
         <div className="flex-1 flex overflow-hidden w-full">
           <Sidebar className="hidden md:flex shrink-0" />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 md:p-6 pb-24 md:pb-6 bg-[#060a14]">
-            <div className="max-w-[1700px] mx-auto w-full">
+          <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6 bg-[#060a14]">
+            <div className="max-w-[1700px] mx-auto w-full min-w-0">
               {children}
             </div>
           </main>

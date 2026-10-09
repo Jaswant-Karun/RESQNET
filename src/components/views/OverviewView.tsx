@@ -103,7 +103,7 @@ export function OverviewView() {
   const isEscalated = simulationStage === "ESCALATED";
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 pb-16 md:pb-12">
+    <div className="flex min-w-0 flex-col gap-4 sm:gap-6 lg:grid lg:grid-cols-12 pb-16 md:pb-12">
       {/* ========================================================
           MOBILE PRIORITY 1 / DESKTOP ROW 1: CRITICAL ALERTS & CONTROLS
       ======================================================== */}
@@ -128,15 +128,15 @@ export function OverviewView() {
           description="Multisource observed hazards, meteorological forecasts, and deterministic risk scoring"
         />
 
-        <div className="p-4 rounded-xl bg-[#080d1a] border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-[#080d1a] border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4 shadow-lg min-w-0">
           <div className="space-y-1 w-full md:w-auto">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-              <strong className="text-white font-mono text-xs sm:text-sm uppercase">
+              <strong className="text-white font-mono text-xs sm:text-sm uppercase break-words">
                 Zone A - Kotturpuram Riverfront Basin (Risk Score: {isEscalated ? "96" : "88"}/100 • CRITICAL)
               </strong>
             </div>
-            <p className="text-xs text-slate-400 font-mono">
+            <p className="text-xs text-slate-400 font-mono leading-relaxed">
               Live multisource intelligence correlated: Open-Meteo precipitation forecast, GDACS regional alerts, and RESQNET deterministic risk engine.
             </p>
           </div>
@@ -144,7 +144,7 @@ export function OverviewView() {
           <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
             <button
               onClick={() => setActiveTab("risk-intelligence")}
-              className="w-full md:w-auto px-4 py-2.5 min-h-[44px] rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold transition-all shadow-lg shadow-indigo-950/40 cursor-pointer flex items-center justify-center gap-1.5 touch-manipulation"
+              className="w-full md:w-auto px-4 py-2.5 min-h-[48px] rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold transition-all shadow-lg shadow-indigo-950/40 cursor-pointer flex items-center justify-center gap-1.5 touch-manipulation"
             >
               <span>Launch Live Disaster Risk Intelligence</span>
               <span>→</span>

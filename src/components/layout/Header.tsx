@@ -76,9 +76,9 @@ export function Header() {
         <div className="w-full px-4 sm:px-6 py-2.5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             {/* MOBILE TOP BAR (< md) */}
-            <div className="flex md:hidden items-center justify-between w-full py-0.5">
+            <div className="flex md:hidden items-center justify-between gap-2 w-full py-0.5 min-w-0">
               {/* Left: RESQNET + SYSTEM ONLINE */}
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div className="relative flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-red-600 via-blue-600 to-indigo-700 shadow-md shadow-blue-900/30 shrink-0">
                   <Shield className="h-4 w-4 text-white" />
                   <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
@@ -86,7 +86,7 @@ export function Header() {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                   </span>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="text-base font-black tracking-widest text-white uppercase font-sans leading-tight">
                     RESQ<span className="text-red-500">NET</span>
                   </div>
@@ -98,7 +98,7 @@ export function Header() {
               </div>
 
               {/* Right: Commander + Notifications */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => {
                     markAlertsRead();
@@ -117,14 +117,14 @@ export function Header() {
 
                 <div
                   onClick={() => setShowCommanderPanel(true)}
-                  className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-2.5 py-1.5 rounded-lg cursor-pointer hover:border-slate-700 transition-all min-h-[44px]"
+                  className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-2 py-1.5 rounded-lg cursor-pointer hover:border-slate-700 transition-all min-h-[44px] max-w-[calc(100vw-142px)]"
                   title="Commander Clearance Profile"
                 >
                   <div className="text-right font-mono leading-none">
                     <div className="text-[9px] text-amber-400 font-bold tracking-wider uppercase">
                       Commander:
                     </div>
-                    <div className="text-slate-100 font-bold text-[11px] truncate max-w-[125px] mt-0.5">
+                    <div className="text-slate-100 font-bold text-[11px] truncate max-w-[96px] min-[390px]:max-w-[112px] mt-0.5">
                       {currentUser.name}
                     </div>
                   </div>

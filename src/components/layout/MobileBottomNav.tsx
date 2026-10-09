@@ -72,7 +72,7 @@ export function MobileBottomNav() {
         paddingBottom: "max(env(safe-area-inset-bottom, 0px), 8px)",
       }}
     >
-      <div className="flex items-center justify-around px-2 pt-2 pb-1">
+      <div className="flex items-center justify-around gap-1 px-1.5 pt-2 pb-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -81,7 +81,7 @@ export function MobileBottomNav() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 min-h-[48px] rounded-xl transition-all cursor-pointer active:scale-95 touch-manipulation ${
+              className={`relative flex min-w-0 flex-1 flex-col items-center justify-center py-1.5 px-0.5 min-h-[48px] rounded-xl transition-all cursor-pointer active:scale-95 touch-manipulation ${
                 isActive
                   ? "text-blue-400 font-bold"
                   : "text-slate-400 hover:text-slate-200"
@@ -124,7 +124,7 @@ export function MobileBottomNav() {
 
               {/* Label */}
               <span
-                className={`text-[10px] font-mono tracking-tight mt-1 truncate ${
+                className={`max-w-full text-[10px] font-mono tracking-tight mt-1 truncate ${
                   isActive ? "text-blue-300 font-black" : "text-slate-400"
                 }`}
               >

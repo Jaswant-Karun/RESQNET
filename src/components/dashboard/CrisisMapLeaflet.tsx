@@ -791,7 +791,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
   ]);
 
   return (
-    <div className="w-full h-full relative z-0 min-h-[320px] sm:min-h-[480px]">
+    <div className="w-full h-full relative z-0 min-h-[360px] sm:min-h-[480px]">
       {/* Map Tile Unavailable System Status Banner */}
       {isTileUnavailable && (
         <div className="absolute top-3 left-3 right-3 sm:right-auto z-[500] flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-950/95 border border-amber-500/80 text-amber-300 text-xs font-mono shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-300">
@@ -810,7 +810,7 @@ export function CrisisMapLeaflet({ layers, activeViewMode }: CrisisMapLeafletPro
       {/* Leaflet Map Div with Fallback Tactical Coordinate Grid */}
       <div
         ref={mapContainerRef}
-        className={`w-full h-full min-h-[320px] sm:min-h-[480px] ${
+        className={`w-full h-full min-h-[360px] sm:min-h-[480px] ${
           isTileUnavailable ? "tactical-fallback-grid" : ""
         } ${activeViewMode === "THERMAL_IR" ? "contrast-125 saturate-150" : ""}`}
         style={{
