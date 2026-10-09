@@ -1,21 +1,85 @@
 # yaml-language-server: $schema=./.vscode/compose-spec.json
 services:
-  resqnet-n8n:
+  resqnet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: resqnet
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_MODE: ${DATABASE_MODE:-mongodb}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/resqnet}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/resqnet-orchestrator}
+      N8N_ALERT_WEBHOOK_URL: ${N8N_ALERT_WEBHOOK_URL:-http://n8n:5678/webhook/resqnet-risk-alert}
+      N8N_ALERT_SHARED_SECRET: ${N8N_ALERT_SHARED_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      ALERT_FROM_EMAIL: ${ALERT_FROM_EMAIL:-}
+      COMMANDER_ALERT_EMAIL: ${COMMANDER_ALERT_EMAIL:-}
+      ALERT_COOLDOWN_MINUTES: ${ALERT_COOLDOWN_MINUTES:-10}
+      DEMO_COMMANDER_PASSWORD: ${DEMO_COMMANDER_PASSWORD:-}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      n8n:
+        condition: service_started
+    networks:
+      - resqnet-network
+
+  mongodb:
+    image: mongo:8
+    container_name: resqnet-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - resqnet_mongodb_data:/data/db
+    networks:
+      - resqnet-network
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand({ ping: 1 }).ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  n8n:
     image: n8nio/n8n:latest
     container_name: resqnet-n8n
     restart: unless-stopped
     ports:
-      - "5680:5678"
+      - "5678:5678"
     environment:
-      - N8N_HOST=localhost
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://localhost:5680/
-      - N8N_DISABLE_PRODUCTION_MAIN_PROCESS=false
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
+      N8N_DISABLE_PRODUCTION_MAIN_PROCESS: "false"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_ALERT_SHARED_SECRET: ${N8N_ALERT_SHARED_SECRET:-}
     volumes:
       - resqnet_n8n_data:/home/node/.n8n
+    networks:
+      - resqnet-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
+  resqnet_mongodb_data:
+    name: resqnet_mongodb_data
   resqnet_n8n_data:
     name: resqnet_n8n_data
+
+networks:
+  resqnet-network:
+    name: resqnet-network

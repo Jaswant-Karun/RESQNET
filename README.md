@@ -143,3 +143,49 @@ The Android package is `com.resqnet.app`, the display name is `RESQNET`, and
 the generated project includes Android internet access, a dark RESQNET splash
 screen, and placeholder launcher artwork suitable for replacement with
 production branding.
+
+### Docker development stack
+
+The local Docker stack runs the existing Next.js application, MongoDB, and n8n
+on one private Docker network. MongoDB is for local development only; use
+MongoDB Atlas for production deployments.
+
+Copy `.env.example` to `.env` and set the external API values you want to use.
+For local Compose, the default database URI is:
+
+```env
+MONGODB_URI=mongodb://mongodb:27017/resqnet
+```
+
+Start the stack:
+
+```bash
+docker compose up --build
+```
+
+Services:
+
+- RESQNET: http://localhost:3000
+- MongoDB: localhost:27017
+- n8n: http://localhost:5678
+
+The containers communicate through the `resqnet-network` Docker network. n8n
+callbacks use `http://resqnet:3000`, and RESQNET uses
+`http://mongodb:27017` and `http://n8n:5678` internally.
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
+View logs:
+
+```bash
+docker compose logs
+docker compose logs -f resqnet
+```
+
+Named volumes preserve local MongoDB and n8n data across container restarts.
+The Docker image uses Next.js standalone output and does not include
+environment secrets in the image.
