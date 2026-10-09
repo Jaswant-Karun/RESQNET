@@ -3,27 +3,6 @@ import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/server/auth";
 import { sendEmergencyEmailAlert, EmailAlertOptions } from "@/lib/server/emailAlertService";
 import { getDatabase, isMongoActive } from "@/lib/mongodb";
 import { AlertDocument } from "@/types";
-import fs from "fs";
-import path from "path";
-
-/**
- * Dynamically read environment variables from .env.local if present,
- * ensuring immediate updates without requiring a dev server restart.
- */
-function getDynamicEnv(key: string, defaultValue = ""): string {
-  try {
-    const envPath = path.join(process.cwd(), ".env.local");
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, "utf8");
-      const regex = new RegExp(`^${key}\\s*=\\s*(.+)$`, "m");
-      const match = content.match(regex);
-      if (match && match[1]) {
-        return match[1].trim().replace(/^['"]|['"]$/g, "");
-      }
-    }
-  } catch {}
-  return process.env[key] || defaultValue;
-}
 
 let activeTargetEmailMemory: string | null = null;
 
@@ -43,7 +22,7 @@ async function getActiveCommanderEmail(): Promise<string> {
       console.warn("[API /api/alerts/email] Failed to read target email from DB settings:", e);
     }
   }
-  return getDynamicEnv("COMMANDER_ALERT_EMAIL", "jksam37@gmail.com");
+  return process.env.COMMANDER_ALERT_EMAIL?.trim() || "";
 }
 
 async function setActiveCommanderEmail(email: string): Promise<void> {
@@ -65,21 +44,19 @@ async function setActiveCommanderEmail(email: string): Promise<void> {
 
 export async function GET(req: NextRequest) {
   try {
-    const smtpUser = getDynamicEnv("SMTP_USER");
-    const smtpPass = getDynamicEnv("SMTP_PASS");
+    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+    const session = token ? await verifySessionToken(token) : null;
+    if (!session || session.role !== "COMMANDER") {
+      return NextResponse.json({ success: false, error: "Commander authentication required." }, { status: 401 });
+    }
+
     const isConfigured = Boolean(
-      smtpUser &&
-      smtpPass &&
-      !smtpUser.includes("your-gmail-address") &&
-      !smtpPass.includes("your-google-app-password")
+      process.env.RESEND_API_KEY?.trim() &&
+        process.env.ALERT_FROM_EMAIL?.trim() &&
+        (await getActiveCommanderEmail())
     );
-    const activeProvider = isConfigured ? "Gmail SMTP" : "Simulation";
-    const alertFrom =
-      getDynamicEnv("EMAIL_FROM") ||
-      getDynamicEnv("ALERT_FROM_EMAIL") ||
-      (smtpUser ? `RESQNET Emergency Command <${smtpUser}>` : "RESQNET Emergency Command <alerts@resqnet.gov.in>");
     const alertRecipient = await getActiveCommanderEmail();
-    const cooldownMin = parseInt(getDynamicEnv("ALERT_COOLDOWN_MINUTES", "10"), 10);
+    const cooldownMin = Number.parseInt(process.env.ALERT_COOLDOWN_MINUTES || "10", 10);
 
     // Fetch recent email alerts from MongoDB if active
     let recentAlerts: AlertDocument[] = [];
@@ -99,10 +76,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      provider: activeProvider,
+      provider: "Resend",
       configured: isConfigured,
-      smtpConfigured: isConfigured,
-      alertFromEmail: alertFrom,
+      resendConfigured: isConfigured,
+      alertFromEmail: process.env.ALERT_FROM_EMAIL || "",
       commanderAlertEmail: alertRecipient,
       cooldownMinutes: cooldownMin,
       recentAlerts,
@@ -153,27 +130,17 @@ export async function POST(req: NextRequest) {
     const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     const session = token ? await verifySessionToken(token) : null;
 
-    // Safety guardrail: Only authenticated COMMANDER can use test alert button
-    if (body.isTest) {
-      if (!session || session.role !== "COMMANDER") {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Authentication required. Only authenticated COMMANDER can use SEND TEST ALERT.",
-          },
-          { status: 403 }
-        );
-      }
+    if (!session || session.role !== "COMMANDER") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Authentication required. Only authenticated COMMANDER can send email alerts.",
+        },
+        { status: 401 }
+      );
     }
 
     const activeRecipient = await getActiveCommanderEmail();
-    const requestedEmail = body.commanderEmail?.trim();
-    const targetRecipient = requestedEmail || activeRecipient;
-
-    // If an explicit target email was sent, persist it as the active recipient
-    if (requestedEmail) {
-      await setActiveCommanderEmail(requestedEmail);
-    }
 
     const options: EmailAlertOptions = {
       area: body.area || "Zone A",
@@ -192,8 +159,8 @@ export async function POST(req: NextRequest) {
       recommendedAction:
         body.recommendedAction || "Review evacuation response plan.",
       incidentId: body.incidentId || "FL-902",
-      commanderName: session?.name || body.commanderName || "Cmdr Jaswant Karun",
-      commanderEmail: targetRecipient,
+      commanderName: session.name,
+      commanderEmail: activeRecipient || session.email,
       isTest: Boolean(body.isTest),
     };
 
