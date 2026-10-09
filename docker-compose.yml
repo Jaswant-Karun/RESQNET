@@ -60,6 +60,7 @@ services:
       WEBHOOK_URL: ${N8N_PUBLIC_URL:-http://localhost:5678/}
       N8N_DISABLE_PRODUCTION_MAIN_PROCESS: "false"
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-}
       N8N_ALERT_SHARED_SECRET: ${N8N_ALERT_SHARED_SECRET:-}
     volumes:
       - resqnet_n8n_data:/home/node/.n8n

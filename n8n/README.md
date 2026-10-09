@@ -104,8 +104,11 @@ Return status
 ## 3. Configuration
 
 The Live Risk Monitor and RESQNET risk engine use `N8N_ALERT_WEBHOOK_URL` to invoke
-Workflow 6. The workflow uses `N8N_ALERT_SHARED_SECRET` when it calls the
-protected RESQNET email endpoint. Keep both values server-side.
+Workflow 6. RESQNET sends `N8N_WEBHOOK_SECRET` in the
+`X-Resqnet-Webhook-Secret` header when invoking n8n. Configure the n8n webhook
+authentication or an ingress policy to require that value. Workflow 6 uses
+`N8N_ALERT_SHARED_SECRET` when it calls the protected RESQNET email endpoint.
+Keep both values server-side.
 
 In `.env.local` or `.env`:
 
