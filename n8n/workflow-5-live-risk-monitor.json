@@ -71,10 +71,10 @@
       "position": [1480, 180],
       "parameters": {
         "method": "POST",
-        "url": "http://resqnet:3000/api/automation/risk-alert",
+        "url": "http://resqnet:3000/api/alerts",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { riskForecast: $json.riskForecast, area: $json.area, severity: $json.severity, riskScore: $json.riskScore, commander: $json.commander, timestamp: $json.timestamp, simulationMode: $json.simulationMode } }}",
+        "jsonBody": "={{ { incidentId: $json.area.id, type: 'LIVE_RISK_MONITOR', severity: $json.severity, recipient: $json.commander.email, channel: 'DASHBOARD', status: 'PENDING_EMAIL', area: $json.area.name || $json.area.id, riskScore: $json.riskScore, riskLevel: $json.severity, source: 'N8N_LIVE_RISK_MONITOR', createdAt: new Date().toISOString() } }}",
         "options": { "timeout": 10000 }
       }
     },

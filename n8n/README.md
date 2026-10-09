@@ -48,27 +48,24 @@ All workflow definitions are ready to import directly into your n8n canvas:
 | `workflow-2-critical-response.json` | **WORKFLOW 2: Critical Response** | `Incident` → `Check Severity` → `If CRITICAL` → `Request Human Approval` → `If Approved` → `Allocate Resources` → `Trigger Ambulance Workflow` → `Trigger Rescue Team Workflow` → `Trigger Drone Workflow` → `Update RESQNET` |
 | `workflow-3-drone-deployment.json` | **WORKFLOW 3: Drone Deployment** | `Drone Request` → `Check Available Drones` → `Select Available Drone` → `Create Mission` → `Update Mission Status` → `Return Result` |
 | `workflow-4-emergency-alert.json` | **WORKFLOW 4: Emergency Alert** | `Critical Incident` → `Generate Alert` → `Human Approval` → `Publish/Simulate Alert` → `Log Alert` |
-| `workflow-5-risk-alert.json` | **RESQNET Risk Alert** | `Webhook` → `Validate Risk` → `Check Severity` → `IF HIGH / CRITICAL` → `Create Alert Log` → `Send Email` → `Update RESQNET` → `Return Status` |
-| `workflow-master-orchestration.json` | **Master Workflow Orchestrator** | End-to-end unified workflow coordinating multi-agency dispatch in a single canvas. |
+| `workflow-5-live-risk-monitor.json` | **Live Risk Monitor** | `Schedule Trigger` → `Fetch live risk data` → `Normalize data` → `Calculate/check risk` → `HIGH/CRITICAL?` → persist, notify, email, approval, and activity logging |
+| `workflow-6-email-alert.json` | **Email Alert** | Validates HIGH/CRITICAL alerts, delegates delivery to the server-side RESQNET email API, and records the alert |
+| `workflow-7-escalation-reassessment.json` | **Escalation Reassessment** | Compares state, identifies changed factors, invokes the RESQNET response engine, requests approval, and gates simulated execution |
+| `workflow-8-activity-logger.json` | **Activity Logger** | Normalizes and persists workflow events through `/api/activity` |
+| `workflow-master-orchestration.json` | **Legacy Master Workflow Orchestrator** | Existing combined prototype workflow retained for reference; use workflows 1-8 for the final architecture. |
 
-### Workflow 5: RESQNET Risk Alert Flow & Safeguard Protocol
+### Workflow 6: Email Alert Flow & Safeguard Protocol
 
 ```text
 Webhook
    ↓
-Validate Risk
+Validate alert
    ↓
-Check Severity
+Send email via RESQNET
    ↓
-IF HIGH / CRITICAL
-   ↓ (TRUE)
-Create Alert Log
+Create alert log in RESQNET
    ↓
-Send Email
-   ↓
-Update RESQNET
-   ↓
-Return Status
+Return status
 ```
 
 **Payload Schema:**
@@ -106,7 +103,9 @@ Return Status
 
 ## 3. Configuration
 
-The RESQNET Risk Alert connection uses `N8N_ALERT_WEBHOOK_URL`. The n8n workflow uses `N8N_ALERT_SHARED_SECRET` when it calls the protected RESQNET email endpoint. Keep both values server-side.
+The Live Risk Monitor and RESQNET risk engine use `N8N_ALERT_WEBHOOK_URL` to invoke
+Workflow 6. The workflow uses `N8N_ALERT_SHARED_SECRET` when it calls the
+protected RESQNET email endpoint. Keep both values server-side.
 
 In `.env.local` or `.env`:
 
