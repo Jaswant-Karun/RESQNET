@@ -13,10 +13,10 @@ services:
       PORT: 3000
       HOSTNAME: 0.0.0.0
       DATABASE_MODE: ${DATABASE_MODE:-mongodb}
-      MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/resqnet}
+      MONGODB_URI: mongodb://mongodb:27017/resqnet
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/resqnet-orchestrator}
-      N8N_ALERT_WEBHOOK_URL: ${N8N_ALERT_WEBHOOK_URL:-http://n8n:5678/webhook/resqnet-risk-alert}
+      N8N_WEBHOOK_URL: http://n8n:5678/webhook/resqnet-orchestrator
+      N8N_ALERT_WEBHOOK_URL: http://n8n:5678/webhook/resqnet-risk-alert
       N8N_ALERT_SHARED_SECRET: ${N8N_ALERT_SHARED_SECRET:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       ALERT_FROM_EMAIL: ${ALERT_FROM_EMAIL:-}
