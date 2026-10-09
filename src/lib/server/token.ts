@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 export const SESSION_COOKIE_NAME = "resqnet_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24; // 24 hours
 
