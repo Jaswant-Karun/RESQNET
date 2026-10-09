@@ -2,12 +2,15 @@ export const SESSION_COOKIE_NAME = "resqnet_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24; // 24 hours
 
 const configuredSecret = process.env.SESSION_SECRET?.trim();
-if (process.env.NODE_ENV === "production" && !configuredSecret) {
-  throw new Error("SESSION_SECRET must be configured in production.");
-}
+const developmentSecret = crypto.randomBytes(32).toString("hex");
 
-export const SESSION_SECRET =
-  configuredSecret || "development-only-resqnet-session-secret";
+function getSessionSecret(): string {
+  if (configuredSecret) return configuredSecret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be configured in production.");
+  }
+  return developmentSecret;
+}
 
 export interface SessionPayload {
   userId: string;
@@ -97,7 +100,10 @@ export async function createSessionToken(user: {
   const header = { alg: "HS256", typ: "JWT" };
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-  const signature = await signHmac(`${encodedHeader}.${encodedPayload}`, SESSION_SECRET);
+  const signature = await signHmac(
+    `${encodedHeader}.${encodedPayload}`,
+    getSessionSecret()
+  );
 
   return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
@@ -109,7 +115,16 @@ export async function verifySessionToken(token: string | undefined | null): Prom
   if (parts.length !== 3) return null;
 
   const [encodedHeader, encodedPayload, signature] = parts;
-  const isValidSig = await verifyHmac(`${encodedHeader}.${encodedPayload}`, signature, SESSION_SECRET);
+  let isValidSig = false;
+  try {
+    isValidSig = await verifyHmac(
+      `${encodedHeader}.${encodedPayload}`,
+      signature,
+      getSessionSecret()
+    );
+  } catch {
+    return null;
+  }
   if (!isValidSig) return null;
 
   try {
