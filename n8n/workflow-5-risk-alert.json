@@ -1,41 +1,50 @@
 {
   "id": "resqnet-risk-alert-05",
   "name": "RESQNET Risk Alert",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
   "nodes": [
     {
+      "id": "node-webhook-risk-alert",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [160, 300],
       "parameters": {
         "httpMethod": "POST",
         "path": "resqnet-risk-alert",
         "responseMode": "responseNode",
         "options": {}
-      },
-      "id": "node-webhook-risk-alert",
-      "name": "Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [160, 300]
+      }
     },
     {
-      "parameters": {
-        "jsCode": "// Step 1: Validate Risk Payload\nconst payload = $input.first().json.body || $input.first().json;\n\nif (!payload) {\n  throw new Error('Invalid payload: request body is empty.');\n}\n\nconst riskForecast = payload.riskForecast || {};\nconst area = payload.area || { name: 'Adyar Sector Alpha' };\nconst rawSeverity = String(payload.severity || (payload.riskScore >= 75 ? 'CRITICAL' : payload.riskScore >= 60 ? 'HIGH' : 'MODERATE')).toUpperCase();\nconst validSeverities = ['CRITICAL', 'HIGH', 'MODERATE', 'LOW'];\nconst severity = validSeverities.includes(rawSeverity) ? rawSeverity : 'HIGH';\n\nconst riskScore = typeof payload.riskScore === 'number' ? payload.riskScore : (severity === 'CRITICAL' ? 85 : severity === 'HIGH' ? 68 : 45);\n\nconst commander = payload.commander || {\n  name: 'Cmdr Jaswant Karun',\n  email: 'jksam37@gmail.com',\n  role: 'INCIDENT_COMMANDER'\n};\n\nconst timestamp = payload.timestamp || new Date().toISOString();\nconst simulationMode = payload.simulationMode !== undefined ? Boolean(payload.simulationMode) : false;\n\nreturn [{\n  json: {\n    riskForecast,\n    area,\n    severity,\n    riskScore,\n    commander,\n    timestamp,\n    simulationMode,\n    isValid: true,\n    validatedAt: new Date().toISOString()\n  }\n}];"
-      },
       "id": "node-validate-risk",
       "name": "Validate Risk",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [380, 300]
+      "position": [380, 300],
+      "parameters": {
+        "jsCode": "const payload = $input.first().json.body || $input.first().json;\nif (!payload || typeof payload !== 'object') throw new Error('Invalid risk alert payload.');\nconst severity = String(payload.severity || '').toUpperCase();\nif (!['LOW', 'MODERATE', 'HIGH', 'CRITICAL'].includes(severity)) throw new Error('severity must be LOW, MODERATE, HIGH, or CRITICAL.');\nconst riskScore = Number(payload.riskScore);\nif (!Number.isFinite(riskScore) || riskScore < 0 || riskScore > 100) throw new Error('riskScore must be a number from 0 to 100.');\nif (!payload.area || typeof payload.area !== 'object') throw new Error('area is required.');\nif (!payload.commander || typeof payload.commander !== 'object') throw new Error('commander is required.');\nreturn [{ json: { riskForecast: payload.riskForecast || {}, area: payload.area, severity, riskScore, commander: payload.commander, timestamp: payload.timestamp || new Date().toISOString(), simulationMode: payload.simulationMode === true, validatedAt: new Date().toISOString() } }];"
+      }
     },
     {
-      "parameters": {
-        "jsCode": "// Step 2: Check Severity & Formulate Human Review Safeguards\nconst data = $input.first().json;\nconst severity = data.severity;\nconst riskScore = data.riskScore;\n\nconst isHighOrCritical = severity === 'HIGH' || severity === 'CRITICAL' || riskScore >= 60;\nconst isCritical = severity === 'CRITICAL' || riskScore >= 75;\n\n// RESQNET Safety Protocol:\n// For CRITICAL alerts: Require commander review before simulated emergency execution.\n// The email may notify the commander, but emergency execution still requires human approval.\nconst requiresCommanderReview = isCritical;\nconst emergencyExecutionStatus = isCritical ? 'AWAITING_COMMANDER_APPROVAL' : 'NOT_APPLICABLE';\n\nreturn [{\n  json: {\n    ...data,\n    evaluation: {\n      severity,\n      riskScore,\n      isHighOrCritical,\n      isCritical,\n      requiresCommanderReview,\n      emergencyExecutionStatus,\n      humanApprovalPolicy: 'Emergency execution strictly requires human approval before simulated deployment.'\n    }\n  }\n}];"
-      },
       "id": "node-check-severity",
       "name": "Check Severity",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [600, 300]
+      "position": [600, 300],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst isHighOrCritical = data.severity === 'HIGH' || data.severity === 'CRITICAL';\nconst isCritical = data.severity === 'CRITICAL';\nreturn [{ json: { ...data, evaluation: { isHighOrCritical, isCritical, requiresCommanderReview: isCritical, emergencyExecutionStatus: isCritical ? 'AWAITING_COMMANDER_APPROVAL' : 'NOT_APPLICABLE', humanApprovalPolicy: 'Emergency execution requires commander approval before simulated execution.' } } }];"
+      }
     },
     {
+      "id": "node-if-high-critical",
+      "name": "IF HIGH / CRITICAL",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [820, 300],
       "parameters": {
         "conditions": {
           "boolean": [
@@ -45,190 +54,109 @@
             }
           ]
         }
-      },
-      "id": "node-if-high-critical",
-      "name": "IF HIGH / CRITICAL",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [820, 300]
+      }
     },
     {
-      "parameters": {
-        "jsCode": "// Step 4: Create Alert Log Entry\nconst data = $input.first().json;\nconst alertId = `ALT-RISK-${Date.now().toString(36).toUpperCase()}`;\nconst areaName = data.area?.name || data.area?.shortName || 'Zone A - Saidapet';\n\nconst alertLog = {\n  alertId,\n  timestamp: data.timestamp,\n  loggedAt: new Date().toISOString(),\n  areaName,\n  severity: data.severity,\n  riskScore: data.riskScore,\n  hazard: data.riskForecast?.hazardType || 'FLOOD',\n  commanderName: data.commander?.name || 'Cmdr Jaswant Karun',\n  recipient: data.commander?.email || 'jksam37@gmail.com',\n  status: 'PENDING_EMAIL_DISPATCH',\n  requiresCommanderReview: data.evaluation.requiresCommanderReview,\n  emergencyExecutionStatus: data.evaluation.emergencyExecutionStatus,\n  safeguardNotice: 'Human authorization required before simulated emergency execution.'\n};\n\nreturn [{\n  json: {\n    ...data,\n    alertId,\n    alertLog\n  }\n}];"
-      },
       "id": "node-create-alert-log",
       "name": "Create Alert Log",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1060, 200]
+      "position": [1060, 200],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst alertId = `ALT-RISK-${Date.now().toString(36).toUpperCase()}`;\nreturn [{ json: { ...data, alertId, alertLog: { alertId, timestamp: data.timestamp, loggedAt: new Date().toISOString(), area: data.area, severity: data.severity, riskScore: data.riskScore, commander: data.commander, status: 'PENDING_EMAIL_DISPATCH', requiresCommanderReview: data.evaluation.requiresCommanderReview, emergencyExecutionStatus: data.evaluation.emergencyExecutionStatus } } }];"
+      }
     },
     {
-      "parameters": {
-        "method": "POST",
-        "url": "http://localhost:3000/api/alerts/email",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"area\": $json.alertLog.areaName,\n  \"hazard\": $json.alertLog.hazard,\n  \"riskScore\": $json.riskScore,\n  \"riskLevel\": $json.severity,\n  \"commanderName\": $json.commander.name,\n  \"commanderEmail\": $json.commander.email,\n  \"forecastWindow\": $json.riskForecast.forecastWindow || \"Next 24 hours\",\n  \"contributingFactors\": $json.riskForecast.contributingFactors || [\n    \"Severe precipitation detected\",\n    \"High inundation risk in lowlands\",\n    \"Population density exposure\"\n  ],\n  \"recommendedAction\": \"Review evacuation response plan. For CRITICAL alerts: Commander review is required before simulated emergency execution. Emergency execution still requires human approval.\",\n  \"isTest\": false,\n  \"workflow\": \"RESQNET Risk Alert\"\n}",
-        "options": {
-          "timeout": 8000
-        }
-      },
       "id": "node-send-email",
       "name": "Send Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1280, 200]
-    },
-    {
+      "position": [1280, 200],
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:3000/api/automation/mock-dispatch",
+        "url": "http://host.docker.internal:3000/api/alerts/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-resqnet-alert-secret",
+              "value": "={{ $env.N8N_ALERT_SHARED_SECRET }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"service\": \"RESQNET_RISK_MONITOR_SYNC\",\n  \"workflow\": \"RESQNET Risk Alert\",\n  \"alertId\": $json.alertId,\n  \"area\": $json.area,\n  \"severity\": $json.severity,\n  \"riskScore\": $json.riskScore,\n  \"commander\": $json.commander,\n  \"requiresCommanderReview\": $json.evaluation.requiresCommanderReview,\n  \"emergencyExecutionStatus\": $json.evaluation.emergencyExecutionStatus,\n  \"safeguardNotice\": \"Require commander review before simulated emergency execution. The email may notify the commander, but emergency execution still requires human approval.\",\n  \"timestamp\": $json.timestamp,\n  \"simulationMode\": $json.simulationMode\n}",
+        "jsonBody": "={{ { area: $('Create Alert Log').item.json.area.name || $('Create Alert Log').item.json.area.shortName, hazard: $('Create Alert Log').item.json.riskForecast.hazardType || 'FLOOD', riskScore: $('Create Alert Log').item.json.riskScore, riskLevel: $('Create Alert Log').item.json.severity, commanderName: $('Create Alert Log').item.json.commander.name, commanderEmail: $('Create Alert Log').item.json.commander.email, forecastWindow: $('Create Alert Log').item.json.riskForecast.forecastWindow || 'Next 24 hours', contributingFactors: $('Create Alert Log').item.json.riskForecast.contributingFactors || [], recommendedAction: 'Review evacuation response plan. Commander review is required before simulated emergency execution.', isTest: false } }}",
         "options": {
           "timeout": 8000
         }
-      },
+      }
+    },
+    {
       "id": "node-update-resqnet",
       "name": "Update RESQNET",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1500, 200]
+      "position": [1500, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { alertId: $('Create Alert Log').item.json.alertId, incidentId: 'n8n-risk-alert', type: 'RESQNET_RISK_ALERT', severity: $('Create Alert Log').item.json.severity, recipient: $('Create Alert Log').item.json.commander.email, channel: 'N8N', status: $('Send Email').item.json.status || 'FAILED', sentAt: new Date().toISOString(), area: $('Create Alert Log').item.json.area.name, riskScore: $('Create Alert Log').item.json.riskScore, riskLevel: $('Create Alert Log').item.json.severity, provider: 'RESQNET_N8N', requiresCommanderReview: $('Create Alert Log').item.json.evaluation.requiresCommanderReview } }}",
+        "options": {
+          "timeout": 8000
+        }
+      }
     },
     {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"RESQNET Risk Alert\",\n  \"status\": \"DISPATCHED\",\n  \"alertId\": $json.alertId,\n  \"severity\": $json.severity,\n  \"riskScore\": $json.riskScore,\n  \"area\": $json.area,\n  \"commander\": $json.commander,\n  \"emailDispatched\": true,\n  \"resqnetUpdated\": true,\n  \"emergencyExecution\": {\n    \"requiresCommanderReview\": $json.evaluation.requiresCommanderReview,\n    \"status\": $json.evaluation.emergencyExecutionStatus,\n    \"policy\": \"For CRITICAL alerts: Require commander review before simulated emergency execution. The email may notify the commander, but emergency execution still requires human approval.\"\n  },\n  \"timestamp\": new Date().toISOString()\n}",
-        "options": {}
-      },
-      "id": "node-return-status-dispatched",
+      "id": "node-return-status",
       "name": "Return Status",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1720, 200]
+      "position": [1720, 200],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, workflow: 'RESQNET Risk Alert', status: $('Send Email').item.json.status || 'FAILED', alertId: $('Create Alert Log').item.json.alertId, severity: $('Create Alert Log').item.json.severity, riskScore: $('Create Alert Log').item.json.riskScore, area: $('Create Alert Log').item.json.area, commander: $('Create Alert Log').item.json.commander, emailDispatched: $('Send Email').item.json.success === true, resqnetUpdated: true, safeguards: $('Create Alert Log').item.json.evaluation, timestamp: new Date().toISOString() } }}",
+        "options": {}
+      }
     },
     {
-      "parameters": {
-        "jsCode": "// Step: Low / Moderate Risk - Alert Skipped Log\nconst data = $input.first().json;\nreturn [{\n  json: {\n    ...data,\n    skipReason: `Severity (${data.severity}) is below alert threshold (HIGH/CRITICAL). No email dispatch necessary.`\n  }\n}];"
-      },
       "id": "node-log-skipped",
       "name": "Log Skipped Alert",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1060, 420]
+      "position": [1060, 400],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nreturn [{ json: { success: true, workflow: 'RESQNET Risk Alert', status: 'SKIPPED', severity: data.severity, riskScore: data.riskScore, area: data.area, emailDispatched: false, resqnetUpdated: false, reason: 'LOW and MODERATE alerts do not send email.', timestamp: new Date().toISOString() } }];"
+      }
     },
     {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"workflow\": \"RESQNET Risk Alert\",\n  \"status\": \"SKIPPED\",\n  \"severity\": $json.severity,\n  \"riskScore\": $json.riskScore,\n  \"area\": $json.area,\n  \"emailDispatched\": false,\n  \"reason\": $json.skipReason,\n  \"timestamp\": new Date().toISOString()\n}",
-        "options": {}
-      },
-      "id": "node-return-status-skipped",
+      "id": "node-return-skipped",
       "name": "Return Status (Skipped)",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1280, 420]
+      "position": [1280, 400],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
     }
   ],
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Validate Risk",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Risk": {
-      "main": [
-        [
-          {
-            "node": "Check Severity",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Severity": {
-      "main": [
-        [
-          {
-            "node": "IF HIGH / CRITICAL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
+    "Webhook": { "main": [[{ "node": "Validate Risk", "type": "main", "index": 0 }]] },
+    "Validate Risk": { "main": [[{ "node": "Check Severity", "type": "main", "index": 0 }]] },
+    "Check Severity": { "main": [[{ "node": "IF HIGH / CRITICAL", "type": "main", "index": 0 }]] },
     "IF HIGH / CRITICAL": {
       "main": [
-        [
-          {
-            "node": "Create Alert Log",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Log Skipped Alert",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Create Alert Log", "type": "main", "index": 0 }],
+        [{ "node": "Log Skipped Alert", "type": "main", "index": 0 }]
       ]
     },
-    "Create Alert Log": {
-      "main": [
-        [
-          {
-            "node": "Send Email",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Email": {
-      "main": [
-        [
-          {
-            "node": "Update RESQNET",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update RESQNET": {
-      "main": [
-        [
-          {
-            "node": "Return Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Skipped Alert": {
-      "main": [
-        [
-          {
-            "node": "Return Status (Skipped)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "settings": {
-    "executionOrder": "v1"
+    "Create Alert Log": { "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]] },
+    "Send Email": { "main": [[{ "node": "Update RESQNET", "type": "main", "index": 0 }]] },
+    "Update RESQNET": { "main": [[{ "node": "Return Status", "type": "main", "index": 0 }]] },
+    "Log Skipped Alert": { "main": [[{ "node": "Return Status (Skipped)", "type": "main", "index": 0 }]] }
   }
 }

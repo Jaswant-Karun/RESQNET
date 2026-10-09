@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
         body.recommendedAction || "Review evacuation response plan.",
       incidentId: body.incidentId || "FL-902",
       commanderName: session?.name || body.commanderName || "Cmdr Jaswant Karun",
-      commanderEmail: activeRecipient || session.email,
+      commanderEmail: activeRecipient || session?.email || body.commanderEmail || "",
       isTest: Boolean(body.isTest),
     };
 
