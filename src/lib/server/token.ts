@@ -1,8 +1,13 @@
 export const SESSION_COOKIE_NAME = "resqnet_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24; // 24 hours
 
-const DEFAULT_SECRET = "resqnet-eoc-emergency-command-secret-key-2026";
-export const SESSION_SECRET = process.env.SESSION_SECRET || DEFAULT_SECRET;
+const configuredSecret = process.env.SESSION_SECRET?.trim();
+if (process.env.NODE_ENV === "production" && !configuredSecret) {
+  throw new Error("SESSION_SECRET must be configured in production.");
+}
+
+export const SESSION_SECRET =
+  configuredSecret || "development-only-resqnet-session-secret";
 
 export interface SessionPayload {
   userId: string;

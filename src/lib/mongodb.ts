@@ -50,6 +50,7 @@ const options: MongoClientOptions = {
 
 let client: MongoClient | null = null;
 let clientPromise: Promise<MongoClient> | null = null;
+let indexesPromise: Promise<void> | null = null;
 
 declare global {
   // Global declaration to maintain cached client across hot reloads in Next.js development
@@ -107,7 +108,32 @@ export async function getMongoClient(): Promise<MongoClient> {
  */
 export async function getDatabase(dbName = DATABASE_NAME): Promise<Db> {
   const clientInstance = await getMongoClient();
-  return clientInstance.db(dbName);
+  const db = clientInstance.db(dbName);
+
+  if (!indexesPromise) {
+    indexesPromise = ensureIndexes(db).catch((error: unknown) => {
+      indexesPromise = null;
+      console.error(
+        "[MongoDB] Failed to create indexes:",
+        error instanceof Error ? error.message : "unknown error"
+      );
+      throw error;
+    });
+  }
+
+  await indexesPromise;
+  return db;
+}
+
+async function ensureIndexes(db: Db): Promise<void> {
+  await Promise.all([
+    db.collection(COLLECTIONS.USERS).createIndex({ email: 1 }, { unique: true, sparse: true }),
+    db.collection(COLLECTIONS.INCIDENTS).createIndex({ status: 1, updatedAt: -1 }),
+    db.collection(COLLECTIONS.ALERTS).createIndex({ incidentId: 1, createdAt: -1 }),
+    db.collection(COLLECTIONS.ALERTS).createIndex({ severity: 1, area: 1, createdAt: -1 }),
+    db.collection(COLLECTIONS.RISK_FORECASTS).createIndex({ areaId: 1, timestamp: -1 }),
+    db.collection(COLLECTIONS.ACTIVITY_LOGS).createIndex({ incidentId: 1, timestamp: -1 }),
+  ]);
 }
 
 /**

@@ -84,7 +84,8 @@ function buildEmailContent(options: Required<
     commanderName,
   } = options;
   const subject = `[RESQNET ${riskLevel} ALERT] ${hazard} Risk Detected — ${area}`;
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard`;
+  const appUrl = process.env.APP_URL?.trim();
+  const dashboardUrl = appUrl ? `${appUrl.replace(/\/$/, "")}/dashboard` : "/dashboard";
   const factorsText = contributingFactors.map((factor) => `- ${factor}`).join("\n");
   const text = `RESQNET EMERGENCY ALERT
 

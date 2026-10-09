@@ -78,6 +78,9 @@ export async function executeAutomationWorkflow(
         headers: {
           "Content-Type": "application/json",
           "X-Resqnet-Source": "RESQNET_COMMAND_CENTER",
+          ...(process.env.N8N_WEBHOOK_SECRET?.trim()
+            ? { "X-Resqnet-Webhook-Secret": process.env.N8N_WEBHOOK_SECRET.trim() }
+            : {}),
         },
         body: JSON.stringify({
           ...payload,
