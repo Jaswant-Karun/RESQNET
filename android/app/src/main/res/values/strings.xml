@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">RESQNET</string>
     <string name="title_activity_main">RESQNET</string>
+    <string name="app_description">AI-Powered Adaptive Disaster Response &amp; Rescue Coordination</string>
     <string name="package_name">com.resqnet.app</string>
     <string name="custom_url_scheme">com.resqnet.app</string>
 </resources>
