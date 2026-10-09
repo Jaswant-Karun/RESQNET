@@ -75,6 +75,12 @@ export async function GET() {
     n8n: status.n8n,
     email: status.email,
     lastAlert: status.lastAlert || getLastAlertTimestamp(),
+    workflowStatus: {
+      riskMonitor: status.riskMonitor,
+      n8n: status.n8n,
+      email: status.email,
+      lastAlert: status.lastAlert || getLastAlertTimestamp(),
+    },
     safeguards: {
       criticalAlertsRequireReview: true,
       humanApprovalMandatory: true,

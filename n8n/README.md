@@ -48,7 +48,7 @@ All workflow definitions are ready to import directly into your n8n canvas:
 | `workflow-2-critical-response.json` | **WORKFLOW 2: Critical Response** | `Incident` → `Check Severity` → `If CRITICAL` → `Request Human Approval` → `If Approved` → `Allocate Resources` → `Trigger Ambulance Workflow` → `Trigger Rescue Team Workflow` → `Trigger Drone Workflow` → `Update RESQNET` |
 | `workflow-3-drone-deployment.json` | **WORKFLOW 3: Drone Deployment** | `Drone Request` → `Check Available Drones` → `Select Available Drone` → `Create Mission` → `Update Mission Status` → `Return Result` |
 | `workflow-4-emergency-alert.json` | **WORKFLOW 4: Emergency Alert** | `Critical Incident` → `Generate Alert` → `Human Approval` → `Publish/Simulate Alert` → `Log Alert` |
-| `workflow-5-risk-alert.json` | **WORKFLOW 5: RESQNET Risk Alert** | `Webhook` → `Validate Risk` → `Check Severity` → `IF HIGH / CRITICAL` → `Create Alert Log` → `Send Email` → `Update RESQNET` → `Return Status` |
+| `workflow-5-risk-alert.json` | **RESQNET Risk Alert** | `Webhook` → `Validate Risk` → `Check Severity` → `IF HIGH / CRITICAL` → `Create Alert Log` → `Send Email` → `Update RESQNET` → `Return Status` |
 | `workflow-master-orchestration.json` | **Master Workflow Orchestrator** | End-to-end unified workflow coordinating multi-agency dispatch in a single canvas. |
 
 ### Workflow 5: RESQNET Risk Alert Flow & Safeguard Protocol
@@ -104,18 +104,19 @@ Return Status
 
 ---
 
-## 3. Configuration (`N8N_WEBHOOK_URL`)
+## 3. Configuration
 
-The connection between RESQNET and n8n is governed by the `N8N_WEBHOOK_URL` environment variable.
+The RESQNET Risk Alert connection uses `N8N_ALERT_WEBHOOK_URL`. The n8n workflow uses `N8N_ALERT_SHARED_SECRET` when it calls the protected RESQNET email endpoint. Keep both values server-side.
 
 In `.env.local` or `.env`:
 
 ```bash
 # Example for local n8n instance:
-N8N_WEBHOOK_URL=http://localhost:5678/webhook/resqnet-orchestrator
+N8N_ALERT_WEBHOOK_URL=http://localhost:5678/webhook/resqnet-risk-alert
+N8N_ALERT_SHARED_SECRET=replace_with_a_long_random_secret
 
 # Example for cloud-hosted n8n:
-# N8N_WEBHOOK_URL=https://n8n.your-domain.com/webhook/resqnet-orchestrator
+# N8N_ALERT_WEBHOOK_URL=https://n8n.your-domain.com/webhook/resqnet-risk-alert
 ```
 
 ### Clean Abstraction & Simulation Mode

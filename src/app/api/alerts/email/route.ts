@@ -130,11 +130,17 @@ export async function POST(req: NextRequest) {
     const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
     const session = token ? await verifySessionToken(token) : null;
 
-    if (!session || session.role !== "COMMANDER") {
+    const workflowSecret = process.env.N8N_ALERT_SHARED_SECRET?.trim();
+    const isAuthorizedWorkflow =
+      Boolean(workflowSecret) &&
+      req.headers.get("x-resqnet-alert-secret") === workflowSecret;
+
+    if ((!session || session.role !== "COMMANDER") && !isAuthorizedWorkflow) {
       return NextResponse.json(
         {
           success: false,
-          error: "Authentication required. Only authenticated COMMANDER can send email alerts.",
+          error:
+            "Authentication required. Only an authenticated COMMANDER or authorized RESQNET n8n workflow can send email alerts.",
         },
         { status: 401 }
       );
@@ -169,7 +175,7 @@ export async function POST(req: NextRequest) {
       recommendedAction:
         body.recommendedAction || "Review evacuation response plan.",
       incidentId: body.incidentId || "FL-902",
-      commanderName: session.name,
+      commanderName: session?.name || body.commanderName || "Cmdr Jaswant Karun",
       commanderEmail: activeRecipient || session.email,
       isTest: Boolean(body.isTest),
     };
