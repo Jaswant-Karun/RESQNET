@@ -1,10 +1,11 @@
-import crypto from "node:crypto";
-
 export const SESSION_COOKIE_NAME = "resqnet_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24; // 24 hours
 
 const configuredSecret = process.env.SESSION_SECRET?.trim();
-const developmentSecret = crypto.randomBytes(32).toString("hex");
+const developmentSecret = Array.from(
+  globalThis.crypto.getRandomValues(new Uint8Array(32)),
+  (byte) => byte.toString(16).padStart(2, "0")
+).join("");
 
 function getSessionSecret(): string {
   if (configuredSecret) return configuredSecret;
