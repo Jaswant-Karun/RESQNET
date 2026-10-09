@@ -1,0 +1,72 @@
+{
+  "id": "resqnet-email-alert-06",
+  "name": "RESQNET - Workflow 6: Email Alert",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "email-alert-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [160, 300],
+      "parameters": { "httpMethod": "POST", "path": "resqnet-risk-alert", "responseMode": "responseNode", "options": {} }
+    },
+    {
+      "id": "email-alert-validate",
+      "name": "Validate alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [380, 300],
+      "parameters": {
+        "jsCode": "const p = $input.first().json.body || $input.first().json; const severity = String(p.severity || '').toUpperCase(); if (!['HIGH','CRITICAL'].includes(severity)) throw new Error('Email Alert accepts HIGH or CRITICAL only.'); if (!p.area || !p.commander) throw new Error('area and commander are required.'); return [{ json: { ...p, severity, riskScore: Number(p.riskScore), timestamp: p.timestamp || new Date().toISOString(), requiresCommanderReview: severity === 'CRITICAL' } }];"
+      }
+    },
+    {
+      "id": "email-alert-send",
+      "name": "Send email via RESQNET",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://resqnet:3000/api/alerts/email",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "x-resqnet-alert-secret", "value": "={{ $env.N8N_ALERT_SHARED_SECRET }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { area: $json.area.name || $json.area.id, hazard: $json.riskForecast?.hazardType || 'FLOOD', riskScore: $json.riskScore, riskLevel: $json.severity, commanderName: $json.commander.name, commanderEmail: $json.commander.email, forecastWindow: $json.riskForecast?.forecastWindow || 'Next 24 hours', contributingFactors: $json.riskForecast?.contributingFactors || [], recommendedAction: 'Review evacuation response plan. Commander approval is required before emergency execution.', isTest: false } }}",
+        "options": { "timeout": 10000 }
+      }
+    },
+    {
+      "id": "email-alert-log",
+      "name": "Create alert log in RESQNET",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [860, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://resqnet:3000/api/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { incidentId: $json.area.id, type: 'N8N_EMAIL_ALERT', severity: $json.severity, recipient: $json.commander.email, channel: 'EMAIL', status: $('Send email via RESQNET').item.json.status || 'FAILED', sentAt: new Date().toISOString(), area: $json.area.name || $json.area.id, riskScore: $json.riskScore, requiresCommanderReview: $json.requiresCommanderReview } }}",
+        "options": { "timeout": 8000 }
+      }
+    },
+    {
+      "id": "email-alert-response",
+      "name": "Return status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1080, 300],
+      "parameters": { "respondWith": "json", "responseBody": "={{ { success: true, workflow: 'Email Alert', status: $('Send email via RESQNET').item.json.status || 'FAILED', emailDispatched: $('Send email via RESQNET').item.json.success === true, requiresCommanderReview: $json.requiresCommanderReview, timestamp: new Date().toISOString() } }}", "options": {} }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Validate alert", "type": "main", "index": 0 }]] },
+    "Validate alert": { "main": [[{ "node": "Send email via RESQNET", "type": "main", "index": 0 }]] },
+    "Send email via RESQNET": { "main": [[{ "node": "Create alert log in RESQNET", "type": "main", "index": 0 }]] },
+    "Create alert log in RESQNET": { "main": [[{ "node": "Return status", "type": "main", "index": 0 }]] }
+  }
+}

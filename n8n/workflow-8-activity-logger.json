@@ -1,0 +1,45 @@
+{
+  "id": "resqnet-activity-logger-08",
+  "name": "RESQNET - Workflow 8: Activity Logger",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "activity-webhook",
+      "name": "Activity event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [160, 300],
+      "parameters": { "httpMethod": "POST", "path": "resqnet-activity", "responseMode": "responseNode", "options": {} }
+    },
+    {
+      "id": "activity-normalize",
+      "name": "Normalize activity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300],
+      "parameters": { "jsCode": "const event = $input.first().json.body || $input.first().json; return [{ json: { ...event, source: event.source || 'N8N_ORCHESTRATOR', eventType: event.eventType || event.workflow || 'WORKFLOW_EVENT', timestamp: event.timestamp || new Date().toISOString() } }];" }
+    },
+    {
+      "id": "activity-persist",
+      "name": "Persist activity in RESQNET",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300],
+      "parameters": { "method": "POST", "url": "http://resqnet:3000/api/activity", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ $json }}", "options": { "timeout": 8000 } }
+    },
+    {
+      "id": "activity-response",
+      "name": "Return log status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [860, 300],
+      "parameters": { "respondWith": "json", "responseBody": "={{ { success: true, workflow: 'Activity Logger', logged: true, timestamp: new Date().toISOString() } }}", "options": {} }
+    }
+  ],
+  "connections": {
+    "Activity event": { "main": [[{ "node": "Normalize activity", "type": "main", "index": 0 }]] },
+    "Normalize activity": { "main": [[{ "node": "Persist activity in RESQNET", "type": "main", "index": 0 }]] },
+    "Persist activity in RESQNET": { "main": [[{ "node": "Return log status", "type": "main", "index": 0 }]] }
+  }
+}

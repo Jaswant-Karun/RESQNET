@@ -1,0 +1,115 @@
+{
+  "id": "resqnet-escalation-reassessment-07",
+  "name": "RESQNET - Workflow 7: Escalation Reassessment",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "escalation-webhook",
+      "name": "Risk changed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [160, 300],
+      "parameters": { "httpMethod": "POST", "path": "resqnet-escalation", "responseMode": "responseNode", "options": {} }
+    },
+    {
+      "id": "escalation-compare",
+      "name": "Compare previous state",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300],
+      "parameters": {
+        "jsCode": "const incoming = $input.first().json.body || $input.first().json; const state = $getWorkflowStaticData('global'); const previous = state.lastRisk || {}; const current = { areaId: incoming.area?.id || incoming.areaId, severity: String(incoming.severity || '').toUpperCase(), riskScore: Number(incoming.riskScore || 0), factors: incoming.riskForecast?.contributingFactors || [] }; state.lastRisk = current; const changedFactors = current.factors.filter(f => !previous.factors?.includes(f)); const changed = current.areaId !== previous.areaId || current.severity !== previous.severity || current.riskScore !== previous.riskScore || changedFactors.length > 0; return [{ json: { ...incoming, ...current, previous, changed, changedFactors, reassessedAt: new Date().toISOString() } }];"
+      }
+    },
+    {
+      "id": "escalation-gate",
+      "name": "Determine changed factors",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [640, 300],
+      "parameters": { "conditions": { "boolean": [{ "value1": "={{ $json.changed }}", "value2": true }] } }
+    },
+    {
+      "id": "escalation-engine",
+      "name": "Trigger RESQNET response engine",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [860, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "http://resqnet:3000/api/automation/risk-alert",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { riskForecast: $json.riskForecast || {}, area: $json.area || { id: $json.areaId }, severity: $json.severity, riskScore: $json.riskScore, commander: $json.commander || {}, timestamp: $json.reassessedAt, simulationMode: $json.simulationMode === true } }}",
+        "options": { "timeout": 10000 }
+      }
+    },
+    {
+      "id": "escalation-response",
+      "name": "Generate updated response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "http://resqnet:3000/api/response-plans",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { incidentId: $json.areaId, planType: 'ESCALATION_REASSESSMENT', severity: $json.severity, riskScore: $json.riskScore, changedFactors: $json.changedFactors, humanApproved: false, approvalStatus: 'PENDING_COMMANDER_REVIEW', source: 'N8N_ESCALATION_REASSESSMENT', createdAt: new Date().toISOString() } }}",
+        "options": { "timeout": 8000 }
+      }
+    },
+    {
+      "id": "escalation-approval",
+      "name": "Request commander approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 180],
+      "parameters": { "jsCode": "const data = $input.first().json; return [{ json: { ...data, approval: { status: 'PENDING_COMMANDER_APPROVAL', humanApprovalRequired: true, emergencyExecutionBlocked: true } } }];" }
+    },
+    {
+      "id": "escalation-approved",
+      "name": "Execute approved automation",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1520, 180],
+      "parameters": { "conditions": { "boolean": [{ "value1": "={{ $json.commanderApproved === true }}", "value2": true }] } }
+    },
+    {
+      "id": "escalation-execute",
+      "name": "Execute approved dispatch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1740, 100],
+      "parameters": { "method": "POST", "url": "http://resqnet:3000/api/automation/mock-dispatch", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ { action: 'ESCALATION_APPROVED', incidentId: $json.areaId, severity: $json.severity, simulationMode: true } }}", "options": { "timeout": 8000 } }
+    },
+    {
+      "id": "escalation-log",
+      "name": "Log everything",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1960, 180],
+      "parameters": { "workflowId": { "__rl": true, "value": "resqnet-activity-logger-08", "mode": "id" }, "mode": "once", "options": {} }
+    },
+    {
+      "id": "escalation-return",
+      "name": "Return status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2180, 180],
+      "parameters": { "respondWith": "json", "responseBody": "={{ { success: true, workflow: 'Escalation Reassessment', changed: $json.changed, changedFactors: $json.changedFactors, approval: $json.approval || { status: 'NO_CHANGE' }, emergencyExecution: $json.commanderApproved === true ? 'EXECUTED_SIMULATION' : 'BLOCKED_PENDING_APPROVAL', timestamp: new Date().toISOString() } }}", "options": {} }
+    }
+  ],
+  "connections": {
+    "Risk changed": { "main": [[{ "node": "Compare previous state", "type": "main", "index": 0 }]] },
+    "Compare previous state": { "main": [[{ "node": "Determine changed factors", "type": "main", "index": 0 }]] },
+    "Determine changed factors": { "main": [[{ "node": "Trigger RESQNET response engine", "type": "main", "index": 0 }], [{ "node": "Log everything", "type": "main", "index": 0 }]] },
+    "Trigger RESQNET response engine": { "main": [[{ "node": "Generate updated response", "type": "main", "index": 0 }]] },
+    "Generate updated response": { "main": [[{ "node": "Request commander approval", "type": "main", "index": 0 }]] },
+    "Request commander approval": { "main": [[{ "node": "Execute approved automation", "type": "main", "index": 0 }]] },
+    "Execute approved automation": { "main": [[{ "node": "Execute approved dispatch", "type": "main", "index": 0 }], [{ "node": "Log everything", "type": "main", "index": 0 }]] },
+    "Execute approved dispatch": { "main": [[{ "node": "Log everything", "type": "main", "index": 0 }]] },
+    "Log everything": { "main": [[{ "node": "Return status", "type": "main", "index": 0 }]] }
+  }
+}

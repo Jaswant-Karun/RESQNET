@@ -1,0 +1,132 @@
+{
+  "id": "resqnet-live-risk-monitor-05",
+  "name": "RESQNET - Workflow 5: Live Risk Monitor",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "live-risk-schedule",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [160, 300],
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 5 }] } }
+    },
+    {
+      "id": "live-risk-fetch",
+      "name": "Fetch live risk data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [380, 300],
+      "parameters": { "method": "GET", "url": "http://resqnet:3000/api/risk-forecasts", "options": { "timeout": 8000 } }
+    },
+    {
+      "id": "live-risk-normalize",
+      "name": "Normalize data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 300],
+      "parameters": {
+        "jsCode": "const body = $input.first().json; const rows = Array.isArray(body.data) ? body.data : Array.isArray(body.forecasts) ? body.forecasts : Array.isArray(body) ? body : [body]; const source = rows.sort((a,b) => new Date(b.timestamp || b.createdAt || 0) - new Date(a.timestamp || a.createdAt || 0))[0] || {}; return [{ json: { riskForecast: source.riskForecast || source, area: source.area || { id: source.areaId || 'zone-a', name: source.areaName || 'Unknown zone' }, riskScore: Number(source.riskScore ?? source.score ?? 0), commander: source.commander || {}, timestamp: source.timestamp || new Date().toISOString(), simulationMode: source.simulationMode === true } }];"
+      }
+    },
+    {
+      "id": "live-risk-calculate",
+      "name": "Calculate/check risk",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [820, 300],
+      "parameters": {
+        "jsCode": "const data = $input.first().json; const score = Math.max(0, Math.min(100, data.riskScore)); const severity = String(data.riskForecast.severity || (score >= 75 ? 'CRITICAL' : score >= 50 ? 'HIGH' : score >= 25 ? 'MODERATE' : 'LOW')).toUpperCase(); return [{ json: { ...data, riskScore: score, severity, isHighOrCritical: severity === 'HIGH' || severity === 'CRITICAL', requiresCommanderReview: severity === 'CRITICAL', evaluatedAt: new Date().toISOString() } }];"
+      }
+    },
+    {
+      "id": "live-risk-gate",
+      "name": "HIGH/CRITICAL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1040, 300],
+      "parameters": { "conditions": { "boolean": [{ "value1": "={{ $json.isHighOrCritical }}", "value2": true }] } }
+    },
+    {
+      "id": "live-risk-record",
+      "name": "Create MongoDB risk record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1260, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "http://resqnet:3000/api/risk-forecasts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { ...$json.riskForecast, area: $json.area, riskScore: $json.riskScore, severity: $json.severity, timestamp: $json.timestamp, source: 'N8N_LIVE_RISK_MONITOR' } }}",
+        "options": { "timeout": 8000 }
+      }
+    },
+    {
+      "id": "live-risk-notify",
+      "name": "Notify RESQNET",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1480, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "http://resqnet:3000/api/automation/risk-alert",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { riskForecast: $json.riskForecast, area: $json.area, severity: $json.severity, riskScore: $json.riskScore, commander: $json.commander, timestamp: $json.timestamp, simulationMode: $json.simulationMode } }}",
+        "options": { "timeout": 10000 }
+      }
+    },
+    {
+      "id": "live-risk-email",
+      "name": "Email commander",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1700, 180],
+      "parameters": { "workflowId": { "__rl": true, "value": "resqnet-email-alert-06", "mode": "id" }, "mode": "once", "options": {} }
+    },
+    {
+      "id": "live-risk-approval",
+      "name": "Create approval request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1920, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "http://resqnet:3000/api/response-plans",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { incidentId: $json.area.id, planType: 'LIVE_RISK_APPROVAL', severity: $json.severity, riskScore: $json.riskScore, humanApproved: false, approvalStatus: 'PENDING_COMMANDER_REVIEW', requiresCommanderApproval: $json.requiresCommanderReview, source: 'N8N_LIVE_RISK_MONITOR', createdAt: new Date().toISOString() } }}",
+        "options": { "timeout": 8000 }
+      }
+    },
+    {
+      "id": "live-risk-log",
+      "name": "Log activity",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [2140, 180],
+      "parameters": { "workflowId": { "__rl": true, "value": "resqnet-activity-logger-08", "mode": "id" }, "mode": "once", "options": {} }
+    },
+    {
+      "id": "live-risk-low-log",
+      "name": "Log below threshold",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1260, 420],
+      "parameters": { "workflowId": { "__rl": true, "value": "resqnet-activity-logger-08", "mode": "id" }, "mode": "once", "options": {} }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Fetch live risk data", "type": "main", "index": 0 }]] },
+    "Fetch live risk data": { "main": [[{ "node": "Normalize data", "type": "main", "index": 0 }]] },
+    "Normalize data": { "main": [[{ "node": "Calculate/check risk", "type": "main", "index": 0 }]] },
+    "Calculate/check risk": { "main": [[{ "node": "HIGH/CRITICAL?", "type": "main", "index": 0 }]] },
+    "HIGH/CRITICAL?": { "main": [[{ "node": "Create MongoDB risk record", "type": "main", "index": 0 }], [{ "node": "Log below threshold", "type": "main", "index": 0 }]] },
+    "Create MongoDB risk record": { "main": [[{ "node": "Notify RESQNET", "type": "main", "index": 0 }]] },
+    "Notify RESQNET": { "main": [[{ "node": "Email commander", "type": "main", "index": 0 }]] },
+    "Email commander": { "main": [[{ "node": "Create approval request", "type": "main", "index": 0 }]] },
+    "Create approval request": { "main": [[{ "node": "Log activity", "type": "main", "index": 0 }]] }
+  }
+}
